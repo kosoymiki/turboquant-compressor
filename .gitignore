@@ -1,0 +1,8 @@
+node_modules/
+dist/
+native/wasm/target/
+native/wasm/pkg/*.wasm
+*.tgz
+*.log
+.DS_Store
+coverage/

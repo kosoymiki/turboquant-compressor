@@ -57,7 +57,7 @@ Validated by PolyKV (2026): 2.91x compression, +0.57% PPL degradation on Llama-3
 5. **Block size 128** — donor default, better than 32 for modern hardware
 6. **Mixed KV types** — different bits for keys and values
 
-## MCP Tools (13)
+## MCP Tools (14)
 
 | Tool | Function |
 |------|----------|
@@ -140,25 +140,100 @@ const output = cache.computeAttention(query, cache.getKeyQuantized()!, cache.get
 
 ```
 native/opencl/kernels/
-├── tq_fused_attention_v2.cl    — Full fused attention (LUT + sparse V + q8)
-└── tq_fused_attention_tiled.cl — Tiled variant (TILE_K=32)
+├── tq_fused_attention_v2.cl        — Fused attention (LUT + sparse V + q8)
+├── tq_fused_attention_v3_fp16.cl   — fp16 + vload4 (Adreno 730 ALU 2x)
+├── tq_fused_attention_v4_fp16.cl   — Full vectorized: vload8/vstore8 all paths
+├── tq_fused_attention_tiled.cl     — Tiled variant (TILE_K=32)
+└── tq_fwht_fp16                    — Vectorized FWHT butterfly (in v4)
 ```
 
-Target: Adreno 730v3 via Rusticl (Mesa/KGSL). Requires OpenCL 3.0+.
+Target: Adreno 730v3 via Rusticl (Mesa/KGSL). OpenCL 3.0+ / cl_khr_fp16.
 
-Limitations:
-- fp32 only (fp16 path planned for 2x throughput)
-- dim ≤ 256, key_bits ≤ 6
-- No vectorized loads yet (vload4/vload8 planned)
+v4 improvements:
+- vload8/vstore8: query load, key dot, output rescale, final norm (256-bit burst)
+- vload4/vstore4: value dequant+accum
+- 2x bandwidth vs v3 on Adreno L2 (128B cache line)
+- Separate tq_fwht_fp16 kernel — vectorized butterfly
+
+## WASM SIMD128 Core (Rust)
+
+```
+native/wasm/
+├── Cargo.toml         — cdylib, LTO, strip, opt-level=3
+├── src/lib.rs         — FWHT, Lloyd-Max, QJL, pack/unpack, simd_dot
+├── build.sh           — cargo + wasm-bindgen + wasm-opt pipeline
+└── pkg/               — Output: 37KB .wasm + JS bindings
+```
+
+Functions (all SIMD128 f32x4 where applicable):
+- `fwht` — Fast Walsh-Hadamard Transform (SIMD normalize)
+- `fwht_batch` — Batch FWHT (N vectors)
+- `lloyd_max_quantize` — Nearest centroid search + bit-pack
+- `lloyd_max_dequantize` — Unpack + centroid lookup
+- `qjl_sign_project` — 1-bit sign dot projection
+- `simd_dot` — f32x4 dot product
+- `pack_2bit` / `unpack_2bit` — 2-bit packing utilities
+
+Build:
+```bash
+cd native/wasm
+RUSTFLAGS="-C target-feature=+simd128" cargo build --target wasm32-unknown-unknown --release
+```
+
+Integration: `src/native/wasm_backend.ts` — auto-init, fallback to TS if unavailable.
+
+## Portable Installation
+
+### Requirements
+- Node.js 18+ (or Bun)
+- Optional: Rust 1.70+ with wasm32-unknown-unknown target (for WASM rebuild)
+- Optional: OpenCL 3.0 runtime (for GPU kernels)
+
+### Quick Start (any platform)
+
+```bash
+git clone https://github.com/kosoymiki/turboquant-compressor.git
+cd turboquant-compressor
+npm install
+npm run build
+npm run smoke:stdio
+```
+
+### Termux (Android/aarch64)
+
+```bash
+pkg install nodejs-lts rust rust-std-wasm32-unknown-unknown binaryen
+git clone https://github.com/kosoymiki/turboquant-compressor.git
+cd turboquant-compressor
+npm install
+npm run build
+# Optional: rebuild WASM
+cd native/wasm && bash build.sh && cd ../..
+```
+
+### Claude Code MCP
+
+Add to `~/.claude/settings.json`:
+```json
+{
+  "mcpServers": {
+    "turboquant-compressor": {
+      "command": "node",
+      "args": ["/path/to/turboquant-compressor/dist/server.js"]
+    }
+  }
+}
+```
+
+Verify: `echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' | node dist/server.js`
 
 ## Known Limitations
 
-1. **Outlier sensitivity**: min-max group quantization for values. Single outlier stretches range.
-   Mitigation: use larger groupSize or 4-bit values for outlier-heavy layers.
-2. **Sparse V positional bias**: early tokens less likely to be skipped than late tokens with same score.
-3. **Beta PDF assumption**: codebook optimized for uniform-on-sphere. Real KV vectors have structure.
-   Empirically validated by PolyKV — degradation minimal (+0.57% PPL).
-4. **QJL module**: research-only, not paper-faithful. Not wired into public tools.
+1. **Outlier sensitivity**: min-max group quantization for values. Mitigation: RotateKV channel reorder (implemented).
+2. **Sparse V positional bias**: early tokens favored. Mitigation: attention-sink protection (first N tokens never skipped).
+3. **Beta PDF assumption**: codebook optimized for uniform-on-sphere. Empirically validated by PolyKV (+0.57% PPL).
+4. **QJL module**: sign-bit estimator documented, not yet wired into public tools.
+5. **WASM fallback**: if wasm32 binary unavailable, pure TS path (~10x slower on FWHT).
 
 ## Testing
 
