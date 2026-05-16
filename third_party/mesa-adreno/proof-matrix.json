@@ -1,0 +1,36 @@
+{
+  "ADRENO_TURNIP_VULKAN_READY": {
+    "description": "Turnip Vulkan compute path proven on device",
+    "proof": [
+      "vulkaninfo_success",
+      "device_is_adreno",
+      "vulkan_compute_shader_dispatch",
+      "tq_value_dequant_vulkan_parity",
+      "tq_fused_attention_vulkan_parity",
+      "benchmark_json_written"
+    ]
+  },
+  "ADRENO_MESA_RUSTICL_OPENCL_READY": {
+    "description": "Rusticl OpenCL over Freedreno/Gallium proven on device",
+    "proof": [
+      "RUSTICL_ENABLE_freedreno_set",
+      "clGetPlatformIDs_returns_gt_0",
+      "device_is_freedreno_or_adreno",
+      "tq_mse_score_parity",
+      "tq_qjl_score_parity",
+      "tq_value_dequant_parity",
+      "tq_fused_attention_parity",
+      "benchmark_json_written"
+    ]
+  },
+  "ADRENO_FREEDRENO_KGSL_READY": {
+    "description": "Freedreno KGSL backend loaded and functional",
+    "proof": [
+      "kgsl_devnode_present",
+      "freedreno_kgsl_backend_loaded",
+      "mesa_runtime_log_clean",
+      "one_graphics_or_compute_smoke_pass",
+      "tq_kernel_parity_any_one"
+    ]
+  }
+}

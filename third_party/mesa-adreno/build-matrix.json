@@ -1,0 +1,36 @@
+{
+  "modes": [
+    {
+      "id": "termux_native",
+      "description": "Build helper libs/tools in Termux, not full Mesa",
+      "use_for": ["tq_adreno_cli", "vulkan_loader_probe", "mesa_artifact_inspection"],
+      "do_not_claim": ["rusticl_ready", "turnip_ready"],
+      "toolchain": "Termux clang/clang++",
+      "sysroot": "$PREFIX"
+    },
+    {
+      "id": "proot_ubuntu",
+      "description": "Build Mesa Freedreno/Turnip/Rusticl with KGSL patches in proot",
+      "use_for": ["full_mesa_build", "turnip_vulkan", "rusticl_opencl", "freedreno_gl"],
+      "proof": ["clinfo", "vulkaninfo", "tq_value_dequant_parity", "tq_fused_attention_parity"],
+      "toolchain": "gcc/g++ from Ubuntu 24.04/26.04",
+      "dependencies": ["meson", "ninja", "libdrm-dev", "llvm-dev", "libclang-dev"]
+    },
+    {
+      "id": "android_companion_service",
+      "description": "App-private Vulkan/driver/service bridge via APK",
+      "use_for": ["vulkan_compute_fallback", "command_buffer_bridge", "namespace_bypass"],
+      "proof": ["service_handshake", "vulkan_probe", "command_buffer_execution", "parity"],
+      "toolchain": "Android NDK / Gradle",
+      "dependencies": ["Android SDK", "NDK r25+"]
+    },
+    {
+      "id": "adrenotools_turnip",
+      "description": "Vulkan fallback via AdrenoTools-style hot-swap driver",
+      "use_for": ["vulkan_fallback_packaging", "app_private_driver"],
+      "proof": ["app_loads_driver", "vulkan_compute_shader_parity"],
+      "toolchain": "NDK clang",
+      "dependencies": ["AdrenoTools loader", "Turnip .so"]
+    }
+  ]
+}

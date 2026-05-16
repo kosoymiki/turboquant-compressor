@@ -1,0 +1,26 @@
+{
+  "test_name": "turboquant_open_test_local",
+  "files": 38,
+  "chunks": 57,
+  "approximate_tokens": 35681,
+  "token_count_source": "approximate_bytes_div_4",
+  "dimensions": 384,
+  "vector_count": 57,
+  "compression_ratio": 5.875973154362416,
+  "compressed_bytes": 14900,
+  "original_bytes_estimate": 87552,
+  "compress_ms": 39.98833300000001,
+  "recall_at_1": 0.6,
+  "recall_at_5": 0.9,
+  "mae": 7.505107646466058e-16,
+  "mse": 9.520565049886086e-31,
+  "p95_abs_error": 1.7763568394002505e-15,
+  "algorithm_level": "LEVEL_0_TURBOQUANT_INSPIRED_MVP",
+  "format_version": 3,
+  "include_qjl": false,
+  "warnings": [
+    "LEVEL_0_TURBOQUANT_INSPIRED_MVP: This is a proof-of-concept implementation",
+    "Uniform quantizer has fixed step size - may not be optimal for all distributions",
+    "QJL residual sketch/correction is not implemented in LEVEL_0."
+  ]
+}

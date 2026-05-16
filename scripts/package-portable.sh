@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+NAME="$(basename "$ROOT")"
+VERSION="$(node -p "require('$ROOT/package.json').version")"
+OUT="$ROOT/../${NAME}-${VERSION}-portable.tar.gz"
+
+cd "$ROOT/.."
+
+tar \
+  --exclude="${NAME}/.git" \
+  --exclude="${NAME}/coverage" \
+  --exclude="${NAME}/.turbo" \
+  --exclude="${NAME}/.cache" \
+  --exclude="${NAME}/*.tgz" \
+  --exclude="${NAME}/*.tar.gz" \
+  --exclude="${NAME}/**/.claude/settings.local.json" \
+  --exclude="${NAME}/**/.claude/*.local.json" \
+  --exclude="${NAME}/forensics" \
+  --exclude="${NAME}/mcp-conformance-transcript.json" \
+  --exclude="${NAME}/*transcript*.jsonl" \
+  --exclude="${NAME}/*transcript*.json" \
+  --exclude="${NAME}/**/*transcript*.jsonl" \
+  --exclude="${NAME}/**/*transcript*.json" \
+  --exclude="${NAME}/native/opencl/build" \
+  --exclude="${NAME}/native/adreno/build" \
+  --exclude="${NAME}/native/vulkan/build" \
+  --exclude="${NAME}/**/CMakeCache.txt" \
+  --exclude="${NAME}/**/CMakeFiles" \
+  --exclude="${NAME}/**/cmake_install.cmake" \
+  -czf "$OUT" "$NAME"
+
+if tar -tzf "$OUT" | grep -E '\.claude/settings\.local\.json|\.claude/.*\.local\.json'; then
+  echo "ERROR: local Claude settings found in archive"
+  exit 1
+fi
+
+ls -lh "$OUT"
+echo "$OUT"

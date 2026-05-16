@@ -1,0 +1,85 @@
+{
+  "generated": "2026-05-15",
+  "mesa_target_commit": "f7fed3bdf8532db9fe70e73da3d4dc4c42374836",
+  "mesa_target_version": "mesa-26.1.0",
+  "method": "no_full_clone — dry-run requires shallow clone or CI environment",
+  "patches": [
+    {
+      "patch_id": "freedreno_kgsl_backend_v1",
+      "source": "droidvm/mesa-freedreno-patchs",
+      "original_target": "Mesa 24.3.x",
+      "current_target": "mesa-26.1.0",
+      "dry_run": "not_tested",
+      "reason": "requires full Mesa clone for git apply --check",
+      "rebase_likely": true,
+      "rebase_reason": "2 major versions gap (24.3 → 26.1)",
+      "conflicts_expected": ["src/freedreno/drm — likely refactored"],
+      "claim_state": "research_only"
+    },
+    {
+      "patch_id": "turnip_kgsl_a7xx_v1",
+      "source": "droidvm/mesa-freedreno-patchs",
+      "original_target": "Mesa 24.3.x",
+      "current_target": "mesa-26.1.0",
+      "dry_run": "not_tested",
+      "reason": "requires full Mesa clone for git apply --check",
+      "rebase_likely": true,
+      "rebase_reason": "2 major versions gap (24.3 → 26.1)",
+      "conflicts_expected": ["src/freedreno/vulkan — active development area"],
+      "claim_state": "research_only"
+    },
+    {
+      "patch_id": "rusticl_freedreno_enable",
+      "source": "upstream Mesa",
+      "original_target": "Mesa 26.x / main",
+      "current_target": "mesa-26.1.0",
+      "dry_run": "not_applicable",
+      "reason": "upstream native — no patch needed, just build config",
+      "rebase_likely": false,
+      "rebase_reason": null,
+      "conflicts_expected": [],
+      "claim_state": "research_only"
+    },
+    {
+      "patch_id": "android_container_freedreno_arm64",
+      "source": "lfdevs/mesa-for-android-container",
+      "original_target": "Mesa 26.0.x+",
+      "current_target": "mesa-26.1.0",
+      "dry_run": "not_applicable",
+      "reason": "binary distribution — no source patch to apply",
+      "rebase_likely": false,
+      "rebase_reason": null,
+      "conflicts_expected": [],
+      "claim_state": "research_only",
+      "license_blocked": true
+    },
+    {
+      "patch_id": "turnip_android_hot_swap",
+      "source": "nihui/mesa-turnip-android-driver",
+      "original_target": "varies by release",
+      "current_target": "mesa-26.1.0",
+      "dry_run": "not_applicable",
+      "reason": "packaging layer — not a source patch against Mesa tree",
+      "rebase_likely": false,
+      "rebase_reason": null,
+      "conflicts_expected": [],
+      "claim_state": "research_only"
+    }
+  ],
+  "summary": {
+    "total_patches": 5,
+    "tested": 0,
+    "not_tested": 2,
+    "not_applicable": 3,
+    "rebase_likely": 2,
+    "license_blocked": 1,
+    "all_research_only": true
+  },
+  "next_steps": [
+    "Shallow clone Mesa at pinned commit in CI/proot environment",
+    "Extract actual patch files from droidvm/mesa-freedreno-patchs",
+    "Run git apply --check against pinned Mesa",
+    "Record conflict details per-file",
+    "Update this report with real dry-run results"
+  ]
+}

@@ -1,0 +1,19 @@
+import { z } from 'zod';
+import type { CacheLintResult } from '../cost/types.js';
+import { lintCacheStability } from '../cost/context_lint.js';
+
+const PromptCacheLintInputSchema = z.object({
+  blocks: z.array(
+    z.object({
+      label: z.string(),
+      text: z.string(),
+    })
+  ),
+});
+
+export function turboquantPromptCacheLint(
+  rawInput: unknown
+): CacheLintResult {
+  const input = PromptCacheLintInputSchema.parse(rawInput);
+  return lintCacheStability(input.blocks);
+}

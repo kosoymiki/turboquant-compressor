@@ -1,0 +1,38 @@
+{
+  "mesa_upstream": {
+    "url": "https://gitlab.freedesktop.org/mesa/mesa.git",
+    "tracking": "main",
+    "pinned_commit": "f7fed3bdf8532db9fe70e73da3d4dc4c42374836",
+    "pinned_version": "mesa-26.1.0",
+    "pin_date": "2026-05-15",
+    "required_paths": [
+      "src/freedreno/common/freedreno_devices.py",
+      "src/freedreno/vulkan",
+      "src/gallium/drivers/freedreno",
+      "src/gallium/frontends/rusticl",
+      "src/compiler/nir",
+      "src/compiler/spirv",
+      "meson.options"
+    ],
+    "required_paths_verified": true
+  },
+  "target": {
+    "soc": "SM8475",
+    "soc_name": "Snapdragon 8+ Gen 1",
+    "gpu": "Adreno 730",
+    "gpu_generation": "a7xx",
+    "android_mode": "no-root Termux + optional proot/apk-service",
+    "primary_backend": "vendor_opencl_qualcomm",
+    "mesa_backend_roles": [
+      "turnip_vulkan_fallback",
+      "rusticl_opencl_research",
+      "freedreno_kgsl_android_container"
+    ]
+  },
+  "policy": {
+    "no_ready_without_proof": true,
+    "no_blind_patch_apply": true,
+    "no_unlicensed_copy": true,
+    "vendor_opencl_remains_primary": true
+  }
+}

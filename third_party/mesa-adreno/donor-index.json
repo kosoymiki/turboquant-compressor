@@ -1,0 +1,84 @@
+[
+  {
+    "id": "lfdevs_mesa_android_container",
+    "url": "https://github.com/lfdevs/mesa-for-android-container",
+    "role": "android_container_mesa_distribution",
+    "license": "MIT (verify per-file)",
+    "strength": [
+      "ARM64 Android container packaging",
+      "Freedreno/Turnip runtime env model",
+      "Adreno 6xx/7xx/8xx compatibility tracking",
+      "PRoot/chroot/LXC/Droidspaces support"
+    ],
+    "risk": [
+      "community tested, not upstream CI proof",
+      "container assumptions may not fit Termux-native",
+      "binary distribution requires hash verification"
+    ],
+    "copy_policy": "conceptual_and_scripts_after_license_review",
+    "subsystems": ["freedreno", "turnip", "packaging"],
+    "target_mesa": "26.0.x+",
+    "last_checked": "2026-05-15"
+  },
+  {
+    "id": "droidvm_mesa_freedreno_patchs",
+    "url": "https://github.com/droidvm/mesa-freedreno-patchs",
+    "role": "kgsl_patches_for_adreno_a6xx_a7xx",
+    "license": "MIT (verify per-patch)",
+    "strength": [
+      "KGSL patchset for proot environment",
+      "Tested on Mesa 24.3.x",
+      "vulkaninfo/vkcube/vkmark/glmark2 proof discipline"
+    ],
+    "risk": [
+      "tested mainly Mesa 24.3.x — rebase likely for newer",
+      "kernel-interface-specific patches",
+      "proot-only tested, Termux-native unknown"
+    ],
+    "copy_policy": "patch_inventory_first_no_blind_apply",
+    "subsystems": ["freedreno", "kgsl"],
+    "target_mesa": "24.3.x",
+    "last_checked": "2026-05-15"
+  },
+  {
+    "id": "nihui_mesa_turnip_android_driver",
+    "url": "https://github.com/nihui/mesa-turnip-android-driver",
+    "role": "android_turnip_hot_swap_driver_packaging",
+    "license": "MIT (verify)",
+    "strength": [
+      "Android app-private/runtime Vulkan driver packaging",
+      "Adreno 6xx/7xx target",
+      "Edge and versioned release channels",
+      "AdrenoTools-style delivery"
+    ],
+    "risk": [
+      "Vulkan-oriented only, not Rusticl/OpenCL",
+      "claims require local device proof",
+      "hot-swap model may not fit MCP/Termux"
+    ],
+    "copy_policy": "packaging_and_ci_patterns_only",
+    "subsystems": ["turnip", "android-loader"],
+    "target_mesa": "varies by release",
+    "last_checked": "2026-05-15"
+  },
+  {
+    "id": "whitebelyash_freedreno_turnip_ci",
+    "url": "https://github.com/whitebelyash/freedreno_turnip-CI",
+    "role": "upstream_tracking_ci_experimental",
+    "license": "unknown (verify before use)",
+    "strength": [
+      "Frequent upstream Mesa rebase",
+      "A8XX patch tracking",
+      "CI automation patterns"
+    ],
+    "risk": [
+      "self-described as 'highly unstable & sloppy'",
+      "no stability guarantees",
+      "patches may be incomplete or broken"
+    ],
+    "copy_policy": "warning_grade_donor_ci_ideas_only",
+    "subsystems": ["turnip", "freedreno", "a8xx"],
+    "target_mesa": "main/HEAD",
+    "last_checked": "2026-05-15"
+  }
+]

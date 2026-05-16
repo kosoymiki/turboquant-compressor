@@ -1,0 +1,52 @@
+{
+  "generated": "2026-05-15",
+  "mesa_upstream_commit": "f7fed3bdf8532db9fe70e73da3d4dc4c42374836",
+  "mesa_upstream_version": "mesa-26.1.0",
+  "donors": [
+    {
+      "id": "lfdevs_mesa_android_container",
+      "repo": "lfdevs/mesa-for-android-container",
+      "head_sha": "dff4db21c0309c790353f449e6c63139d1b36813",
+      "license_file_present": false,
+      "license_determined": "unknown — no LICENSE file at repo root",
+      "copy_blocked": true,
+      "copy_blocked_reason": "Cannot copy code without confirmed license",
+      "safe_to_use": "conceptual patterns and public documentation only"
+    },
+    {
+      "id": "droidvm_mesa_freedreno_patchs",
+      "repo": "droidvm/mesa-freedreno-patchs",
+      "head_sha": "607ffa0719fe58bae2d45defe9fc9e8f4591b0e0",
+      "license_file_present": true,
+      "license_determined": "verify content — file exists",
+      "copy_blocked": false,
+      "copy_blocked_reason": null,
+      "safe_to_use": "patch inventory after license content verification"
+    },
+    {
+      "id": "nihui_mesa_turnip_android_driver",
+      "repo": "nihui/mesa-turnip-android-driver",
+      "head_sha": "1af600c6584dadb08f993f0e3aad9bc76de1508f",
+      "license_file_present": true,
+      "license_determined": "verify content — file exists",
+      "copy_blocked": false,
+      "copy_blocked_reason": null,
+      "safe_to_use": "packaging patterns after license content verification"
+    },
+    {
+      "id": "whitebelyash_freedreno_turnip_ci",
+      "repo": "whitebelyash/freedreno_turnip-CI",
+      "head_sha": "d10529bccb177b7056c1b70afd549c4e0993152f",
+      "license_file_present": true,
+      "license_determined": "verify content — file exists",
+      "copy_blocked": false,
+      "copy_blocked_reason": null,
+      "safe_to_use": "CI patterns after license content verification"
+    }
+  ],
+  "policy": {
+    "unknown_license_blocks_code_copy": true,
+    "conceptual_use_always_allowed": true,
+    "patch_inventory_requires_license_verification": true
+  }
+}

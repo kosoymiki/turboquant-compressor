@@ -1,0 +1,96 @@
+[
+  {
+    "patch_id": "freedreno_kgsl_backend_v1",
+    "source": "droidvm/mesa-freedreno-patchs",
+    "license": "MIT",
+    "target_mesa": "24.3.x",
+    "subsystem": ["src/freedreno/drm", "src/gallium/drivers/freedreno"],
+    "android_mode": ["proot", "termux_x11"],
+    "description": "KGSL backend for Freedreno on Android without DRM render node",
+    "risk": "kernel-interface-specific",
+    "applies_cleanly": "unknown_until_ci",
+    "rebase_needed": "likely_for_26.x",
+    "proof_required": [
+      "kgsl_devnode_present",
+      "vulkaninfo_or_glmark2",
+      "tq_value_dequant_parity",
+      "tq_fused_attention_parity"
+    ],
+    "claim_state": "research_only"
+  },
+  {
+    "patch_id": "turnip_kgsl_a7xx_v1",
+    "source": "droidvm/mesa-freedreno-patchs",
+    "license": "MIT",
+    "target_mesa": "24.3.x",
+    "subsystem": ["src/freedreno/vulkan", "src/freedreno/drm"],
+    "android_mode": ["proot"],
+    "description": "Turnip Vulkan driver via KGSL for Adreno a6xx/a7xx",
+    "risk": "kernel-interface-specific",
+    "applies_cleanly": "unknown_until_ci",
+    "rebase_needed": "likely_for_26.x",
+    "proof_required": [
+      "vulkaninfo_success",
+      "vkcube_renders",
+      "tq_value_dequant_vulkan_parity"
+    ],
+    "claim_state": "research_only"
+  },
+  {
+    "patch_id": "rusticl_freedreno_enable",
+    "source": "upstream Mesa meson_options.txt",
+    "license": "MIT",
+    "target_mesa": "26.x / main",
+    "subsystem": ["src/gallium/frontends/rusticl", "meson.options"],
+    "android_mode": ["proot", "termux"],
+    "description": "Enable Rusticl OpenCL frontend over Freedreno Gallium driver",
+    "risk": "build-config",
+    "applies_cleanly": "upstream_native",
+    "rebase_needed": "no",
+    "proof_required": [
+      "RUSTICL_ENABLE=freedreno",
+      "clGetPlatformIDs_returns_gt_0",
+      "tq_mse_score_parity",
+      "tq_qjl_score_parity",
+      "tq_value_dequant_parity",
+      "tq_fused_attention_parity"
+    ],
+    "claim_state": "research_only"
+  },
+  {
+    "patch_id": "android_container_freedreno_arm64",
+    "source": "lfdevs/mesa-for-android-container",
+    "license": "MIT (verify)",
+    "target_mesa": "26.0.x+",
+    "subsystem": ["freedreno", "turnip", "packaging"],
+    "android_mode": ["proot", "chroot", "lxc", "droidspaces"],
+    "description": "Pre-built Mesa ARM64 for Android containers",
+    "risk": "container-runtime-specific",
+    "applies_cleanly": "n/a_binary_distribution",
+    "rebase_needed": "n/a",
+    "proof_required": [
+      "vulkaninfo_success",
+      "clinfo_if_rusticl_enabled",
+      "tq_kernel_parity"
+    ],
+    "claim_state": "research_only"
+  },
+  {
+    "patch_id": "turnip_android_hot_swap",
+    "source": "nihui/mesa-turnip-android-driver",
+    "license": "MIT (verify)",
+    "target_mesa": "varies_by_release",
+    "subsystem": ["turnip", "android-loader", "adrenotools"],
+    "android_mode": ["app_private", "adrenotools"],
+    "description": "Android hot-swap Vulkan driver via AdrenoTools-style loading",
+    "risk": "app-runtime-specific",
+    "applies_cleanly": "n/a_packaging",
+    "rebase_needed": "n/a",
+    "proof_required": [
+      "driver_loads_in_app",
+      "vulkan_compute_dispatch",
+      "tq_value_dequant_vulkan_parity"
+    ],
+    "claim_state": "research_only"
+  }
+]
