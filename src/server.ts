@@ -1,4 +1,5 @@
 import { McpServer, StdioServerTransport, fromJsonSchema } from '@modelcontextprotocol/server';
+import { initWasmBackend, isWasmReady } from './native/wasm_backend.js';
 import { compressVectors } from './tools/compress.js';
 import { searchVectors } from './tools/search.js';
 import { parseCompressInput, parseSearchInput } from './tools/validation.js';
@@ -453,6 +454,12 @@ server.registerTool(
     return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
   }
 );
+
+// Auto-init WASM backend (non-blocking, falls back to TS)
+initWasmBackend().then(ok => {
+  if (ok) process.stderr.write('[turboquant] WASM SIMD128 backend: ready (17KB)\n');
+  else process.stderr.write('[turboquant] WASM unavailable, using TS fallback\n');
+}).catch(() => {});
 
 const transport = new StdioServerTransport();
 server.connect(transport).catch((err: unknown) => {

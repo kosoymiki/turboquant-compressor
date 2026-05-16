@@ -4,9 +4,10 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
+export PATH="$HOME/.cargo/bin:$PATH"
 
-echo "Building turboquant-wasm..."
-cargo build --target wasm32-unknown-unknown --release
+echo "Building turboquant-wasm (SIMD128)..."
+RUSTFLAGS="-C target-feature=+simd128" cargo build --target wasm32-unknown-unknown --release
 
 echo "Generating JS bindings..."
 mkdir -p pkg
@@ -17,7 +18,7 @@ wasm-bindgen \
   --omit-default-module-path
 
 echo "Optimizing with wasm-opt..."
-wasm-opt -O3 pkg/turboquant_wasm_bg.wasm -o pkg/turboquant_wasm_bg.wasm 2>/dev/null || true
+wasm-opt --enable-simd --enable-bulk-memory -O3 pkg/turboquant_wasm_bg.wasm -o pkg/turboquant_wasm_bg.wasm
 
-echo "Done. Output: pkg/"
-ls -lh pkg/
+echo "Done. Output:"
+ls -lh pkg/*.wasm pkg/*.js pkg/*.d.ts

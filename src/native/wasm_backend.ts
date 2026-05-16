@@ -1,106 +1,130 @@
 /**
- * TurboQuant WASM backend integration for MCP server.
- * Offloads CPU-bound FWHT/Lloyd-Max/QJL to SIMD128 WASM core (37KB).
- * Falls back to pure TS if WASM unavailable.
+ * TurboQuant WASM SIMD128 backend — direct WebAssembly loader (ESM).
+ * Bypasses wasm-bindgen CJS/ESM conflicts.
+ * 17KB binary, f32x4 vectorized FWHT/Lloyd-Max/QJL.
  */
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const WASM_PATH = join(__dirname, '../../native/wasm/pkg/turboquant_wasm.wasm');
+const __dir = dirname(fileURLToPath(import.meta.url));
+const WASM_PATH = join(__dir, 'wasm', 'pkg', 'turboquant_wasm_bg.wasm');
 
-let wasmReady = false;
-let wasmInstance: WebAssembly.Instance | null = null;
-let wasmMemory: WebAssembly.Memory | null = null;
+let exports: any = null;
+let memory: WebAssembly.Memory;
+let ready = false;
 
 export async function initWasmBackend(): Promise<boolean> {
-  if (wasmReady) return true;
+  if (ready) return true;
   try {
-    const buf = readFileSync(WASM_PATH);
-    const mod = await WebAssembly.compile(buf);
-    const mem = new WebAssembly.Memory({ initial: 64, maximum: 256 });
-    const inst = await WebAssembly.instantiate(mod, { env: { memory: mem } });
-    wasmInstance = inst;
-    wasmMemory = (inst.exports.memory as WebAssembly.Memory) || mem;
-    wasmReady = true;
+    const wasmBytes = readFileSync(WASM_PATH);
+
+    // Heap for wasm-bindgen object references
+    const heap: any[] = [undefined, null, true, false];
+    let heap_next = heap.length;
+    function addHeapObject(obj: any) { heap[heap_next] = obj; return heap_next++; }
+    function getObject(idx: number) { return heap[idx]; }
+    function dropObject(idx: number) { heap[idx] = undefined; }
+
+    const importObj = {
+      './turboquant_wasm_bg.js': {
+        __wbg___wbindgen_copy_to_typed_array_787746aeb47818bc(ptr: number, len: number, dst: number) {
+          const arr = getObject(dst) as Float32Array;
+          arr.set(new Float32Array(memory.buffer, ptr, len / 4));
+        },
+        __wbindgen_object_drop_ref(idx: number) { dropObject(idx); },
+      },
+    };
+
+    const mod = await WebAssembly.compile(wasmBytes);
+    const inst = await WebAssembly.instantiate(mod, importObj);
+    exports = inst.exports;
+    memory = exports.memory as WebAssembly.Memory;
+    ready = true;
     return true;
   } catch {
-    wasmReady = false;
+    ready = false;
     return false;
   }
 }
 
-export function isWasmReady(): boolean {
-  return wasmReady;
-}
+export function isWasmReady(): boolean { return ready; }
 
-function getExports(): any {
-  return wasmInstance?.exports;
-}
-
-/**
- * FWHT via WASM SIMD128
- * Returns null if WASM unavailable (caller falls back to TS)
- */
-export function wasmFwht(data: Float32Array): Float32Array | null {
-  if (!wasmReady) return null;
-  const exports = getExports();
-  if (!exports?.fwht) return null;
-
+function allocF32(data: Float32Array): [number, number] {
   const bytes = data.byteLength;
-  const ptr = exports.__wbindgen_malloc(bytes, 4);
-  const view = new Float32Array(wasmMemory!.buffer, ptr, data.length);
-  view.set(data);
-  exports.fwht(ptr, data.length);
-  const result = new Float32Array(wasmMemory!.buffer, ptr, data.length).slice();
-  exports.__wbindgen_free(ptr, bytes, 4);
+  const ptr = exports.__wbindgen_export(bytes, 4);
+  new Float32Array(memory.buffer, ptr, data.length).set(data);
+  return [ptr, data.length];
+}
+
+function freePtr(ptr: number, len: number) {
+  exports.__wbindgen_export2?.(ptr, len * 4, 4);
+}
+
+export function wasmFwht(data: Float32Array): Float32Array | null {
+  if (!ready) return null;
+  const [ptr, len] = allocF32(data);
+  exports.fwht(ptr, len);
+  const result = new Float32Array(memory.buffer, ptr, len).slice();
+  freePtr(ptr, len);
   return result;
 }
 
-/**
- * SIMD dot product via WASM
- */
+export function wasmFwhtBatch(data: Float32Array, dim: number): Float32Array | null {
+  if (!ready) return null;
+  const [ptr, len] = allocF32(data);
+  exports.fwht_batch(ptr, len, dim);
+  const result = new Float32Array(memory.buffer, ptr, len).slice();
+  freePtr(ptr, len);
+  return result;
+}
+
 export function wasmDot(a: Float32Array, b: Float32Array): number | null {
-  if (!wasmReady) return null;
-  const exports = getExports();
-  if (!exports?.simd_dot) return null;
-
-  const aBytes = a.byteLength;
-  const bBytes = b.byteLength;
-  const ptrA = exports.__wbindgen_malloc(aBytes, 4);
-  const ptrB = exports.__wbindgen_malloc(bBytes, 4);
-  new Float32Array(wasmMemory!.buffer, ptrA, a.length).set(a);
-  new Float32Array(wasmMemory!.buffer, ptrB, b.length).set(b);
-  const result = exports.simd_dot(ptrA, a.length, ptrB, b.length);
-  exports.__wbindgen_free(ptrA, aBytes, 4);
-  exports.__wbindgen_free(ptrB, bBytes, 4);
+  if (!ready) return null;
+  const [ptrA, lenA] = allocF32(a);
+  const [ptrB, lenB] = allocF32(b);
+  const result = exports.simd_dot(ptrA, lenA, ptrB, lenB);
+  freePtr(ptrA, lenA);
+  freePtr(ptrB, lenB);
   return result;
 }
 
-/**
- * Lloyd-Max quantize via WASM
- */
 export function wasmLloydMaxQuantize(values: Float32Array, centroids: Float32Array, bits: number): Uint8Array | null {
-  if (!wasmReady) return null;
-  const exports = getExports();
-  if (!exports?.lloyd_max_quantize) return null;
-
-  const vBytes = values.byteLength;
-  const cBytes = centroids.byteLength;
-  const ptrV = exports.__wbindgen_malloc(vBytes, 4);
-  const ptrC = exports.__wbindgen_malloc(cBytes, 4);
-  new Float32Array(wasmMemory!.buffer, ptrV, values.length).set(values);
-  new Float32Array(wasmMemory!.buffer, ptrC, centroids.length).set(centroids);
-
-  const resultPtr = exports.lloyd_max_quantize(ptrV, values.length, ptrC, centroids.length, bits);
+  if (!ready) return null;
+  const [pv, lv] = allocF32(values);
+  const [pc, lc] = allocF32(centroids);
+  const retPtr = exports.lloyd_max_quantize(pv, lv, pc, lc, bits);
   const valsPerByte = Math.floor(8 / bits);
   const packedLen = Math.ceil(values.length / valsPerByte);
-  const packed = new Uint8Array(wasmMemory!.buffer, resultPtr, packedLen).slice();
-
-  exports.__wbindgen_free(ptrV, vBytes, 4);
-  exports.__wbindgen_free(ptrC, cBytes, 4);
+  const packed = new Uint8Array(memory.buffer, retPtr, packedLen).slice();
+  freePtr(pv, lv);
+  freePtr(pc, lc);
   return packed;
 }
 
-export default { initWasmBackend, isWasmReady, wasmFwht, wasmDot, wasmLloydMaxQuantize };
+export function wasmLloydMaxDequantize(packed: Uint8Array, centroids: Float32Array, bits: number, count: number): Float32Array | null {
+  if (!ready) return null;
+  // Allocate and copy packed bytes
+  const pBytes = packed.byteLength;
+  const pp = exports.__wbindgen_export(pBytes, 1);
+  new Uint8Array(memory.buffer, pp, pBytes).set(packed);
+  const [pc, lc] = allocF32(centroids);
+  const retPtr = exports.lloyd_max_dequantize(pp, pBytes, pc, lc, bits, count);
+  const result = new Float32Array(memory.buffer, retPtr, count).slice();
+  freePtr(pc, lc);
+  return result;
+}
+
+export function wasmQjlSignProject(vector: Float32Array, randomMatrix: Float32Array, projDim: number): Uint8Array | null {
+  if (!ready) return null;
+  const [pv, lv] = allocF32(vector);
+  const [pm, lm] = allocF32(randomMatrix);
+  const retPtr = exports.qjl_sign_project(pv, lv, pm, lm, projDim);
+  const packedLen = Math.ceil(projDim / 8);
+  const bits = new Uint8Array(memory.buffer, retPtr, packedLen).slice();
+  freePtr(pv, lv);
+  freePtr(pm, lm);
+  return bits;
+}
+
+export default { initWasmBackend, isWasmReady, wasmFwht, wasmFwhtBatch, wasmDot, wasmLloydMaxQuantize, wasmLloydMaxDequantize, wasmQjlSignProject };
