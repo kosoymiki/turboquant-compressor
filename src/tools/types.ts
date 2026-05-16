@@ -9,6 +9,7 @@ export interface CompressResult {
   vector_count: number;
   bits_per_value: number;
   include_qjl: boolean;
+  qjl_sketches_b64?: string;
   algorithm_level: string;
   original_bytes_estimate: number;
   compressed_bytes: number;

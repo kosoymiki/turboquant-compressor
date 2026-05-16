@@ -29,11 +29,11 @@ describe('compressVectors', () => {
     expect(result.compression_ratio).toBeGreaterThanOrEqual(0.25);
   });
 
-  test('should include MVP warning', () => {
+  test('should include LEVEL_1 info', () => {
     const vectors = [[0.1, -0.3, 0.5, -0.7]];
     const result = compressVectors({ vectors });
 
-    expect(result.warnings.some(w => w.includes('LEVEL_0_TURBOQUANT_INSPIRED_MVP'))).toBe(true);
+    expect(result.warnings.some(w => w.includes('LEVEL_1_TURBOQUANT'))).toBe(true);
   });
 
   test('rejects ragged vectors', () => {
@@ -62,14 +62,14 @@ describe('compressVectors', () => {
     })).toThrow(/dimensions/i);
   });
 
-  test('includeQJL remains false and warns because QJL is not implemented', () => {
+  test('includeQJL enables QJL residual sketch', () => {
     const result = compressVectors({
       vectors: [[1, 0, 0, 0]],
       includeQJL: true,
     });
 
-    expect(result.include_qjl).toBe(false);
-    expect(result.warnings.join('\n')).toMatch(/no QJL data is stored|not implemented/i);
+    expect(result.include_qjl).toBe(true);
+    expect(result.qjl_sketches_b64).toBeDefined();
   });
 
   test('format_version matches decoded binary format version', () => {
@@ -87,17 +87,15 @@ describe('compressVectors', () => {
     expect(decoded.headerLength).toBe(80);
   });
 
-  test('public compression does not store QJL payload even when requested', () => {
+  test('public compression stores QJL payload when requested', () => {
     const result = compressVectors({
       vectors: [[1, 0, 0, 0]],
       dimensions: 4,
       includeQJL: true,
     });
 
-    const decoded = decodeCompressedDatabase(result.compressed_database_b64);
-
-    expect(result.include_qjl).toBe(false);
-    expect(decoded.qjlLength).toBe(0);
-    expect(decoded.qjlSketch).toBeUndefined();
+    expect(result.include_qjl).toBe(true);
+    expect(result.qjl_sketches_b64).toBeDefined();
+    expect(result.algorithm_level).toBe('LEVEL_1_TURBOQUANT_QJL');
   });
 });
