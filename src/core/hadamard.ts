@@ -1,7 +1,9 @@
 /**
  * Fast Walsh-Hadamard Transform implementation.
- * Mobile-friendly O(n log n) rotation without floating-point operations.
+ * WASM SIMD128 backend (17KB) when available, fallback to pure TS.
  */
+
+import { isWasmReady, wasmFwht } from '../native/wasm_backend.js';
 
 export function isPowerOfTwo(n: number): boolean {
   return n > 0 && (n & (n - 1)) === 0;
@@ -35,6 +37,13 @@ export function fwhtInPlace(data: Float32Array): void {
 
 export function normalizedFwhtInPlace(data: Float32Array): void {
   const n = data.length;
+
+  // WASM SIMD128 path — fwht() includes normalize with f32x4, mutates in-place
+  if (isWasmReady()) {
+    if (wasmFwht(data)) return;
+  }
+
+  // TS fallback
   fwhtInPlace(data);
   const scale = 1 / Math.sqrt(n);
   for (let i = 0; i < n; i++) {
