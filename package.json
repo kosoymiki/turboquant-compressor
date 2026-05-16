@@ -1,7 +1,7 @@
 {
   "name": "turboquant-compressor",
   "version": "3.4.0",
-  "description": "TurboQuant v3.3.0 \u2014 full donor port (llama-cpp-turboquant). FWHT rotation, Lloyd-Max codebook, sparse V threshold, q8 query path, tiled attention, block-128 groups, OpenCL Adreno kernels.",
+  "description": "TurboQuant v3.4.0 — FWHT rotation, Lloyd-Max codebook, QJL residual sketch, WASM SIMD128, sparse V, q8 query, tiled attention, block-128, OpenCL Adreno fp16.",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {

@@ -18,7 +18,7 @@
     {
       "test": "tools/call:turboquant_compress",
       "status": "PASS",
-      "detail": "ok, 624b"
+      "detail": "ok, 473b"
     },
     {
       "test": "tools/call:turboquant_cost_analyze",
@@ -58,7 +58,7 @@
     {
       "test": "tools/call:turboquant_opencl_probe",
       "status": "PASS",
-      "detail": "ok, 864b"
+      "detail": "ok, 865b"
     },
     {
       "test": "tools/call:turboquant_adreno_loader_probe",
@@ -93,7 +93,7 @@
     {
       "test": "stdout_purity",
       "status": "PASS",
-      "detail": "stderr lines=0, no secrets in stdout"
+      "detail": "stderr lines=1, no secrets in stdout"
     }
   ],
   "transcript": []

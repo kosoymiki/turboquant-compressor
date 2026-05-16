@@ -37,7 +37,7 @@ type SearchToolArgs = {
 };
 
 const server = new McpServer(
-  { name: 'turboquant-compressor', version: '3.3.0' },
+  { name: 'turboquant-compressor', version: '3.4.0' },
   { capabilities: {} }
 );
 
