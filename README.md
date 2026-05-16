@@ -1,7 +1,7 @@
-# TurboQuant Compressor v3.3.0
+# TurboQuant Compressor v3.4.0
 
-KV cache compression engine. FWHT rotation + Lloyd-Max Beta codebook quantization.
-MCP server for Claude Code / Black Diamond ecosystem.
+KV cache compression engine. FWHT rotation + Lloyd-Max Beta codebook + QJL residual sketch.
+MCP server for Claude Code / Black Diamond ecosystem. WASM SIMD128 accelerated.
 
 ## Architecture
 
@@ -9,12 +9,15 @@ MCP server for Claude Code / Black Diamond ecosystem.
 Input KV vectors
     │
     ├─ Keys: normalize → FWHT sign-flip rotation → Beta Lloyd-Max quantize (1-6 bit)
-    │        Store: packed indices + norms
+    │        → QJL residual sketch (1-bit sign projection)
+    │        Store: packed indices + norms + qjl_sketches
     │
     └─ Values: group quantization (2/3/4 bit, min-max per group)
                Store: packed data + scales + zeros
 
 Attention: online softmax + sparse V threshold + tiled processing
+WASM SIMD128: f32x4 vectorized FWHT/dot/quantize (2-10x vs pure TS)
+OpenCL fp16: vload8/vstore8 fused attention (Adreno 730)
 ```
 
 ## Theory
@@ -34,6 +37,16 @@ References:
 - KVLinC: Hadamard Rotation + Linear Correction (Saxena & Roy, 2025, arXiv:2510.05373)
 - PolyKV: Shared Asymmetrically-Compressed KV Cache (Patel & Joshi, 2026, arXiv:2604.24971)
 - Online Normalizer Calculation for Softmax (Milakov & Gimelshein, 2018, arXiv:1805.02867)
+
+## WASM SIMD128 Benchmark
+
+| Operation | dim=256 | dim=1024 | dim=2048 |
+|-----------|---------|----------|----------|
+| Dot product | **10.1x** | **2.2x** | **2.0x** |
+| FWHT | 1.04x | **2.1x** | 1.4x |
+
+Measured on aarch64 (Snapdragon 8 Gen 1), Node.js 22, WASM SIMD128 vs pure TS.
+At real KV-cache dimensions (1024+), WASM dominates dot-heavy paths (QJL sign projection).
 
 ## Performance
 
@@ -232,8 +245,8 @@ Verify: `echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocol
 1. **Outlier sensitivity**: min-max group quantization for values. Mitigation: RotateKV channel reorder (implemented).
 2. **Sparse V positional bias**: early tokens favored. Mitigation: attention-sink protection (first N tokens never skipped).
 3. **Beta PDF assumption**: codebook optimized for uniform-on-sphere. Empirically validated by PolyKV (+0.57% PPL).
-4. **QJL module**: sign-bit estimator documented, not yet wired into public tools.
-5. **WASM fallback**: if wasm32 binary unavailable, pure TS path (~10x slower on FWHT).
+4. **QJL residual sketch**: wired into compress tool (`includeQJL: true`). WASM-accelerated sign projection.
+5. **WASM fallback**: if wasm32 binary unavailable, pure TS path (2-10x slower on hot paths).
 
 ## Testing
 
