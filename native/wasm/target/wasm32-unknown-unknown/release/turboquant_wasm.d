@@ -1,0 +1,1 @@
+/data/data/com.termux/files/home/turboquant/turboquant-compressor/native/wasm/target/wasm32-unknown-unknown/release/turboquant_wasm.wasm: /data/data/com.termux/files/home/turboquant/turboquant-compressor/native/wasm/src/lib.rs
