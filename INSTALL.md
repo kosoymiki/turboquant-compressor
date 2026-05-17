@@ -21,7 +21,7 @@ npm run verify:adreno-opencl
 
 - Node.js 22+
 - npm 10+
-- Adreno 7xx+ GPU (730, 740, 750, 8cx Gen 3, etc.)
+- Adreno 7xx/8xx GPU (730, 740, 750, 8cx Gen 3/4, etc.)
 - Android 24+ (Termux recommended)
 - 2GB RAM minimum
 
@@ -31,7 +31,8 @@ npm run verify:adreno-opencl
 - **Adreno 740** (SM8475): Snapdragon 8 Gen 2
 - **Adreno 750** (SM8550): Snapdragon 8 Gen 3
 - **Adreno 8cx Gen 3**: Snapdragon X Elite/Plus
-- All Adreno 7xx+: Automatic device detection
+- **Adreno 8cx Gen 4**: Snapdragon X Elite/Plus Gen 2
+- All Adreno 7xx/8xx: Automatic device detection
 
 ## Full Installation
 

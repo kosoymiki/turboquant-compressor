@@ -1,13 +1,13 @@
 # TurboQuant v4.0.0 — Production Release
 
-**KV cache compression + custom Rusticl/Turnip GPU driver stack for Adreno 7xx+**
+**KV cache compression + custom Rusticl/Turnip GPU driver stack for Adreno 7xx/8xx**
 
 ## 🚀 What's New in v4.0.0
 
 - ✓ Custom Rusticl compiler (232 objs, 13 patches, 14 donors)
 - ✓ Custom Turnip driver (65 objs, 12 patches, 11 donors)
 - ✓ Freedreno Gallium driver (102 objs)
-- ✓ Full Adreno 7xx+ support (730, 740, 750, 8cx Gen 3, etc.)
+- ✓ Full Adreno 7xx/8xx support (730, 740, 750, 8cx Gen 3, 8cx Gen 4, etc.)
 - ✓ BD MCP ecosystem (memory + corpus routing)
 - ✓ 25 OpenCL donor optimizations
 - ✓ Material Design 3 shell status UI
