@@ -9,6 +9,11 @@
 #include "tq_opencl_probe.h"
 #include "tq_opencl_kernels.h"
 #include "tq_opencl_memory.h"
+#include "tq_gpu_profile.h"
+#include "tq_kernel_tune.h"
+#include "tq_vk_probe.h"
+#include "tq_driver_manifest.h"
+#include "tq_cl_vk_interop.h"
 
 #include <CL/cl.h>
 #include <string>
@@ -26,6 +31,7 @@ bool is_initialized();
 bool is_adreno();
 uint32_t get_compute_units();
 size_t get_max_wg_size();
+const GpuProfile& get_gpu_profile();
 
 // Program/kernel compilation
 TqStatus build_program(const std::string& source, const std::string& options, cl_program* out);

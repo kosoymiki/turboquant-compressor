@@ -1,9 +1,11 @@
 /**
  * TurboQuant OpenCL — context management with profiling queue.
+ * Enhanced with GPU auto-profile integration.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 #include "tq_opencl_types.h"
+#include "../include/tq_gpu_profile.h"
 #include <CL/cl.h>
 #include <cstdio>
 #include <cstring>
@@ -19,6 +21,7 @@ struct OpenClContext {
     bool is_adreno = false;
     uint32_t compute_units = 0;
     size_t max_wg_size = 0;
+    GpuProfile gpu_profile = {};
 };
 
 static OpenClContext g_ctx;
@@ -31,6 +34,7 @@ bool is_initialized() { return g_ctx.initialized; }
 bool is_adreno() { return g_ctx.is_adreno; }
 uint32_t get_compute_units() { return g_ctx.compute_units; }
 size_t get_max_wg_size() { return g_ctx.max_wg_size; }
+const GpuProfile& get_gpu_profile() { return g_ctx.gpu_profile; }
 
 TqStatus init_context() {
     if (g_ctx.initialized) return TqStatus::OK;
@@ -52,9 +56,9 @@ TqStatus init_context() {
     cl_context ctx = clCreateContext(nullptr, 1, &dev, nullptr, nullptr, &err);
     if (err != CL_SUCCESS) return TqStatus::ERR_NO_PLATFORM;
 
-    // Create command queue with profiling enabled
-    cl_command_queue_properties props = CL_QUEUE_PROFILING_ENABLE;
-    cl_command_queue queue = clCreateCommandQueue(ctx, dev, props, &err);
+    // Create command queue with profiling enabled (OpenCL 2.0+ API)
+    cl_queue_properties qprops[] = { CL_QUEUE_PROPERTIES, CL_QUEUE_PROFILING_ENABLE, 0 };
+    cl_command_queue queue = clCreateCommandQueueWithProperties(ctx, dev, qprops, &err);
     if (err != CL_SUCCESS) {
         clReleaseContext(ctx);
         return TqStatus::ERR_NO_PLATFORM;
@@ -78,6 +82,15 @@ TqStatus init_context() {
     g_ctx.is_adreno = (strstr(name_buf, "Adreno") != nullptr || strstr(name_buf, "QUALCOMM") != nullptr);
     g_ctx.compute_units = cu;
     g_ctx.max_wg_size = wg;
+
+    // Detect GPU profile for per-kernel tuning
+    g_ctx.gpu_profile = detect_gpu_profile();
+    // Override max_wg_size from profile if profile detected a known GPU
+    if (g_ctx.gpu_profile.gen != GpuGen::UNKNOWN && g_ctx.gpu_profile.preferred_wg_size > 0) {
+        g_ctx.max_wg_size = (g_ctx.max_wg_size > 0)
+            ? g_ctx.max_wg_size  // Keep hardware limit
+            : g_ctx.gpu_profile.preferred_wg_size;
+    }
 
     return TqStatus::OK;
 }

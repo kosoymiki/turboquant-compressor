@@ -7,6 +7,7 @@
  */
 
 #include "tq_opencl.h"
+#include "../include/tq_kernel_tune.h"
 #include <CL/cl.h>
 #include <cstdint>
 #include <cstring>
@@ -92,9 +93,17 @@ TqStatus fused_attention_tiled_opencl(const FusedAttentionInput& input) {
     clSetKernelArg(k_logits, arg++, sizeof(float), &qjl_scale);
     clSetKernelArg(k_logits, arg++, sizeof(float), &sm_scale);
 
-    // Launch pass 1: one work-item per token
-    size_t global_tokens = (size_t)tokens;
-    err = clEnqueueNDRangeKernel(queue, k_logits, 1, nullptr, &global_tokens, nullptr, 0, nullptr, nullptr);
+    // Tuned dispatch: use kernel_tune for optimal WG size + local mem
+    KernelTuneParams tune_logits = get_kernel_tune("tq_attention_logits");
+    size_t local_logits = tune_logits.wg_size_x;
+    size_t global_tokens = ((size_t)tokens + local_logits - 1) / local_logits * local_logits;
+
+    // Allocate __local memory for partial reductions (bank-conflict-free sizing)
+    if (tune_logits.local_mem_bytes > 0) {
+        clSetKernelArg(k_logits, arg++, tune_logits.local_mem_bytes, nullptr);
+    }
+
+    err = clEnqueueNDRangeKernel(queue, k_logits, 1, nullptr, &global_tokens, &local_logits, 0, nullptr, nullptr);
     if (err != CL_SUCCESS) {
         // Cleanup and fallback
         clReleaseMemObject(d_query); clReleaseMemObject(d_key_packed);
@@ -124,9 +133,17 @@ TqStatus fused_attention_tiled_opencl(const FusedAttentionInput& input) {
     clSetKernelArg(k_values, arg++, sizeof(int), &group_size);
     clSetKernelArg(k_values, arg++, sizeof(int), &n_groups);
 
-    // Launch pass 2: one work-item per dim
-    size_t global_dim = (size_t)dim;
-    err = clEnqueueNDRangeKernel(queue, k_values, 1, nullptr, &global_dim, nullptr, 0, nullptr, nullptr);
+    // Tuned dispatch pass 2: optimal WG for value accumulation
+    KernelTuneParams tune_values = get_kernel_tune("tq_fused_attention");
+    size_t local_values = tune_values.wg_size_x;
+    size_t global_dim = ((size_t)dim + local_values - 1) / local_values * local_values;
+
+    // Allocate __local memory for softmax partial sums + shared KV tile
+    if (tune_values.local_mem_bytes > 0) {
+        clSetKernelArg(k_values, arg++, tune_values.local_mem_bytes, nullptr);
+    }
+
+    err = clEnqueueNDRangeKernel(queue, k_values, 1, nullptr, &global_dim, &local_values, 0, nullptr, nullptr);
     if (err != CL_SUCCESS) {
         clReleaseMemObject(d_query); clReleaseMemObject(d_key_packed);
         clReleaseMemObject(d_key_norms); clReleaseMemObject(d_centroids);
@@ -205,6 +222,12 @@ TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input,
     int val_bits = input.value.bits;
     int group_size = input.value.group_size;
 
+    // Tuned dispatch parameters from kernel_tune database
+    KernelTuneParams tune_logits = get_kernel_tune("tq_attention_logits");
+    size_t local_logits = tune_logits.wg_size_x;
+    KernelTuneParams tune_values = get_kernel_tune("tq_fused_attention");
+    size_t local_values = tune_values.wg_size_x;
+
     int a = 0;
     clSetKernelArg(k_logits, a++, sizeof(cl_mem), &d_query);
     clSetKernelArg(k_logits, a++, sizeof(cl_mem), &d_key_packed);
@@ -223,9 +246,9 @@ TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input,
     clSetKernelArg(k_logits, a++, sizeof(float), &qjl_scale);
     clSetKernelArg(k_logits, a++, sizeof(float), &sm_scale);
 
-    size_t global_tokens = (size_t)tokens;
+    size_t global_tokens = ((size_t)tokens + local_logits - 1) / local_logits * local_logits;
     cl_event ev1;
-    err = clEnqueueNDRangeKernel(queue, k_logits, 1, nullptr, &global_tokens, nullptr, 0, nullptr, &ev1);
+    err = clEnqueueNDRangeKernel(queue, k_logits, 1, nullptr, &global_tokens, &local_logits, 0, nullptr, &ev1);
     if (err != CL_SUCCESS) {
         clReleaseMemObject(d_query); clReleaseMemObject(d_key_packed);
         clReleaseMemObject(d_key_norms); clReleaseMemObject(d_centroids);
@@ -251,9 +274,9 @@ TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input,
     clSetKernelArg(k_values, a++, sizeof(int), &group_size);
     clSetKernelArg(k_values, a++, sizeof(int), &n_groups);
 
-    size_t global_dim = (size_t)dim;
+    size_t global_dim = ((size_t)dim + local_values - 1) / local_values * local_values;
     cl_event ev2;
-    err = clEnqueueNDRangeKernel(queue, k_values, 1, nullptr, &global_dim, nullptr, 1, &ev1, &ev2);
+    err = clEnqueueNDRangeKernel(queue, k_values, 1, nullptr, &global_dim, &local_values, 1, &ev1, &ev2);
     if (err != CL_SUCCESS) {
         clWaitForEvents(1, &ev1);
         clReleaseEvent(ev1);

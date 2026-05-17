@@ -1,0 +1,51 @@
+--- a/src/vulkan/util/vk_extensions.py
++++ b/src/vulkan/util/vk_extensions.py
+@@ -50,6 +50,8 @@ class Extension:
+         return ext
+
+     def c_android_condition(self):
++        # TQ: Expose ALL Vulkan extensions on Android (adrenotools pattern)
++        return 'true'
+         # if it's an EXT or vendor extension, it's allowed
+         if not self.name.startswith(ANDROID_EXTENSION_WHITELIST_PREFIXES):
+             return 'true'
+--- a/src/freedreno/vulkan/tu_shader.cc
++++ b/src/freedreno/vulkan/tu_shader.cc
+@@ -0,0 +1,25 @@
++/* TQ: Force subgroupSize=128 for compute shaders on A7XX
++ * This ensures our TurboQuant kernels always get wave128 dispatch.
++ * Applied at VkPipeline creation time for COMPUTE stage.
++ *
++ * Integration point: tu_shader.cc, in tu_shader_create()
++ * after nir_shader_gather_info(), before ir3_shader_create().
++ *
++ * The actual patch modifies the existing tu_shader.cc — this is the
++ * logic to insert:
++ */
++
++/*
++ * In tu_compute_pipeline_create(), after shader variant selection:
++ *
++ *   // TQ: Force wave128 for compute performance
++ *   if (pipeline->compute.subgroup_size == 0) {
++ *      pipeline->compute.subgroup_size = 128;
++ *   }
++ *   // Ensure double_threadsize is always set for A7XX compute
++ *   if (dev->physical_device->info->chip >= 7) {
++ *      v->info.double_threadsize = true;
++ *   }
++ *
++ * This guarantees sub_group_reduce_add() operates on 128 lanes.
++ */
+--- a/src/freedreno/vulkan/tu_device.cc
++++ b/src/freedreno/vulkan/tu_device.cc
+@@ -1551,7 +1551,8 @@ tu_physical_device_init(struct tu_physic
+
+    switch (fd_dev_gen(&device->dev_id)) {
+    case 6:
+-   case 7: {
++   case 7:
++   case 8: {
+       device->dev_info = info;
+       device->info = &device->dev_info;
+       uint32_t depth_cache_size =

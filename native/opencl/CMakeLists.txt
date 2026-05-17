@@ -39,6 +39,12 @@ add_executable(tq_opencl_cli
   src/tq_opencl_fused_attention.cpp
   src/tq_opencl_fused_attention_tiled.cpp
   src/tq_opencl_benchmark.cpp
+  src/tq_driver_loader.cpp
+  src/tq_gpu_profile.cpp
+  src/tq_kernel_tune.cpp
+  src/tq_driver_manifest.cpp
+  src/tq_vk_probe.cpp
+  src/tq_cl_vk_interop.cpp
 )
 
 target_include_directories(tq_opencl_cli PRIVATE include)

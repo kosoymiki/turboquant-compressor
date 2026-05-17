@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/data/data/com.termux/files/home/.claude/tools/turboquant-compressor/native/opencl/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
