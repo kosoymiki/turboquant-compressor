@@ -37,7 +37,7 @@ npm run smoke:mcp
 npm run smoke:stdio
 ```
 
-A migration spike to a stable MCP SDK package is planned for v3.2.0.
+A migration spike to a stable MCP SDK package is planned for v4.0.0.
 
 ## Dependency notes
 

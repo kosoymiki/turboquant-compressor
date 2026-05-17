@@ -2,7 +2,7 @@
 
 ## Current encoder
 
-v3.2.0 encodes new payloads as binary format v3.
+v4.0.0 encodes new payloads as binary format v3.
 
 - Magic: `TQMC`
 - Version: `3`

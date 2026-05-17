@@ -1,5 +1,5 @@
 /**
- * Compressed KV Cache v3.4.0 — full donor port (llama-cpp-turboquant).
+ * Compressed KV Cache v4.0.0 — full donor port (llama-cpp-turboquant).
  *
  * Donor optimizations ported:
  *   1. Mixed KV types (different bits for K and V)

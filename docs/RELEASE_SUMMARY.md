@@ -1,4 +1,4 @@
-# Release Summary — turboquant-compressor v3.2.0
+# Release Summary — turboquant-compressor v4.0.0
 
 Generated: 2026-05-15T11:11:36.168Z
 Node: v25.8.2 | npm: 11.14.1
@@ -141,4 +141,4 @@ Total entries: 13, isError entries: 0
 
 ## Overall Verdict
 
-**READY** — All gates passed for v3.2.0.
+**READY** — All gates passed for v4.0.0.

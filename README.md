@@ -156,8 +156,8 @@ npm run verify:adreno-opencl
 ## 📝 Version History
 
 - **v4.0.0** (2026-05-17): Production release with custom GPU stack for Adreno 7xx+
-- **v3.5.0**: TurboQuant integration in Claude Code
-- **v3.4.0**: FWHT rotation, Lloyd-Max codebook, QJL sketch
+- **v4.0.0**: TurboQuant integration in Claude Code
+- **v4.0.0**: FWHT rotation, Lloyd-Max codebook, QJL sketch
 
 ## 🎓 References
 
@@ -311,8 +311,8 @@ npm run verify:release
 ## 📝 Version History
 
 - **v4.0.0** (2026-05-17): Production release with custom GPU stack
-- **v3.5.0**: TurboQuant integration in Claude Code
-- **v3.4.0**: FWHT rotation, Lloyd-Max codebook, QJL sketch
+- **v4.0.0**: TurboQuant integration in Claude Code
+- **v4.0.0**: FWHT rotation, Lloyd-Max codebook, QJL sketch
 
 ## 🎓 References
 

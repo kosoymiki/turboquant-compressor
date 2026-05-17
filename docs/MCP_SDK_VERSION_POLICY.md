@@ -29,7 +29,7 @@ We pin the exact alpha version and protect behavior with runtime MCP smoke tests
 ## Future Roadmap
 
 - **v3.2.x**: Keep v2 alpha with clear documentation
-- **v3.3.0**: Consider migration to v1.x production SDK if v2 is still not stable
+- **v4.0.0**: Consider migration to v1.x production SDK if v2 is still not stable
 - **v4.0.0**: Target stable v2 SDK when officially released
 
 ## Recommendation
