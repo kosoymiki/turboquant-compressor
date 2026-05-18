@@ -1,4 +1,5 @@
 import { McpServer, StdioServerTransport, fromJsonSchema } from '@modelcontextprotocol/server';
+import { readFileSync } from 'node:fs';
 import { initWasmBackend, isWasmReady } from './native/wasm_backend.js';
 import { compressVectors } from './tools/compress.js';
 import { searchVectors } from './tools/search.js';
@@ -14,6 +15,16 @@ import { turboquantKvAnalyze, turboquantKvAnalyzeSchema } from './tools/turboqua
 import { turboquantBackendProbe, turboquantBackendProbeSchema } from './tools/turboquant_backend_probe.js';
 import { turboquantOpenclProbe, turboquantOpenclProbeSchema } from './tools/turboquant_opencl_probe.js';
 import { turboquantAdrenoLoaderProbe, turboquantAdrenoLoaderProbeSchema } from './tools/turboquant_adreno_loader_probe.js';
+
+function readServerVersion(): string {
+  try {
+    const packageJsonPath = new URL('../package.json', import.meta.url);
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { version?: string };
+    return packageJson.version ?? '4.0.0';
+  } catch {
+    return '4.0.0';
+  }
+}
 
 type CompressToolArgs = {
   vectors: number[][];
@@ -37,7 +48,7 @@ type SearchToolArgs = {
 };
 
 const server = new McpServer(
-  { name: 'turboquant-compressor', version: '3.4.0' },
+  { name: 'turboquant-compressor', version: readServerVersion() },
   { capabilities: {} }
 );
 
