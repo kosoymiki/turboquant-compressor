@@ -10,7 +10,6 @@
 - ✓ Full Adreno 7xx/8xx support (730, 740, 750, 8cx Gen 3, 8cx Gen 4, etc.)
 - ✓ BD MCP ecosystem (memory + corpus routing)
 - ✓ 25 OpenCL donor optimizations
-- ✓ Material Design 3 shell status UI
 - ✓ GPU forensics (quantize/attention/dequantize)
 
 ## 📊 Performance (Adreno 7xx+)
