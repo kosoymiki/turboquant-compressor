@@ -1,170 +1,462 @@
-# TurboQuant v4.0.0 — Production Release
 
-**KV cache compression + custom Rusticl/Turnip GPU driver stack for Adreno 7xx/8xx**
+# TurboQuant Compressor v4.0.0
 
-## 🚀 What's New in v4.0.0
+**Termux-first MCP server for compressed local vector search, context-pack retrieval, KV/cache analysis, and Adreno/OpenCL readiness forensics.**
 
-- ✓ Custom Rusticl compiler (232 objs, 13 patches, 14 donors)
-- ✓ Custom Turnip driver (65 objs, 12 patches, 11 donors)
-- ✓ Freedreno Gallium driver (102 objs)
-- ✓ Full Adreno 7xx/8xx support (730, 740, 750, 8cx Gen 3, 8cx Gen 4, etc.)
-- ✓ BD MCP ecosystem (memory + corpus routing)
-- ✓ 25 OpenCL donor optimizations
-- ✓ GPU forensics (quantize/attention/dequantize)
+TurboQuant Compressor is a local **Model Context Protocol (MCP)** server designed for Claude Code / stdio-style agent hosts on Android Termux and Linux. It provides compressed vector storage/search, context-pack construction, cache planning, prompt-cache linting, KV analysis, backend probing, and OpenCL/Adreno diagnostics.
 
-## 📊 Performance (Adreno 7xx+)
+The current public benchmark evidence supports **5.5x+ local corpus compression** on the included open-test corpus, with retrieval quality and score-error metrics recorded in `bench/results/`.
 
-| Metric | Baseline | TurboQuant | Custom Stack |
-|--------|----------|-----------|--------------|
-| KV Cache | 512 MB | 144 MB | **96 MB** |
-| Compression | 1.0x | 3.56x | **5.33x** |
-| Latency | 100 ms | 45 ms | **18 ms** |
-| Throughput | 100 tok/s | 220 tok/s | **550 tok/s** |
-| **Improvement** | — | +120% | **+450%** |
+---
 
-## 🏗️ Architecture
+## Status
 
+**Current release:** `v4.0.0`  
+**Primary target:** Termux + local MCP hosts  
+**Transport:** MCP stdio  
+**License:** GPL-3.0-or-later
+
+This repository currently ships:
+
+- A TypeScript MCP server over stdio
+- 13 MCP tools verified by the conformance transcript
+- Compressed vector database format with deterministic encode/decode path
+- Local corpus compression/search benchmarks
+- Context-pack build/search tools for local retrieval
+- KV/cache analysis utilities
+- Termux/OpenCL/Adreno probe and release-evidence gates
+- Release verification scripts for package, MCP, schema, scientific claims, Termux readiness, OpenCL claims, archives, and artifact parity
+
+---
+
+## Measured Results
+
+The public benchmark artifacts in `bench/results/` show **5.5x+ compression** on local corpus tests.
+
+| Artifact | Files | Chunks | Dimensions | Compression ratio | Recall@1 | Recall@5 | MRR | Notes |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| `bench/results/open-test-local-20260514-220247.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | — | Early open local test |
+| `bench/results/open-test-local-20260514-224444.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | 0.708 | 50-query evaluation |
+| `bench/results/open-test-local-20260514-233707.json` | 57 | 78 | 384 | **5.8844x** | 0.58 | 0.92 | 0.7047 | Larger corpus evaluation |
+
+### Practical headline
+
+```text
+Measured local corpus compression: 5.5x+
+Best public artifact:              5.884x
+Recall@5 range:                    0.90–0.92
+Format version:                    3
+Algorithm level:                   LEVEL_0_TURBOQUANT_INSPIRED_MVP
+````
+
+The benchmark artifacts intentionally include warnings when a feature is not part of the public LEVEL_0 path. In particular, current public local-corpus artifacts are generated with:
+
+```text
+include_qjl: false
+QJL residual sketch/correction is not implemented in LEVEL_0
 ```
-TurboQuant v4.0.0
-├── dist/                    (WASM SIMD128, OpenCL, NEON, CPU)
-├── native/                  (OpenCL kernels, Adreno device detection)
-├── driver/                  (Custom GPU stack for Adreno 7xx+)
-│   ├── nir/                 (232 .o files, NIR compiler)
-│   ├── ir3/                 (65 .o files, IR3 backend)
-│   └── freedreno/           (102 .o files, Gallium driver)
-├── src/                     (8315 lines, 64 modules)
-└── tools/                   (14 MCP tools)
+
+This keeps the README honest: **5.5x+ compression is measured**, while QJL correction remains gated until it is stored in the public format and applied in search.
+
+---
+
+## What TurboQuant Compressor Does
+
+TurboQuant Compressor gives an MCP host local tools for:
+
+* Compressing vectors into compact binary payloads
+* Searching compressed vector databases
+* Building compressed context packs from files
+* Searching context packs by query
+* Estimating cache/cost behavior
+* Finding prompt-cache busting patterns
+* Analyzing KV/cache compression scenarios
+* Probing backend availability
+* Diagnosing Termux/OpenCL/Adreno readiness
+* Returning host-specific MCP configuration profiles
+
+It is designed for local agent workflows where context, retrieval, and compression need to be inspectable and reproducible.
+
+---
+
+## MCP Tools
+
+The public conformance transcript verifies **13 tools**.
+
+| Tool                             | Purpose                                                         |
+| -------------------------------- | --------------------------------------------------------------- |
+| `turboquant_compress`            | Compress vectors into a compact database payload                |
+| `turboquant_vector_search`       | Search nearest neighbors inside a compressed vector database    |
+| `turboquant_cost_analyze`        | Analyze Claude Code usage/cache cost snapshots                  |
+| `turboquant_cache_plan`          | Classify context blocks by volatility and recommend cache tiers |
+| `turboquant_prompt_cache_lint`   | Detect prompt-cache busting patterns                            |
+| `turboquant_context_pack_build`  | Build compressed retrieval packs from local files               |
+| `turboquant_context_pack_search` | Search a previously built context pack                          |
+| `turboquant_cli_mcp_profile`     | Emit MCP host profiles/config snippets                          |
+| `turboquant_quantize`            | Run quantization experiments/tooling                            |
+| `turboquant_kv_analyze`          | Analyze KV/cache compression scenarios                          |
+| `turboquant_backend_probe`       | Probe available runtime backends                                |
+| `turboquant_opencl_probe`        | Probe OpenCL state from Termux/Linux                            |
+| `turboquant_adreno_loader_probe` | Diagnose Adreno/OpenCL loader state                             |
+
+---
+
+## Architecture
+
+```text
+TurboQuant Compressor
+├── src/
+│   ├── server.ts                 # MCP stdio server
+│   ├── tools/                    # MCP tool implementations
+│   ├── core/                     # rotation, quantizer, format, limits
+│   ├── native/                   # backend probes / native readiness
+│   └── research/                 # experimental research paths
+├── scripts/
+│   ├── verify-release.mjs
+│   ├── verify-release-evidence.mjs
+│   ├── verify-opencl-claims.mjs
+│   ├── verify-mcp-conformance.mjs
+│   ├── verify-termux-ready.mjs
+│   ├── benchmark-opencl-adreno.mjs
+│   └── mcp-transcript.mjs
+├── bench/results/
+│   └── open-test-local-*.json    # public local compression/search evidence
+├── docs/
+│   └── Termux/OpenCL/release documentation
+└── package.json
 ```
 
-## 🔧 Installation
+---
 
-### Prerequisites
+## Compression Path
+
+The public compressed-vector path uses:
+
+1. Deterministic vector validation
+2. Rotation/normalization path
+3. Uniform symmetric scalar quantization
+4. Compact binary format
+5. Base64 MCP-safe transport payload
+6. Decode/search path over compressed database contents
+
+The measured local-corpus artifacts currently report:
+
+```text
+algorithm_level: LEVEL_0_TURBOQUANT_INSPIRED_MVP
+format_version: 3
+include_qjl: false
+```
+
+This means the current public proof is strongest for the shipped LEVEL_0 compression/search path. Experimental QJL/Lloyd-Max/OpenCL components should be treated as separately gated until their evidence artifacts are present and wired into the public search path.
+
+---
+
+## GPU / OpenCL / Adreno Status
+
+TurboQuant Compressor includes Adreno/OpenCL readiness and benchmark tooling, but strong GPU acceleration claims are intentionally gated by forensic evidence.
+
+Relevant commands:
+
 ```bash
-npm install
-npm run build
-```
-
-### Verify Custom Driver
-```bash
-npm run verify:release
-npm run smoke:stdio
-npm run verify:adreno-opencl
-```
-
-### GPU Forensics Test
-```bash
-python3 forensics_final.py
-python3 tests_final.py
-```
-
-## 📈 Benchmarks
-
-### Stress Test (KV Cache Compression)
-```
-dim_256:  5.5M kvs/sec
-dim_512:  8.2M kvs/sec
-dim_1024: 8.5M kvs/sec
-dim_2048: 8.7M kvs/sec
-```
-
-### Adreno 7xx+ Utilization
-- CU Occupancy: 95%
-- LDS Usage: 96KB (100%)
-- Bandwidth: 92%
-- fp16 Speedup: 2.1x vs fp32
-
-## 🎯 Optimizations Applied
-
-### Rusticl (13 patches)
-1. Kernel fusion: quantize→attention→dequantize
-2. Matrix blocking: 64×64 tiles
-3. Autotune workgroup: adaptive sizing
-4. Bit-level int8: packed operations
-5. Memory-hard patterns: prefetch+async
-
-### Turnip (12 patches)
-1. LDS allocation: 96KB per workgroup
-2. Occupancy tuning: 128,8,1 workgroup
-3. Warp reduction: subgroup ops
-4. fp16 conversion: Newton-Raphson
-5. Async queues: command pipelining
-
-## 📦 Contents
-
-- **driver/nir**: NIR compiler (232 object files)
-- **driver/ir3**: IR3 backend (65 object files)
-- **driver/freedreno**: Gallium driver (102 object files)
-- **dist/**: Compiled WASM + OpenCL backends
-- **native/**: OpenCL kernels + Adreno device detection
-- **tools/**: 14 MCP tools for Claude Code integration
-
-## 🧪 Testing
-
-```bash
-# Stress test
+npm run probe:opencl
+npm run build:opencl
 npm run bench:opencl
-
-# Verify claims
+npm run verify:adreno-opencl
 npm run verify:opencl-claims
-
-# GPU forensics
-python3 forensics_final.py
-
-# Full test suite
-npm run verify:release
+npm run verify:release-evidence
 ```
 
-## 🔗 Integration
+The OpenCL claim gate requires evidence such as:
 
-### Claude Code
-```bash
-# Shell status hook
-~/.claude/hooks/statusline.sh
-
-# MCP tools
-bd_mcp_final.py (memory + corpus routing)
+```text
+forensics/opencl-adreno-report.json
+forensics/adreno/loader-report.json
 ```
 
-### Adreno 7xx+ Support
-- Adreno 730 (SM8450): 4 CU, 128 threads/wave, 96KB LDS, 204 GB/s
-- Adreno 740 (SM8475): 4 CU, 128 threads/wave, 96KB LDS, 204 GB/s
-- Adreno 750 (SM8550): 4 CU, 128 threads/wave, 96KB LDS, 204 GB/s
-- Adreno 8cx Gen 3: Full support
-- All Adreno 7xx+: Automatic device detection
+Optional performance evidence may include:
 
-## 📚 Documentation
+```text
+forensics/adreno/opencl-performance-report.json
+forensics/adreno/opencl-sustained-report.json
+```
 
-- **BEDROCK Corpus**: 391 entries, 6 domains, 25 donors verified
-- **GPU Forensics**: quantize/attention/dequantize kernels
-- **Material Design 3**: Real-time shell status UI
+If these artifacts are missing or failing, README/Docs must not claim a verified Adreno production acceleration path. The project can still expose probes and diagnostics; it just must not overclaim runtime acceleration without device evidence.
 
-## 🚢 Deployment
+---
+
+## Installation
+
+### Termux / Android
 
 ```bash
-# Build archive
-tar -czf turboquant-v4.0.0.tar.gz dist/ driver/ native/ tools/
+pkg update
+pkg install -y nodejs git clang make cmake python
 
-# Install on target device
-tar -xzf turboquant-v4.0.0.tar.gz
+git clone https://github.com/kosoymiki/turboquant-compressor.git
+cd turboquant-compressor
+
 npm install
 npm run build
-npm run verify:release
-npm run verify:adreno-opencl
+npm run smoke:stdio
 ```
 
-## 📝 Version History
+### Linux
 
-- **v4.0.0** (2026-05-17): Production release with custom GPU stack for Adreno 7xx+
-- **v4.0.0**: TurboQuant integration in Claude Code
-- **v4.0.0**: FWHT rotation, Lloyd-Max codebook, QJL sketch
+```bash
+git clone https://github.com/kosoymiki/turboquant-compressor.git
+cd turboquant-compressor
 
-## 🎓 References
+npm install
+npm run build
+npm test -- --runInBand
+npm run smoke:stdio
+```
 
-- FWHT: Fast Walsh-Hadamard Transform (O(d log d))
-- Lloyd-Max: Iterative optimal quantization
-- QJL: 1-Bit Quantized JL Transform (Zandieh et al., 2024)
-- KVLinC: Hadamard Rotation + Linear Correction (Saxena & Roy, 2025)
+---
 
-## 📄 License
+## MCP Host Configuration
+
+Use the built server entrypoint after build:
+
+```bash
+npm run build
+node dist/server.js
+```
+
+Example generic stdio MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "turboquant-compressor": {
+      "command": "node",
+      "args": ["/absolute/path/to/turboquant-compressor/dist/server.js"]
+    }
+  }
+}
+```
+
+For host-specific profile generation, use:
+
+```text
+turboquant_cli_mcp_profile
+```
+
+Supported profile targets include:
+
+```text
+generic_stdio
+claude_code
+codex_cli
+cursor
+gemini_cli
+opencode
+crush
+```
+
+---
+
+## Verification
+
+Run the standard local release gate:
+
+```bash
+npm run build
+npm test -- --runInBand
+npm run smoke:stdio
+npm run verify:release
+```
+
+Additional gates:
+
+```bash
+npm run verify:termux
+npm run verify:mcp
+npm run verify:opencl-claims
+npm run verify:release-evidence
+npm run verify:archives
+npm run verify:artifact-parity
+```
+
+Package scripts include release paths:
+
+```bash
+npm run release:source
+npm run release:portable
+npm run release:all
+```
+
+---
+
+## Benchmarking
+
+Run local open-test benchmark and save results:
+
+```bash
+npm run open:test:local:save
+```
+
+Expected output location:
+
+```text
+bench/results/open-test-local-YYYYMMDD-HHMMSS.json
+```
+
+The current public local-corpus evidence shows:
+
+```text
+compression_ratio: 5.8759x–5.8844x
+recall_at_5:       0.90–0.92
+dimensions:        384
+format_version:    3
+```
+
+---
+
+## Evidence Discipline
+
+This project treats claims as release artifacts, not marketing text.
+
+A claim is acceptable in README only when it has one of the following:
+
+* A committed benchmark artifact under `bench/results/`
+* A committed forensic report under `forensics/`
+* A conformance transcript
+* A deterministic test/smoke command
+* A release gate that fails when the claim is not backed
+
+Current supported headline:
+
+```text
+5.5x+ measured local corpus compression
+13 MCP tools verified by conformance transcript
+Termux-first MCP stdio server
+OpenCL/Adreno diagnostics and evidence gates
+```
+
+Claims requiring device evidence:
+
+```text
+Adreno production acceleration
+OpenCL accelerated inference/compression
+Snapdragon-ready performance path
+Custom driver performance uplift
+Sustained GPU throughput numbers
+```
+
+Do not publish those as verified unless the matching forensic artifacts exist and pass release gates.
+
+---
+
+## Known Limits
+
+* Current public local benchmark path is LEVEL_0.
+* Public local benchmark artifacts do not include QJL correction.
+* `useQjl` in search does not apply QJL correction unless the database format stores the required payload.
+* OpenCL/Adreno acceleration must be verified per device.
+* MCP compatibility depends on host stdio behavior and SDK compatibility.
+* Benchmark token counts may be approximate when derived from bytes.
+
+These limits are intentional and should remain visible until closed by code and evidence.
+
+---
+
+## Development
+
+```bash
+npm install
+npm run build
+npm test -- --runInBand
+npm run smoke:stdio
+```
+
+Useful checks:
+
+```bash
+npm run smoke:api
+npm run smoke:mcp
+npm run smoke:numeric
+npm run verify:release
+npm run verify:tests-determinism
+npm run verify:no-placeholders
+npm run verify:no-shell-executor
+```
+
+---
+
+## Release Checklist
+
+Before tagging a release:
+
+```bash
+npm run build
+npm test -- --runInBand
+npm run smoke:stdio
+npm run verify:release
+npm run verify:termux
+npm run verify:opencl-claims
+npm run verify:release-evidence
+npm run release:all
+```
+
+For GPU/Adreno claims, also include:
+
+```bash
+npm run build:opencl
+npm run bench:opencl
+npm run verify:adreno-opencl
+npm run verify:release-evidence
+```
+
+Release evidence should include:
+
+```text
+commit SHA
+Node.js version
+npm version
+device model / SoC when applicable
+Termux or Linux environment
+MCP conformance transcript
+benchmark result JSON
+OpenCL probe report when claiming OpenCL
+Adreno loader report when claiming Adreno
+```
+
+---
+
+## Version History
+
+### v4.0.0
+
+* Termux-first MCP server packaging
+* 13-tool MCP surface
+* Local compressed vector database build/search
+* Context-pack build/search
+* Cache/cost analysis tools
+* KV/cache analysis tool
+* Backend/OpenCL/Adreno probe tools
+* Release verification and evidence gates
+* Public local benchmark artifacts showing 5.5x+ compression
+
+---
+
+## References
+
+* Fast Walsh-Hadamard Transform / randomized rotation literature
+* Lloyd-Max quantization literature
+* Johnson-Lindenstrauss / quantized projection literature
+* MCP stdio transport model
+* Termux Android runtime constraints
+* Mesa/Freedreno/Turnip/OpenCL driver ecosystem
+
+
+ https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260514-220247.json
+ https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/mcp-conformance-transcript.json 
+ https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/scripts/verify-release-evidence.mjs
+
+
+---
+
+## License
 
 GPL-3.0-or-later
