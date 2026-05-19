@@ -45,6 +45,7 @@ const report = {
   recommendedBackend: probeResult.recommendedBackend || 'typescript_cpu',
   warnings: probeResult.warnings || [],
   probeTimeMs: probeResult.probeTimeMs || 0,
+  production: probeResult.production,
 };
 
 writeFileSync(outPath, JSON.stringify(report, null, 2));

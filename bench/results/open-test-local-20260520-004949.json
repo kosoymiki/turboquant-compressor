@@ -1,0 +1,28 @@
+{
+  "test_name": "turboquant_open_test_local",
+  "files": 91,
+  "chunks": 135,
+  "approximate_tokens": 80956,
+  "token_count_source": "approximate_bytes_div_4",
+  "dimensions": 384,
+  "vector_count": 135,
+  "compression_ratio": 5.89425810119386,
+  "compressed_bytes": 35180,
+  "original_bytes_estimate": 207360,
+  "compress_ms": 66.91265599999997,
+  "query_count": 50,
+  "recall_at_1": 0.04,
+  "recall_at_5": 0.1,
+  "mrr": 0.06066666666666667,
+  "score_mae_on_exact_topk": 0.20089925780648565,
+  "score_mse_on_exact_topk": 0.0761940756829845,
+  "score_p95_abs_error_on_exact_topk": 0.6111059930891989,
+  "score_mae_on_union_topk": 0.5393216178028494,
+  "score_mse_on_union_topk": 0.3747804044019138,
+  "algorithm_level": "LEVEL_1_TURBOQUANT",
+  "format_version": 3,
+  "include_qjl": false,
+  "warnings": [
+    "LEVEL_1_TURBOQUANT: Production implementation with QJL sign-bit residual correction"
+  ]
+}

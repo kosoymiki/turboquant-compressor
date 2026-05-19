@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -63,6 +63,7 @@ manifest.complete = errors === 0;
 
 // Write manifest
 const manifestPath = join(forensicsDir, 'RELEASE_EVIDENCE_MANIFEST.json');
+mkdirSync(forensicsDir, { recursive: true });
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
 if (errors > 0) {

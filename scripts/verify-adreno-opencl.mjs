@@ -6,18 +6,26 @@
  */
 
 import { execSync, spawnSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
+const forensicsDir = join(rootDir, 'forensics');
+const outPath = join(forensicsDir, 'opencl-adreno-report.json');
 
 const allowUnavailable = process.argv.includes('--allow-unavailable');
+
+mkdirSync(forensicsDir, { recursive: true });
 
 function fail(msg) {
   console.error(`FAIL [verify-adreno-opencl]: ${msg}`);
   process.exit(1);
+}
+
+function writeReport(report) {
+  writeFileSync(outPath, `${JSON.stringify(report, null, 2)}\n`);
 }
 
 // 1. Check dist built
@@ -40,9 +48,27 @@ try {
 
 console.log(`[opencl-probe] available=${probeResult.available}, adreno=${probeResult.adrenoDetected}, recommended=${probeResult.recommendedBackend}`);
 
+const report = {
+  timestamp: new Date().toISOString(),
+  state: probeResult.available ? 'ADRENO_VENDOR_OPENCL_PROBED' : 'ADRENO_VENDOR_OPENCL_UNAVAILABLE',
+  all_pass: false,
+  claim_safe: false,
+  source: 'verify-adreno-opencl',
+  available: probeResult.available,
+  adrenoDetected: probeResult.adrenoDetected,
+  recommendedBackend: probeResult.recommendedBackend,
+  probeTimeMs: probeResult.probeTimeMs,
+  libraryCandidates: probeResult.libraryCandidates,
+  warnings: probeResult.warnings,
+  opencl_probe: probeResult,
+  production: probeResult.production,
+};
+writeReport(report);
+
 // 3. If unavailable
 if (!probeResult.available) {
   if (allowUnavailable) {
+    console.log(`[verify-adreno-opencl] Report: ${outPath}`);
     console.log('[OK] verify-adreno-opencl: OpenCL unavailable (--allow-unavailable passed)');
     process.exit(0);
   } else {
@@ -60,6 +86,7 @@ if (probeResult.libraryCandidates.filter(l => l.exists).length === 0) {
 }
 
 console.log(`[OK] verify-adreno-opencl: OpenCL detected, probe ${probeResult.probeTimeMs}ms`);
+console.log(`[verify-adreno-opencl] Report: ${outPath}`);
 if (probeResult.adrenoDetected) {
   console.log(`  Adreno GPU detected`);
 }

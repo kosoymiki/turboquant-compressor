@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TurboQuant v4.0.0 → Claude Code integration. BD MCP ecosystem."""
+"""TurboQuant v4.0.1 → Claude Code integration. BD MCP ecosystem."""
 
 import json
 from dataclasses import dataclass, field
@@ -7,7 +7,7 @@ from datetime import datetime
 
 @dataclass
 class TurboQuantAnalysis:
-    version: str = "4.0.0"
+    version: str = "4.0.1"
     production_lines: int = 8315
     modules: int = 64
     backends: list = field(default_factory=lambda: [
@@ -25,7 +25,7 @@ class TurboQuantAnalysis:
     ])
 
 def bd_turboquant_analysis() -> dict:
-    """TurboQuant v4.0.0 analysis for BD corpus."""
+    """TurboQuant v4.0.1 analysis for BD corpus."""
     analysis = TurboQuantAnalysis()
     return {
         "project": "turboquant-compressor",
@@ -46,7 +46,7 @@ def bd_turboquant_analysis() -> dict:
     }
 
 def bd_turboquant_improvements() -> dict:
-    """Improvements for TurboQuant v4.0.0."""
+    """Improvements for TurboQuant v4.0.1."""
     return {
         "improvements": [
             {

@@ -13,7 +13,12 @@ describe('backend_probe', () => {
     expect(result.triton).toBe('not_checked');
     expect(result.cuda).toBe('not_checked');
     expect(result.vllm).toBe('not_checked');
-    expect(result.recommendedBackend).toBe('typescript_cpu');
+    expect(['diagnostic_only', 'typescript_cpu']).toContain(result.recommendedBackend);
+    expect(result.productionBackendAllowed).toBe(false);
+    expect(result.production.productionPolicy).toBe('custom_driver_stack_only');
+    expect(result.production.productionReady).toBe(false);
+    expect(result.production.productionRoute).toBe('diagnostic_only');
+    expect(result.production.forbiddenProductionBackends).toContain('typescript_cpu');
     expect(Array.isArray(result.warnings)).toBe(true);
     expect(elapsed).toBeLessThan(3000);
   });

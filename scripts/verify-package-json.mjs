@@ -16,7 +16,14 @@ if (lock.version !== version) fail(`package-lock version ${lock.version} != pack
 if (lock.packages?.['']?.version !== version) fail(`package-lock packages[""].version mismatch`);
 
 const server = readFileSync('src/server.ts', 'utf8');
-if (!server.includes(`version: '${version}'`) && !server.includes(`version: "${version}"`)) {
+const serverVersionMatches =
+  server.includes(`version: '${version}'`) ||
+  server.includes(`version: "${version}"`) ||
+  server.includes(`packageJson.version ?? '${version}'`) ||
+  server.includes(`packageJson.version ?? "${version}"`) ||
+  server.includes(`return '${version}'`) ||
+  server.includes(`return "${version}"`);
+if (!serverVersionMatches) {
   fail('src/server.ts version does not match package.json');
 }
 

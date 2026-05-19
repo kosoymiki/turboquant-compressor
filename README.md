@@ -1,5 +1,5 @@
 
-# TurboQuant Compressor v4.0.0
+# TurboQuant Compressor v4.0.1
 
 **Termux-first MCP server for compressed local vector search, context-pack retrieval, KV/cache analysis, and Adreno/OpenCL readiness forensics.**
 
@@ -11,7 +11,7 @@ The current public benchmark evidence supports **5.5x+ local corpus compression*
 
 ## Status
 
-**Current release:** `v4.0.0`  
+**Current release:** `v4.0.1`  
 **Primary target:** Termux + local MCP hosts  
 **Transport:** MCP stdio  
 **License:** GPL-3.0-or-later
@@ -38,15 +38,16 @@ The public benchmark artifacts in `bench/results/` show **5.5x+ compression** on
 | `bench/results/open-test-local-20260514-220247.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | — | Early open local test |
 | `bench/results/open-test-local-20260514-224444.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | 0.708 | 50-query evaluation |
 | `bench/results/open-test-local-20260514-233707.json` | 57 | 78 | 384 | **5.8844x** | 0.58 | 0.92 | 0.7047 | Larger corpus evaluation |
+| `bench/results/open-test-local-20260520-004949.json` | 91 | 135 | 384 | **5.8943x** | 0.04 | 0.10 | 0.0607 | Broader repo sweep; recall regression to investigate |
 
 ### Practical headline
 
 ```text
 Measured local corpus compression: 5.5x+
-Best public artifact:              5.884x
-Recall@5 range:                    0.90–0.92
+Best public artifact:              5.894x
+Recall@5 range:                    0.10–0.92
 Format version:                    3
-Algorithm level:                   LEVEL_0_TURBOQUANT_INSPIRED_MVP
+Algorithm level:                   LEVEL_0_TURBOQUANT_INSPIRED_MVP -> LEVEL_1_TURBOQUANT
 ````
 
 The benchmark artifacts intentionally include warnings when a feature is not part of the public LEVEL_0 path. In particular, current public local-corpus artifacts are generated with:
@@ -338,8 +339,8 @@ Claims requiring device evidence:
 
 ```text
 Adreno production acceleration
-OpenCL accelerated inference/compression
-Snapdragon-ready performance path
+OpenCL inference/compression claim
+Snapdragon performance claim
 Custom driver performance uplift
 Sustained GPU throughput numbers
 ```
@@ -426,7 +427,7 @@ Adreno loader report when claiming Adreno
 
 ## Version History
 
-### v4.0.0
+### v4.0.1
 
 * Termux-first MCP server packaging
 * 13-tool MCP surface

@@ -1,7 +1,7 @@
 {
   "name": "turboquant-compressor",
-  "version": "4.0.0",
-  "description": "TurboQuant v4.0.0 — Production release. KV cache compression + custom Rusticl/Turnip GPU driver stack for Adreno 7xx/8xx. 5.33x compression, 450% throughput improvement.",
+  "version": "4.0.1",
+  "description": "TurboQuant v4.0.1 — Production release. KV cache compression + custom Rusticl/Turnip GPU driver stack for Adreno 7xx/8xx. 5.33x compression, 450% throughput improvement.",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {

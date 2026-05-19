@@ -5,6 +5,7 @@
 
 import { spawnSync } from 'child_process';
 import { existsSync } from 'fs';
+import { type ProductionPolicyAssessment, assessProductionPolicy } from './production_policy.js';
 
 export interface OpenClProbeResult {
   available: boolean;
@@ -21,6 +22,7 @@ export interface OpenClProbeResult {
   adrenoDetected: boolean;
   libraryCandidates: Array<{ path: string; exists: boolean }>;
   recommendedBackend: 'typescript_cpu' | 'opencl_adreno' | 'opencl_generic' | 'cpu_neon';
+  production: ProductionPolicyAssessment;
   warnings: string[];
   probeTimeMs: number;
 }
@@ -57,6 +59,7 @@ export function probeOpenCl(options: OpenClProbeOptions = {}): OpenClProbeResult
   const anyLibFound = libResults.some(l => l.exists);
 
   if (!anyLibFound) {
+    const production = assessProductionPolicy();
     return {
       available: false,
       libraryExists: false,
@@ -72,7 +75,11 @@ export function probeOpenCl(options: OpenClProbeOptions = {}): OpenClProbeResult
       adrenoDetected: false,
       libraryCandidates: libResults,
       recommendedBackend: 'typescript_cpu',
-      warnings: ['No OpenCL library found on device'],
+      production,
+      warnings: [
+        'No OpenCL library found on device',
+        ...(production.productionReady ? [] : [`Production route blocked: ${production.blockers.join(', ')}`]),
+      ],
       probeTimeMs: Date.now() - start,
     };
   }
@@ -80,6 +87,7 @@ export function probeOpenCl(options: OpenClProbeOptions = {}): OpenClProbeResult
   // Quick mode: library exists but loadability not proven
   if (!deep) {
     const adrenoHint = libResults.some(l => l.exists && l.path.includes('adreno'));
+    const production = assessProductionPolicy();
     return {
       available: false,
       libraryExists: true,
@@ -95,7 +103,11 @@ export function probeOpenCl(options: OpenClProbeOptions = {}): OpenClProbeResult
       adrenoDetected: adrenoHint,
       libraryCandidates: libResults,
       recommendedBackend: 'typescript_cpu',
-      warnings: ['Library exists but loadability not proven; use deep=true to test'],
+      production,
+      warnings: [
+        'Library exists but loadability not proven; use deep=true to test',
+        ...(production.productionReady ? [] : [`Production route blocked: ${production.blockers.join(', ')}`]),
+      ],
       probeTimeMs: Date.now() - start,
     };
   }
@@ -163,6 +175,11 @@ export function probeOpenCl(options: OpenClProbeOptions = {}): OpenClProbeResult
     : blocked ? 'BLOCKED_BY_ANDROID_LINKER_NAMESPACE' as const
     : 'LOADABLE_NO_PLATFORMS' as const;
 
+  const production = assessProductionPolicy();
+  if (!production.productionReady) {
+    warnings.push(`Production route blocked: ${production.blockers.join(', ')}`);
+  }
+
   return {
     available: clInfoWorked && platformCount > 0,
     libraryExists: true,
@@ -180,6 +197,7 @@ export function probeOpenCl(options: OpenClProbeOptions = {}): OpenClProbeResult
     recommendedBackend: clInfoWorked
       ? (adrenoDetected ? 'opencl_adreno' : 'opencl_generic')
       : 'typescript_cpu',
+    production,
     warnings,
     probeTimeMs: Date.now() - start,
   };

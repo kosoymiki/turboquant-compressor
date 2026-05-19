@@ -34,7 +34,7 @@ const res = spawnSync('node', [
   `import { probeBackends } from './dist/runtime/backend_probe.js';
    const r = probeBackends({ deep: false, timeoutMs: 250 });
    if (r.probeMode !== 'quick') throw new Error('not quick mode');
-   if (r.recommendedBackend !== 'typescript_cpu') throw new Error('unexpected backend: ' + r.recommendedBackend);
+   if (!['diagnostic_only', 'typescript_cpu'].includes(r.recommendedBackend)) throw new Error('unexpected backend: ' + r.recommendedBackend);
    console.log(JSON.stringify(r));`
 ], {
   encoding: 'utf8',

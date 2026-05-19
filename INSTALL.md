@@ -1,4 +1,4 @@
-# TurboQuant v4.0.0 — Installation Guide
+# TurboQuant v4.0.1 — Installation Guide
 
 ## Quick Start
 
@@ -206,7 +206,7 @@ status = server.shell_status_monitor()
 
 ## Version
 
-**TurboQuant v4.0.0** — Production Release
+**TurboQuant v4.0.1** — Production Release
 - Custom Rusticl/Turnip GPU driver stack
 - Full Adreno 7xx+ support
 - 25 OpenCL donor optimizations
@@ -382,7 +382,7 @@ status = server.shell_status_monitor()
 
 ## Version
 
-**TurboQuant v4.0.0** — Production Release
+**TurboQuant v4.0.1** — Production Release
 - Custom Rusticl/Turnip GPU driver stack
 - 25 OpenCL donor optimizations
 - 5.33x KV cache compression

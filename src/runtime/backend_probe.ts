@@ -7,6 +7,7 @@
  */
 
 import { spawnSync } from 'child_process';
+import { type ProductionPolicyAssessment, assessProductionPolicy } from '../native/production_policy.js';
 
 export interface BackendProbeOptions {
   deep?: boolean;
@@ -21,7 +22,9 @@ export interface BackendProbeResult {
   triton: 'available' | 'missing' | 'not_checked';
   cuda: 'available' | 'missing' | 'not_checked';
   vllm: 'available' | 'missing' | 'not_checked';
-  recommendedBackend: 'typescript_cpu' | 'python_cpu' | 'python_gpu' | 'triton_gpu';
+  recommendedBackend: 'diagnostic_only' | 'typescript_cpu' | 'python_cpu' | 'python_gpu' | 'triton_gpu';
+  productionBackendAllowed: boolean;
+  production: ProductionPolicyAssessment;
   probeMode: 'quick' | 'deep';
   elapsedMs: number;
   warnings: string[];
@@ -60,7 +63,9 @@ export function probeBackends(options: BackendProbeOptions = {}): BackendProbeRe
     triton: deep ? 'missing' : 'not_checked',
     cuda: deep ? 'missing' : 'not_checked',
     vllm: deep ? 'missing' : 'not_checked',
-    recommendedBackend: 'typescript_cpu',
+    recommendedBackend: 'diagnostic_only',
+    productionBackendAllowed: false,
+    production: assessProductionPolicy(),
     probeMode: deep ? 'deep' : 'quick',
     elapsedMs: 0,
     warnings: [],
@@ -71,6 +76,9 @@ export function probeBackends(options: BackendProbeOptions = {}): BackendProbeRe
   if (!deep) {
     if (result.python === 'missing') {
       result.warnings.push('Python not found; Python reference validation unavailable');
+    }
+    if (!result.production.productionReady) {
+      result.warnings.push(`Production route blocked: ${result.production.blockers.join(', ')}`);
     }
     result.warnings.push('Quick probe: pass deep=true to check torch/triton/vllm');
     result.elapsedMs = Date.now() - started;
@@ -98,13 +106,24 @@ export function probeBackends(options: BackendProbeOptions = {}): BackendProbeRe
     result.recommendedBackend = 'python_gpu';
   } else if (result.torch === 'available') {
     result.recommendedBackend = 'python_cpu';
+  } else {
+    result.recommendedBackend = 'typescript_cpu';
+  }
+
+  result.productionBackendAllowed = result.production.productionReady
+    && result.production.allowedProductionRoutes.includes(result.production.productionRoute as typeof result.production.allowedProductionRoutes[number]);
+  if (!result.productionBackendAllowed) {
+    result.warnings.push('Detected backends are diagnostic-only until custom driver stack runtime evidence is present');
   }
 
   if (result.termux && result.cuda !== 'available') {
-    result.warnings.push('Triton/vLLM unavailable on standard Termux; using TypeScript CPU path');
+    result.warnings.push('Triton/vLLM unavailable on standard Termux; CPU probes stay diagnostic-only under custom driver policy');
   }
   if (result.python === 'missing') {
     result.warnings.push('Python not found; Python reference validation unavailable');
+  }
+  if (!result.production.productionReady) {
+    result.warnings.push(`Production route blocked: ${result.production.blockers.join(', ')}`);
   }
 
   result.elapsedMs = Date.now() - started;
