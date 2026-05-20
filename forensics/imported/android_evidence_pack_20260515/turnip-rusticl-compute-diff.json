@@ -1,0 +1,58 @@
+{
+  "timestamp": "2026-05-15T23:26:38.687Z",
+  "device": "Adreno 730 / FD725 / Snapdragon 8+ Gen 1",
+  "comparison": {
+    "device_context_creation": {
+      "turnip": "PASS — DRAWCTXT_CREATE flags 0x13, ctx assigned",
+      "rusticl": "PASS — same flags, ctx assigned"
+    },
+    "bo_allocation_binding": {
+      "turnip": "PASS — Vulkan manages own allocations via KGSL",
+      "rusticl": "PARTIAL — BOs allocated and mapped, but transfer path broken"
+    },
+    "descriptor_state_setup": {
+      "turnip": "PASS — Vulkan descriptor sets with correct IOVAs",
+      "rusticl": "UNKNOWN — Gallium state emission not verified at PM4 level"
+    },
+    "shader_binary_upload": {
+      "turnip": "PASS — SPIR-V → NIR → IR3 → uploaded to GPU memory",
+      "rusticl": "PARTIAL — SPIR-V compiled (4 OpStore confirmed), IR3 JIT at dispatch, upload unverified"
+    },
+    "pm4_dispatch_packet": {
+      "turnip": "PASS — CP_DISPATCH_DIRECT present in IB",
+      "rusticl": "UNKNOWN — IB contents not decoded, submit accepted"
+    },
+    "cache_flush_invalidate": {
+      "turnip": "PASS — CP_EVENT_WRITE for cache management",
+      "rusticl": "UNKNOWN — not verified"
+    },
+    "timestamp_fence_wait": {
+      "turnip": "PASS — timestamp retires, output visible",
+      "rusticl": "MISLEADING — timestamp assigned (ts=1) but NOP IBs also get timestamps"
+    },
+    "output_memory_visibility": {
+      "turnip": "PASS — buffer contents change after compute dispatch",
+      "rusticl": "FAIL — ALL transfer paths broken (MapBuffer, ReadBuffer, WriteBuffer)"
+    }
+  },
+  "evidence_summary": {
+    "ir3_store_present": true,
+    "memory_classification": "CPU_MAPPING_BROKEN",
+    "timestamp_proves_execution": false,
+    "pm4_classification": "IB_NOT_DECODED",
+    "rusticl_submits": 2,
+    "turnip_output_changes": true,
+    "rusticl_output_changes": false
+  },
+  "decision": "RUSTICL_KGSL_TRANSFER_PATH_BROKEN",
+  "confidence": "high",
+  "evidence_files": [
+    "forensics/kgsl/pm4-ib-diff.json",
+    "forensics/ir3/rusticl-kernel.json",
+    "forensics/kgsl/memory-visibility-report.json",
+    "forensics/kgsl/timestamp-report.json",
+    "forensics/kgsl/rusticl-pm4.json",
+    "forensics/kgsl/turnip-pm4.json"
+  ],
+  "next_action": "Gallium KGSL winsys lacks working buffer transfer implementation. This is architectural — not a small patchable bug."
+}

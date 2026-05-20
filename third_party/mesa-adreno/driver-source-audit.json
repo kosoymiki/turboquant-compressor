@@ -1,0 +1,63 @@
+{
+  "generated": "2026-05-20T11:13:21.043439+00:00",
+  "driver_root": "/data/data/com.termux/files/home/tmp_turboquant/driver",
+  "source_file_count": 18,
+  "build_residue_count": 402,
+  "source_file_paths": [
+    "driver/freedreno/freedreno_tracepoints.c",
+    "driver/freedreno/freedreno_tracepoints.h",
+    "driver/ir3/ir3_lexer.c",
+    "driver/ir3/ir3_nir_branch_and_or_not.c",
+    "driver/ir3/ir3_nir_imul.c",
+    "driver/ir3/ir3_nir_opt_algebraic_late.c",
+    "driver/ir3/ir3_nir_trig.c",
+    "driver/ir3/ir3_nir_triop_bitwise.c",
+    "driver/ir3/ir3_parser.c",
+    "driver/ir3/ir3_parser.h",
+    "driver/nir/nir_builder_opcodes.h",
+    "driver/nir/nir_constant_expressions.c",
+    "driver/nir/nir_intrinsics.c",
+    "driver/nir/nir_intrinsics.h",
+    "driver/nir/nir_intrinsics_indices.h",
+    "driver/nir/nir_opcodes.c",
+    "driver/nir/nir_opcodes.h",
+    "driver/nir/nir_opt_algebraic.c"
+  ],
+  "source_of_truth_rules": [
+    "treat tmp_turboquant/driver as partial source residue, not a full mesa tree",
+    "prefer fresh upstream mesa tree for canonical file locations",
+    "use driver/* only where unique generated or carried source files exist",
+    "ignore .o/.a/.a.p build residue during semantic recovery"
+  ],
+  "generated_residue_notes": [
+    "retained driver source files do not map 1:1 onto simple canonical Mesa src/* paths",
+    "most are generated or carried build-residue sources such as parser/tracepoint/NIR generated outputs",
+    "semantic recovery must locate the modern generator/input in upstream Mesa before porting changes"
+  ],
+  "critical_local_source_buckets": {
+    "freedreno": [
+      "driver/freedreno/freedreno_tracepoints.c",
+      "driver/freedreno/freedreno_tracepoints.h"
+    ],
+    "ir3": [
+      "driver/ir3/ir3_lexer.c",
+      "driver/ir3/ir3_nir_branch_and_or_not.c",
+      "driver/ir3/ir3_nir_imul.c",
+      "driver/ir3/ir3_nir_opt_algebraic_late.c",
+      "driver/ir3/ir3_nir_trig.c",
+      "driver/ir3/ir3_nir_triop_bitwise.c",
+      "driver/ir3/ir3_parser.c",
+      "driver/ir3/ir3_parser.h"
+    ],
+    "nir": [
+      "driver/nir/nir_builder_opcodes.h",
+      "driver/nir/nir_constant_expressions.c",
+      "driver/nir/nir_intrinsics.c",
+      "driver/nir/nir_intrinsics.h",
+      "driver/nir/nir_intrinsics_indices.h",
+      "driver/nir/nir_opcodes.c",
+      "driver/nir/nir_opcodes.h",
+      "driver/nir/nir_opt_algebraic.c"
+    ]
+  }
+}

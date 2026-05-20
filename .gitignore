@@ -11,3 +11,16 @@ __pycache__/
 # Compiled OpenCL test binaries
 native/opencl/cl_kernel_test
 native/opencl/cl_probe
+
+# Native/OpenCL generated artifacts
+native/opencl/build/
+native/opencl/build-tq-zero/
+native/opencl/runtime-pack/
+native/opencl/runtime-pack-fresh/
+native/opencl/driver-pack/out/
+native/opencl/driver-pack/out-fresh/
+driver/
+native/adreno/build/
+
+# Local run artifacts
+artifacts/

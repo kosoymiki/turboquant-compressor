@@ -1,3 +1,0 @@
-/data/data/com.termux/files/home/.claude/tools/turboquant-compressor/native/opencl/build/CMakeFiles/tq_opencl_cli.dir
-/data/data/com.termux/files/home/.claude/tools/turboquant-compressor/native/opencl/build/CMakeFiles/edit_cache.dir
-/data/data/com.termux/files/home/.claude/tools/turboquant-compressor/native/opencl/build/CMakeFiles/rebuild_cache.dir

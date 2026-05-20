@@ -1,65 +1,154 @@
 #!/bin/bash
 # TurboQuant Mesa Two-Layer Build Script
-# Builds Rusticl (Layer 1) + Turnip (Layer 2) from mesa-upstream source
-# Uses -j4 -k0 (caveman mode), safe for Termux
+# Builds Rusticl (compute) + Turnip (Vulkan backend) against current Mesa.
+#
+# This script is source-of-truth for recovery on Mesa 26.2+:
+# - no hardcoded single tree name
+# - uses upstream-native Freedreno KGSL option
+# - prefers custom stack over vendor OpenCL assumptions
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-set -uo pipefail
-
-MESA_SRC="$HOME/mesa-upstream"
-BUILD_DIR="$MESA_SRC/build"
+set -euo pipefail
 
 die() { echo "[FATAL] $*" >&2; exit 1; }
 info() { echo "[tq-build] $*"; }
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+TQ_STACK_ROOT="$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)"
+TQ_REPO_ROOT="$(CDPATH= cd -- "${TQ_STACK_ROOT}/.." && pwd)"
+detect_termux_prefix() {
+    if [ -n "${PREFIX:-}" ] && [ -x "${PREFIX}/bin/clang" ]; then
+        printf '%s\n' "${PREFIX}"
+        return
+    fi
+    local clang_bin
+    clang_bin="$(command -v clang 2>/dev/null || true)"
+    if [ -n "${clang_bin}" ]; then
+        printf '%s\n' "$(CDPATH= cd -- "$(dirname "${clang_bin}")/.." && pwd)"
+        return
+    fi
+    return 1
+}
+TERMUX_PREFIX="${TQ_TERMUX_PREFIX:-$(detect_termux_prefix || true)}"
+[ -n "${TERMUX_PREFIX}" ] || die "Unable to resolve Termux/LLVM prefix; set PREFIX or TQ_TERMUX_PREFIX"
+TERMUX_BIN="${TERMUX_PREFIX}/bin"
+TERMUX_CLANG="${TERMUX_BIN}/clang"
+TERMUX_CLANGXX="${TERMUX_BIN}/clang++"
+TERMUX_LLVM_CONFIG="${TERMUX_BIN}/llvm-config"
+TERMUX_LLVM_AR="${TERMUX_BIN}/llvm-ar"
+TERMUX_RANLIB="${TERMUX_BIN}/llvm-ranlib"
 
-[ -d "$MESA_SRC/src/freedreno" ] || die "Mesa source not found at $MESA_SRC"
+for tool in "$TERMUX_CLANG" "$TERMUX_CLANGXX" "$TERMUX_LLVM_CONFIG" "$TERMUX_LLVM_AR" "$TERMUX_RANLIB"; do
+    [ -x "$tool" ] || die "Required Termux tool not found: $tool"
+done
 
-# Meson configure (skip if already configured)
-if [ ! -f "$BUILD_DIR/build.ninja" ]; then
-    info "Configuring Mesa (Rusticl + Turnip, kgsl=true)..."
-    meson setup "$BUILD_DIR" "$MESA_SRC" \
-        -Dgallium-rusticl=true \
-        -Dvulkan-drivers=freedreno \
-        -Dgallium-drivers=freedreno \
-        -Dfreedreno-kgsl=true \
-        -Dllvm=enabled \
-        -Dshared-llvm=disabled \
-        -Dbuildtype=release \
-        -Dstrip=true \
-        -Dcpp_args="-O2 -march=armv8.2-a" \
-        -Dc_args="-O2 -march=armv8.2-a" \
-        -Dplatforms="" \
-        -Dglx=disabled \
-        -Degl=disabled \
-        -Dgbm=disabled \
-        -Dgles1=disabled \
-        -Dgles2=disabled \
-        -Dopengl=false \
-        --prefix="$HOME/turboquant/drivers" \
-        || die "Meson configure failed"
+unset CC CXX CPP LD AR AS NM STRIP OBJCOPY OBJDUMP RANLIB CFLAGS CXXFLAGS CPPFLAGS LDFLAGS
+export PATH="${TERMUX_BIN}:$PATH"
+export CC="${TERMUX_CLANG}"
+export CXX="${TERMUX_CLANGXX}"
+export AR="${TERMUX_LLVM_AR}"
+export RANLIB="${TERMUX_RANLIB}"
+export LLVM_CONFIG="${TERMUX_LLVM_CONFIG}"
+
+resolve_mesa_src() {
+    if [ -n "${TQ_MESA_ROOT:-}" ] && [ -d "${TQ_MESA_ROOT}/src/freedreno" ]; then
+        printf '%s\n' "${TQ_MESA_ROOT}"
+        return
+    fi
+    for candidate in \
+        "${TQ_STACK_ROOT}/mesa-source" \
+        "${TQ_REPO_ROOT}/mesa-source" \
+        "${HOME}/mesa"; do
+        if [ -d "${candidate}/src/freedreno" ]; then
+            printf '%s\n' "${candidate}"
+            return
+        fi
+    done
+    return 1
+}
+
+MESA_SRC="${1:-$(resolve_mesa_src || true)}"
+[ -n "${MESA_SRC}" ] || die "Mesa source not found; pass path explicitly or set TQ_MESA_ROOT"
+[ -d "${MESA_SRC}/src/freedreno" ] || die "Mesa source not found at ${MESA_SRC}"
+
+BUILD_DIR="${TQ_MESA_BUILD_DIR:-${TQ_STACK_ROOT}/mesa-build}"
+INSTALL_PREFIX="${TQ_DRIVER_INSTALL_PREFIX:-${TQ_STACK_ROOT}/runtime-pack}"
+JOBS="${TQ_BUILD_JOBS:-4}"
+SDK_LEVEL="${TQ_ANDROID_SDK_LEVEL:-34}"
+LLVM_STATE="${TQ_LLVM_STATE:-enabled}"
+RUSTICL_ENABLE_DRIVERS="${TQ_RUSTICL_ENABLE_DRIVERS:-freedreno}"
+BUILD_META_JSON="${BUILD_DIR}/tq-build-metadata.json"
+
+configure_args=(
+    -Dplatforms=android
+    -Dplatform-sdk-version="${SDK_LEVEL}"
+    -Dandroid-stub=true
+    -Dandroid-libbacktrace=disabled
+    -Dgallium-rusticl=true
+    -Dgallium-rusticl-enable-drivers="${RUSTICL_ENABLE_DRIVERS}"
+    -Dvulkan-drivers=freedreno
+    -Dgallium-drivers=freedreno
+    -Dfreedreno-kmds=kgsl
+    -Dllvm="${LLVM_STATE}"
+    -Dshared-llvm=enabled
+    -Dbuildtype=debugoptimized
+    -Dstrip=false
+    -Dcpp_args=-O2\ -march=armv8.2-a
+    -Dc_args=-O2\ -march=armv8.2-a
+    -Dglx=disabled
+    -Degl=disabled
+    -Dgbm=disabled
+    -Dgles1=disabled
+    -Dgles2=disabled
+    -Dopengl=false
+    --prefix="${INSTALL_PREFIX}"
+)
+
+if [ ! -f "${BUILD_DIR}/build.ninja" ]; then
+    info "Configuring Mesa at ${MESA_SRC}"
+    meson setup "${BUILD_DIR}" "${MESA_SRC}" "${configure_args[@]}" || die "Meson configure failed"
 else
-    info "Build dir exists, reconfiguring skipped. Use 'meson setup --reconfigure' if needed."
+    info "Reconfiguring existing build dir ${BUILD_DIR}"
+    meson setup --reconfigure "${BUILD_DIR}" "${MESA_SRC}" "${configure_args[@]}" || die "Meson reconfigure failed"
 fi
 
-# Build — -j4 -k0 (don't crash Termux, don't stop on errors)
-info "Building... (-j4 -k0)"
-ninja -C "$BUILD_DIR" -j4 -k0 \
+info "Building with ninja -j${JOBS} -k0"
+ninja -C "${BUILD_DIR}" -j"${JOBS}" -k0 \
     src/gallium/targets/rusticl/libRusticlOpenCL.so.1.0.0 \
     src/freedreno/vulkan/libvulkan_freedreno.so \
     2>&1 | tail -20
 
-RUSTICL="$BUILD_DIR/src/gallium/targets/rusticl/libRusticlOpenCL.so.1.0.0"
-TURNIP="$BUILD_DIR/src/freedreno/vulkan/libvulkan_freedreno.so"
+RUSTICL="${BUILD_DIR}/src/gallium/targets/rusticl/libRusticlOpenCL.so.1.0.0"
+TURNIP="${BUILD_DIR}/src/freedreno/vulkan/libvulkan_freedreno.so"
 
-if [ -f "$RUSTICL" ] && [ -f "$TURNIP" ]; then
+if [ -f "${RUSTICL}" ] && [ -f "${TURNIP}" ]; then
+    python3 - <<EOF
+import json
+data = {
+  "meson_options": "-Dplatforms=android -Dplatform-sdk-version=${SDK_LEVEL} -Dandroid-stub=true -Dandroid-libbacktrace=disabled -Dgallium-rusticl=true -Dgallium-rusticl-enable-drivers=${RUSTICL_ENABLE_DRIVERS} -Dvulkan-drivers=freedreno -Dgallium-drivers=freedreno -Dfreedreno-kmds=kgsl -Dllvm=${LLVM_STATE} -Dshared-llvm=enabled -Dbuildtype=debugoptimized -Dstrip=false",
+  "compiler": "llvm/clang (Termux canonical toolchain)",
+  "linker": "lld",
+  "static_libcxx": False,
+  "strip": False,
+  "mesa_source": "${MESA_SRC}",
+  "build_dir": "${BUILD_DIR}",
+  "install_prefix": "${INSTALL_PREFIX}",
+  "sdk_level": "${SDK_LEVEL}",
+  "llvm_state": "${LLVM_STATE}",
+  "rusticl_enable_drivers": "${RUSTICL_ENABLE_DRIVERS}"
+}
+with open("${BUILD_META_JSON}", "w") as f:
+    json.dump(data, f, indent=2)
+EOF
     info "BUILD SUCCESS"
-    info "  Layer1: $RUSTICL ($(ls -lh "$RUSTICL" | awk '{print $5}'))"
-    info "  Layer2: $TURNIP ($(ls -lh "$TURNIP" | awk '{print $5}'))"
-    info ""
-    info "Next: ./pack_driver.sh $BUILD_DIR ~/turboquant/driver-pack-out"
+    info "  Mesa source: ${MESA_SRC}"
+    info "  Build dir:    ${BUILD_DIR}"
+    info "  Build meta:   ${BUILD_META_JSON}"
+    info "  Layer1:       ${RUSTICL} ($(ls -lh "${RUSTICL}" | awk '{print $5}'))"
+    info "  Layer2:       ${TURNIP} ($(ls -lh "${TURNIP}" | awk '{print $5}'))"
+    info "Next: ./pack_driver.sh ${BUILD_DIR} ${INSTALL_PREFIX}"
 else
-    info "BUILD INCOMPLETE — check errors above"
-    [ ! -f "$RUSTICL" ] && info "  MISSING: $RUSTICL"
-    [ ! -f "$TURNIP" ] && info "  MISSING: $TURNIP"
+    info "BUILD INCOMPLETE"
+    [ ! -f "${RUSTICL}" ] && info "  MISSING: ${RUSTICL}"
+    [ ! -f "${TURNIP}" ] && info "  MISSING: ${TURNIP}"
 fi

@@ -112,9 +112,15 @@ const testsRun = results.filter(r => r.status !== 'not_built').length;
 const testsPassed = results.filter(r => r.status === 'pass').length;
 const allPass = testsRun > 0 && testsRun === testsPassed;
 
+const recommendedBackend = probeJson.recommendedBackend ?? 'unavailable';
+const customStackReady = probeJson.available && recommendedBackend === 'mesa_rusticl_kgsl';
+const vendorStackReady = probeJson.available && recommendedBackend === 'opencl_generic';
+
 // Determine state
 let state;
-if (probeJson.available) {
+if (customStackReady) {
+  state = allPass ? 'CUSTOM_RUSTICL_STACK_READY' : 'CUSTOM_RUSTICL_STACK_PARITY_FAIL';
+} else if (vendorStackReady) {
   state = allPass ? 'ADRENO_VENDOR_OPENCL_READY' : 'ADRENO_VENDOR_OPENCL_PARITY_FAIL';
 } else if (probeJson.recommendedBackend === 'unavailable' || !probeJson.available) {
   state = probeJson.warnings?.some(w => w.includes('No OpenCL platforms'))
@@ -132,7 +138,8 @@ const report = {
   state,
   cpu_parity_state: cpuParityState,
   all_pass: allPass,
-  claim_safe: allPass && probeJson.available,
+  claim_safe: allPass && customStackReady,
+  stack_class: customStackReady ? 'custom_rusticl_stack' : (vendorStackReady ? 'vendor_opencl' : 'unavailable'),
   opencl_probe: probeJson,
   device: deviceInfo,
   memory: memInfo,

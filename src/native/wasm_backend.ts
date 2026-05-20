@@ -7,7 +7,10 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
-const WASM_PATH = join(__dir, 'wasm', 'pkg', 'turboquant_wasm_bg.wasm');
+const WASM_PATH_CANDIDATES = [
+  join(__dir, 'wasm', 'pkg', 'turboquant_wasm_bg.wasm'),
+  join(__dir, '..', '..', 'native', 'wasm', 'pkg', 'turboquant_wasm_bg.wasm'),
+];
 
 let wasm: any = null;
 let ready = false;
@@ -78,7 +81,19 @@ function passU8(data: Uint8Array): number {
 export async function initWasmBackend(): Promise<boolean> {
   if (ready) return true;
   try {
-    const wasmBytes = readFileSync(WASM_PATH);
+    let wasmBytes: Uint8Array | null = null;
+    for (const candidate of WASM_PATH_CANDIDATES) {
+      try {
+        wasmBytes = readFileSync(candidate);
+        break;
+      } catch {
+        continue;
+      }
+    }
+    if (!wasmBytes) {
+      ready = false;
+      return false;
+    }
 
     const importObj = {
       './turboquant_wasm_bg.js': {
@@ -94,7 +109,12 @@ export async function initWasmBackend(): Promise<boolean> {
       },
     };
 
-    const mod = await WebAssembly.compile(wasmBytes);
+    const wasmBuffer = new Uint8Array(
+      wasmBytes.buffer,
+      wasmBytes.byteOffset,
+      wasmBytes.byteLength
+    ) as unknown as BufferSource;
+    const mod = await WebAssembly.compile(wasmBuffer);
     const inst = await WebAssembly.instantiate(mod, importObj);
     wasm = inst.exports;
     ready = true;

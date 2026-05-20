@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-01-01T00:00:00Z",
+  "device": "Adreno 730 / FD725",
+  "context_id": 15,
+  "alloc": {"id": 2, "gpuaddr": "0x4000030000", "size": 4096, "mmapsize": 4096},
+  "mmap": "OK",
+  "tests": {
+    "noop_ib_1": {"submit_ret": 0, "timestamp": 1, "wait_ret": -1, "content": "CP_NOP only"},
+    "noop_ib_2": {"submit_ret": 0, "timestamp": 2, "wait_ret": -1, "content": "CP_NOP only"}
+  },
+  "timestamp_increments": true,
+  "wait_timeout": true,
+  "interpretation": "timestamp_retirement_not_sufficient_for_memory_side_effect",
+  "analysis": {
+    "nop_ib_accepted": true,
+    "nop_ib_gets_timestamp": true,
+    "timestamp_increments_without_compute": true,
+    "wait_does_not_complete": "waittimestamp times out — GPU may not fully retire NOP without fence event",
+    "implication": "Rusticl submit ret=0 ts=1 does NOT prove compute shader executed. A NOP IB produces identical submit behavior."
+  },
+  "conclusion": "Timestamp assignment proves kernel accepted command buffer. It does NOT prove GPU executed compute shader or produced memory side effects. clFinish returning success after GPU_COMMAND ret=0 is consistent with NOP-like IB submission.",
+  "ioctl_correction": {
+    "old_wrong": "IOCTL 0x39 = PERFCOUNTER_PUT",
+    "correct": "IOCTL 0x4A = GPU_COMMAND",
+    "struct_fix": "kgsl_command_object has offset field before gpuaddr"
+  }
+}

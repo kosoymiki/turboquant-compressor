@@ -1,0 +1,31 @@
+{
+  "backend": "rusticl",
+  "shader": "tiny_write",
+  "kernel_source": "__kernel void tiny_write(__global int* out) { int i = get_global_id(0); out[i] = i * 42; }",
+  "compiler": "ir3 (via Rusticl SPIR-V → NIR → IR3)",
+  "binary_format": "rusticl_serialized",
+  "binary_size": 1465,
+  "spirv": {
+    "present": true,
+    "offset_in_binary": 29,
+    "size": 1436,
+    "magic": "0x07230203",
+    "total_words": 359
+  },
+  "spirv_analysis": {
+    "OpStore_count": 4,
+    "OpAccessChain_count": 0,
+    "store_instruction_present": true,
+    "note": "SPIR-V contains 4 OpStore instructions confirming write path exists in shader source representation"
+  },
+  "nir_present": "inferred_from_successful_build",
+  "isa_present": "inferred_jit_at_dispatch_time",
+  "store_instruction_present": true,
+  "load_store_unit_used": "inferred_from_spirv_stores",
+  "device": "FD725",
+  "kernel_max_wgs": 2048,
+  "binary_header": "rusticl\\x00 + metadata + SPIR-V",
+  "first_64_bytes_hex": "72 75 73 74 69 63 6c 00 01 00 00 00 05 00 00 00 9c 05 00 00 04 00 00 00 46 44 37 32 35 03 02 23 07 00 04 01 00 00 00 11 00 2b 00 00 00 00 00 00 00 11 00 02 00 04 00 00 00 11 00 02 00 06 00 00",
+  "conclusion": "Shader has write path (OpStore present). Failure is NOT in shader compilation. Root cause is post-compilation: command stream emission, buffer descriptor binding, IOVA mapping, or cache visibility.",
+  "risk": "shader compiles with stores; failure is in command/binding/memory layer"
+}

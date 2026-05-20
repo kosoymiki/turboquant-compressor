@@ -1,0 +1,101 @@
+{
+  "generated": "2026-05-20",
+  "mesa_target_commit": "388665c442f2f84fb8bab03eb9042a1fc1c6b97a",
+  "mesa_target_version": "mesa-26.2.0-devel",
+  "device_truth": {
+    "adb_serial": "192.168.50.54:37983",
+    "soc": "SM8475",
+    "gpu": "Adreno730v3",
+    "vendor_vulkan_subgroup_size": 64,
+    "vendor_vulkan_max_compute_shared_memory_size": 32768,
+    "vendor_vulkan_max_compute_workgroup_invocations": 1024
+  },
+  "tracks": [
+    {
+      "id": "reconstruct_0001_kgsl_loader",
+      "source_patch": "native/opencl/driver-pack/patches/0001-pipe_loader_kgsl-compute-priority-boost.patch",
+      "status": "needs_semantic_reconstruction",
+      "reason": "local patch file is corrupt and targets legacy pipe_loader_kgsl path",
+      "target_files": [
+        "src/gallium/auxiliary/pipe-loader/pipe_loader_drm.c",
+        "src/gallium/auxiliary/target-helpers/drm_helper.h",
+        "src/gallium/targets/dril/dril_target.c"
+      ],
+      "desired_outcome": [
+        "KGSL route remains upstream-native",
+        "TurboQuant gets stronger observability and deterministic driver selection",
+        "No fake sysfs clock writes from userspace patch glue"
+      ],
+      "donor_inputs": [
+        "droidvm/mesa-freedreno-patchs",
+        "local corrupt 0001 intent",
+        "current Mesa KGSL descriptor path"
+      ],
+      "proof_after_port": [
+        "kgsl_devnode_present",
+        "freedreno_kgsl_backend_loaded",
+        "one_graphics_or_compute_smoke_pass"
+      ]
+    },
+    {
+      "id": "reconstruct_0002_android_stub_cutils",
+      "source_patch": "native/opencl/driver-pack/patches/0002-android_stub-real-cutils-binding.patch",
+      "status": "needs_semantic_reconstruction",
+      "reason": "local patch file is corrupt and Android stub/cutils surface already evolved upstream",
+      "target_files": [
+        "include/android_stub/**",
+        "src/**/android*",
+        "current includes of cutils/native_handle.h"
+      ],
+      "desired_outcome": [
+        "Clean Android handle/property compatibility for Termux/proot/app-private modes",
+        "No brittle duplicate stub definitions",
+        "Namespace-safe behavior for hot-swap/service paths"
+      ],
+      "donor_inputs": [
+        "nihui/mesa-turnip-android-driver packaging patterns",
+        "current Mesa android_stub tree",
+        "live Android device behavior"
+      ],
+      "proof_after_port": [
+        "android_stub_headers_compile",
+        "turnip_build_success",
+        "app_private_packaging_contract_current"
+      ]
+    },
+    {
+      "id": "port_0003_turnip_a7xx_a8xx",
+      "source_patch": "native/opencl/driver-pack/patches/0003-turnip-expose-all-extensions-force-wave128.patch",
+      "status": "needs_semantic_port",
+      "reason": "patch body is readable but does not apply to current Turnip sources",
+      "target_files": [
+        "src/freedreno/vulkan/tu_device.cc",
+        "src/freedreno/vulkan/tu_shader.cc",
+        "src/freedreno/vulkan/tu_knl_kgsl.cc",
+        "src/freedreno/common/freedreno_devices.py"
+      ],
+      "desired_outcome": [
+        "A7xx/A8xx-aware compute policy",
+        "No blanket extension overclaiming",
+        "Subgroup/wave behavior tied to actual device and kernel capabilities"
+      ],
+      "donor_inputs": [
+        "droidvm/mesa-freedreno-patchs",
+        "whitebelyash/freedreno_turnip-CI",
+        "current Turnip extension tables and KGSL kernel hooks",
+        "live vendor Vulkan baseline"
+      ],
+      "proof_after_port": [
+        "vulkan_compute_shader_dispatch",
+        "tq_value_dequant_vulkan_parity",
+        "tq_fused_attention_vulkan_parity"
+      ]
+    }
+  ],
+  "global_rules": [
+    "Prefer upstream-native kgsl architecture over reviving removed legacy files",
+    "Treat vendor Vulkan and vendor OpenCL only as evidence, never as final TurboQuant production proof",
+    "Do not claim A8xx readiness without fresh proof on actual hardware or reproducible CI evidence",
+    "All final claims must land in forensics/mesa/driver-mesh-recovery-ready.json and parity reports"
+  ]
+}

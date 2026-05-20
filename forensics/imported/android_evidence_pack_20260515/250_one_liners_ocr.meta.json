@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "char_count": 110015,
+  "page_count": 292,
+  "pages_processed": 292,
+  "ocr_used": true,
+  "ocr_lang": "eng",
+  "cyrillic_chars": 0,
+  "cyrillic_ratio": 0.0,
+  "pdf": "/storage/emulated/0/Download/Telegram/250_Python_One_Liners.pdf"
+}

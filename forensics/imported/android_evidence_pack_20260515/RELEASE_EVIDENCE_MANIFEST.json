@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-05-15T16:30:40.552Z",
+  "required": [
+    {
+      "path": "forensics/opencl-adreno-report.json",
+      "status": "present",
+      "state": "ADRENO_VENDOR_OPENCL_READY"
+    },
+    {
+      "path": "forensics/adreno/loader-report.json",
+      "status": "present",
+      "state": "READY"
+    }
+  ],
+  "optional": [
+    {
+      "path": "forensics/adreno/opencl-performance-report.json",
+      "status": "present",
+      "all_pass": true
+    },
+    {
+      "path": "forensics/adreno/opencl-sustained-report.json",
+      "status": "present",
+      "total_runs": 57
+    }
+  ],
+  "complete": true
+}

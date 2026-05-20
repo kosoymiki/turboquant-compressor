@@ -1,5 +1,5 @@
 
-# TurboQuant Compressor v4.0.1
+# TurboQuant Compressor v4.1.0
 
 **Termux-first MCP server for compressed local vector search, context-pack retrieval, KV/cache analysis, and Adreno/OpenCL readiness forensics.**
 
@@ -11,7 +11,7 @@ The current public benchmark evidence supports **5.5x+ local corpus compression*
 
 ## Status
 
-**Current release:** `v4.0.1`  
+**Current release:** `v4.1.0`  
 **Primary target:** Termux + local MCP hosts  
 **Transport:** MCP stdio  
 **License:** GPL-3.0-or-later
@@ -29,6 +29,12 @@ This repository currently ships:
 
 Verification depends on installed npm dependencies. A fresh clone must run `npm install` before `npm test` or `npm run verify:release`.
 
+For a clean export artifact that excludes generated build residue and dead implementation lanes, use:
+
+```bash
+npm run package:release-slice
+```
+
 ---
 
 ## Measured Results
@@ -40,7 +46,8 @@ The public benchmark artifacts in `bench/results/` show **5.5x+ compression** on
 | `bench/results/open-test-local-20260514-220247.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | — | Early open local test |
 | `bench/results/open-test-local-20260514-224444.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | 0.708 | 50-query evaluation |
 | `bench/results/open-test-local-20260514-233707.json` | 57 | 78 | 384 | **5.8844x** | 0.58 | 0.92 | 0.7047 | Larger corpus evaluation |
-| `bench/results/open-test-local-20260520-004949.json` | 91 | 135 | 384 | **5.8943x** | 0.04 | 0.10 | 0.0607 | Broader repo sweep; recall regression to investigate |
+| `bench/results/open-test-local-20260520-004949.json` | 91 | 135 | 384 | **5.8943x** | 0.04 | 0.10 | 0.0607 | Broader repo sweep; recall regression identified |
+| `bench/results/open-test-local-20260520-204549.json` | 96 | 142 | 384 | **5.8949x** | 0.02 | 0.06 | 0.0400 | Latest broader repo sweep; coverage increased, quality still below early open tests |
 
 ### Practical headline
 
@@ -428,6 +435,16 @@ Adreno loader report when claiming Adreno
 ---
 
 ## Version History
+
+### v4.1.0
+
+* Custom Adreno `Rusticl/Freedreno/KGSL/Turnip` stack moved into a canonical release slice
+* Real OpenCL self-tests for `mse_score`, `qjl_score`, `value_dequant`, and `fused_attention`
+* Safe single-run benchmark evidence committed for the repo-local custom stack
+* Canonical stack contracts added: stack map, hygiene baseline, runtime evidence chain, export checklist
+* Mirror parity contract added via sync manifest
+* Clean export path added via `npm run package:release-slice`
+* Dead release lanes removed from export truth: legacy `native/adreno*`, generated build residue, stale fused kernel variants
 
 ### v4.0.1
 

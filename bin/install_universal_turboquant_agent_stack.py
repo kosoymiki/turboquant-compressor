@@ -12,6 +12,21 @@ LOCAL_BIN = HOME / ".local" / "bin"
 TQ_MCP_WRAPPER = LOCAL_BIN / "turboquant-mcp"
 
 
+def detect_repo_root_for_wrapper(required_rel: str) -> str:
+    return "\n".join(
+        [
+            'detect_repo_root() {',
+            '  if [ -n "${TURBOQUANT_ROOT:-}" ] && [ -f "${TURBOQUANT_ROOT}/' + required_rel + '" ]; then',
+            '    printf "%s\\n" "$TURBOQUANT_ROOT"',
+            '    return 0',
+            '  fi',
+            '  SEARCH_BASE="${HOME:-$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)}"',
+            '  find "$SEARCH_BASE" -maxdepth 4 -type f -path "*/' + required_rel + '" 2>/dev/null | head -n 1 | sed "s#/' + required_rel.replace("/", "\\/") + '$##"',
+            '}',
+        ]
+    )
+
+
 def detect_prefix() -> Path:
     env_prefix = os.environ.get("PREFIX")
     if env_prefix:
@@ -56,13 +71,8 @@ def write_turboquant_mcp_wrapper() -> None:
             [
                 "#!/usr/bin/env sh",
                 "set -eu",
-                'HOME_DIR="${HOME:-$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)}"',
-                'ROOT_CANDIDATE="${TURBOQUANT_ROOT:-}"',
-                'if [ -z "$ROOT_CANDIDATE" ]; then',
-                '  for c in "$HOME_DIR/turboquant-compressor" "$HOME_DIR/tmp_turboquant" "$HOME_DIR/corpus-control-plane/mcp/turboquant"; do',
-                '    if [ -f "$c/dist/server.js" ]; then ROOT_CANDIDATE="$c"; break; fi',
-                '  done',
-                'fi',
+                detect_repo_root_for_wrapper("dist/server.js"),
+                'ROOT_CANDIDATE="$(detect_repo_root)"',
                 'if [ -z "$ROOT_CANDIDATE" ] || [ ! -f "$ROOT_CANDIDATE/dist/server.js" ]; then',
                 '  echo "turboquant-mcp: dist/server.js not found" >&2',
                 '  exit 1',
@@ -94,15 +104,10 @@ def write_wrapper(name: str, agent: str, exec_path: str, packet_dir: str, proxy_
             [
                 "#!/usr/bin/env sh",
                 "set -eu",
-                'WRAPPER_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)',
-                'HOME_DIR="${HOME:-$(CDPATH= cd -- "$WRAPPER_DIR/../.." && pwd)}"',
                 'PREFIX_DIR="${PREFIX:-$(CDPATH= cd -- "$(dirname -- "$(command -v node)")/.." && pwd)}"',
-                'TQ_ROOT="${TURBOQUANT_ROOT:-}"',
-                'if [ -z "$TQ_ROOT" ]; then',
-                '  for c in "$HOME_DIR/turboquant-compressor" "$HOME_DIR/tmp_turboquant" "$HOME_DIR/corpus-control-plane"; do',
-                '    if [ -f "$c/bin/' + proxy_name + '" ]; then TQ_ROOT="$c"; break; fi',
-                '  done',
-                'fi',
+                detect_repo_root_for_wrapper("bin/" + proxy_name),
+                'TQ_ROOT="$(detect_repo_root)"',
+                'HOME_DIR="${HOME:-$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)}"',
                 f'PACKET_ROOT="$HOME_DIR/{packet_dir}"',
                 'mkdir -p "$PACKET_ROOT"',
                 'python3 "$TQ_ROOT/bin/' + proxy_name + '" --prompt "$(printf "%s " "$@" | sed \'s/[[:space:]]*$//\')" --argv "$@" >/dev/null 2>&1 || true',

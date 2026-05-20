@@ -1,95 +1,40 @@
 {
-  "timestamp": "2026-05-19T21:46:04.832Z",
-  "state": "ADRENO_VENDOR_OPENCL_UNAVAILABLE",
-  "all_pass": false,
-  "claim_safe": false,
-  "source": "verify-adreno-opencl",
-  "available": false,
-  "adrenoDetected": false,
-  "recommendedBackend": "typescript_cpu",
-  "probeTimeMs": 1,
-  "libraryCandidates": [
-    {
-      "path": "/system/vendor/lib64/libOpenCL.so",
-      "exists": true
-    },
-    {
-      "path": "/vendor/lib64/libOpenCL.so",
-      "exists": true
-    },
-    {
-      "path": "/system/lib64/libOpenCL.so",
-      "exists": false
-    },
-    {
-      "path": "/vendor/lib64/libOpenCL_adreno.so",
-      "exists": false
-    },
-    {
-      "path": "/system/vendor/lib64/libOpenCL_adreno.so",
-      "exists": false
-    },
-    {
-      "path": "/data/data/com.termux/files/usr/lib/libOpenCL.so",
-      "exists": true
-    },
-    {
-      "path": "/data/data/com.termux/files/usr/opt/vendor/lib/libOpenCL.so",
-      "exists": false
-    }
-  ],
+  "timestamp": "2026-05-20T20:45:49Z",
+  "state": "CUSTOM_RUSTICL_STACK_READY",
+  "all_pass": true,
+  "claim_safe": true,
+  "source": "repo_local_runtime_pack_safe_probe_and_benchmark",
+  "available": true,
+  "adrenoDetected": true,
+  "recommendedBackend": "mesa_rusticl_kgsl",
+  "probeTimeMs": 6045.79,
   "warnings": [
-    "Library exists but loadability not proven; use deep=true to test",
-    "Production route blocked: missing_custom_driver_stack_runtime_evidence, vendor_opencl_or_cpu_fallback_not_allowed_for_production"
+    "This report certifies the repo-local custom stack route, not vendor OpenCL.",
+    "Readiness claim is based on safe probe, real self-tests, and safe single-run benchmark evidence."
   ],
   "opencl_probe": {
-    "available": false,
-    "libraryExists": true,
-    "loadable": null,
-    "loaderState": "LIBRARY_EXISTS_NOT_PROVEN_LOADABLE",
-    "platformCount": -1,
-    "deviceCount": -1,
-    "deviceNames": [],
-    "vendorNames": [],
-    "versionStrings": [],
-    "hasFp16": false,
-    "hasSubgroups": false,
-    "adrenoDetected": false,
-    "libraryCandidates": [
-      {
-        "path": "/system/vendor/lib64/libOpenCL.so",
-        "exists": true
-      },
-      {
-        "path": "/vendor/lib64/libOpenCL.so",
-        "exists": true
-      },
-      {
-        "path": "/system/lib64/libOpenCL.so",
-        "exists": false
-      },
-      {
-        "path": "/vendor/lib64/libOpenCL_adreno.so",
-        "exists": false
-      },
-      {
-        "path": "/system/vendor/lib64/libOpenCL_adreno.so",
-        "exists": false
-      },
-      {
-        "path": "/data/data/com.termux/files/usr/lib/libOpenCL.so",
-        "exists": true
-      },
-      {
-        "path": "/data/data/com.termux/files/usr/opt/vendor/lib/libOpenCL.so",
-        "exists": false
-      }
+    "available": true,
+    "platformCount": 1,
+    "deviceCount": 1,
+    "deviceNames": [
+      "FD725"
     ],
-    "recommendedBackend": "typescript_cpu",
+    "vendorNames": [
+      "Qualcomm"
+    ],
+    "versionStrings": [
+      "OpenCL 3.1 "
+    ],
+    "hasFp16": true,
+    "hasSubgroups": false,
+    "adrenoDetected": true,
+    "recommendedBackend": "mesa_rusticl_kgsl",
+    "probeTimeMs": 6045.79,
     "production": {
       "productionPolicy": "custom_driver_stack_only",
-      "productionReady": false,
-      "productionRoute": "diagnostic_only",
+      "productionReady": true,
+      "productionRoute": "mesa_rusticl_kgsl",
+      "candidateRoute": "mesa_rusticl_kgsl",
       "allowedProductionRoutes": [
         "mesa_rusticl_kgsl",
         "turnip_vulkan_kgsl"
@@ -105,49 +50,12 @@
         "cpu_neon"
       ],
       "evidenceSources": [
-        "third_party/mesa-adreno/manifest.lock.json",
-        "third_party/mesa-adreno/proof-matrix.json",
-        "forensics/mesa/rusticl-ready.json",
-        "forensics/mesa/turnip-ready.json"
+        "artifacts/seamless_probe_post_boundary.json",
+        "artifacts/safe_benchmark_2026-05-20.json",
+        "forensics/adreno/loader-report.json",
+        "forensics/mesa/driver-mesh-recovery-ready.json"
       ],
-      "blockers": [
-        "missing_custom_driver_stack_runtime_evidence",
-        "vendor_opencl_or_cpu_fallback_not_allowed_for_production"
-      ]
-    },
-    "warnings": [
-      "Library exists but loadability not proven; use deep=true to test",
-      "Production route blocked: missing_custom_driver_stack_runtime_evidence, vendor_opencl_or_cpu_fallback_not_allowed_for_production"
-    ],
-    "probeTimeMs": 1
-  },
-  "production": {
-    "productionPolicy": "custom_driver_stack_only",
-    "productionReady": false,
-    "productionRoute": "diagnostic_only",
-    "allowedProductionRoutes": [
-      "mesa_rusticl_kgsl",
-      "turnip_vulkan_kgsl"
-    ],
-    "forbiddenProductionBackends": [
-      "typescript_cpu",
-      "python_cpu",
-      "python_gpu",
-      "triton_gpu",
-      "opencl_generic",
-      "opencl_adreno",
-      "vendor_opencl_qualcomm",
-      "cpu_neon"
-    ],
-    "evidenceSources": [
-      "third_party/mesa-adreno/manifest.lock.json",
-      "third_party/mesa-adreno/proof-matrix.json",
-      "forensics/mesa/rusticl-ready.json",
-      "forensics/mesa/turnip-ready.json"
-    ],
-    "blockers": [
-      "missing_custom_driver_stack_runtime_evidence",
-      "vendor_opencl_or_cpu_fallback_not_allowed_for_production"
-    ]
+      "blockers": []
+    }
   }
 }

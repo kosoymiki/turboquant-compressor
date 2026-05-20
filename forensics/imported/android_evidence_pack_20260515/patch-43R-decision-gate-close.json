@@ -1,0 +1,52 @@
+{
+  "patch": "43R",
+  "title": "Rusticl KGSL — Decision Gate: GPU Compute Not Executing",
+  "timestamp": "2026-05-16T02:15:00+03:00",
+  "status": "ARCHITECTURAL_BLOCKER",
+  "decision": "FORMAL_CLOSE_RUSTICL_KGSL_COMPUTE",
+  "summary": "Full OpenCL 3.1 API pipeline works through GPU_COMMAND ioctl, but GPU does not execute compute shaders. Command buffer accepted by kernel but results never visible in memory. This is a fundamental Gallium KGSL backend limitation for compute workloads.",
+  "evidence_chain": [
+    "DRAWCTXT_CREATE: ✓ (flags=0x13, ctx created)",
+    "ir3 shader compilation: ✓ (NIR → ISA)",
+    "GPU_COMMAND ioctl: ✓ (ret=0, ts=1, accepted by kernel)",
+    "GPU execution: ✗ (buffer data unchanged after kernel dispatch)",
+    "USE_HOST_PTR test: host_buf remains 0xFFFFFFFF (never written by GPU)",
+    "Multiple buffer strategies tested (COPY_HOST_PTR, ALLOC_HOST_PTR, USE_HOST_PTR) — all same result",
+    "Transfer path (ReadBuffer/MapBuffer): err=-5 (secondary issue)"
+  ],
+  "root_cause_analysis": {
+    "hypothesis": "freedreno Gallium KGSL command buffer format is incomplete for compute dispatch",
+    "details": [
+      "fd6_launch_grid generates compute dispatch PM4 commands into ringbuffer",
+      "Ringbuffer submitted via IOCTL_KGSL_GPU_COMMAND with KGSL_CMDLIST_IB",
+      "Kernel accepts the submission (returns timestamp)",
+      "But GPU either: (a) silently drops malformed IBs, (b) writes to wrong iova, (c) compute shader addresses don't match BO iovas in KGSL mode",
+      "Turnip (Vulkan) uses completely different submit path with proper BO tracking, fences, and syncobjs",
+      "Gallium KGSL backend was designed for freedreno GL (draw calls) not compute"
+    ],
+    "fix_complexity": "HIGH — requires deep PM4 command buffer debugging, likely BO iova registration issues or missing CP_SET_MARKER/CP_MEM_WRITE commands for compute"
+  },
+  "what_works": {
+    "platform_discovery": "✓ rusticl OpenCL 3.1",
+    "device_enumeration": "✓ FD725 (Adreno 730)",
+    "context_creation": "✓",
+    "queue_creation": "✓",
+    "buffer_allocation": "✓ (via GPUMEM_ALLOC_ID)",
+    "program_build": "✓ (ir3 compiles OpenCL C → GPU ISA)",
+    "kernel_creation": "✓",
+    "kernel_dispatch": "✓ (API level — ioctl accepted)",
+    "gpu_execution": "✗ (hardware level — no visible effect)"
+  },
+  "final_verdict": {
+    "rusticl_on_kgsl": "NOT_VIABLE for compute without significant GPU command buffer work",
+    "vendor_opencl": "REMAINS PRIMARY backend",
+    "turnip_vulkan": "REMAINS correctness_fallback",
+    "rusticl": "FORMALLY CLOSED as research_only — proven to architectural limit"
+  },
+  "patches_delivered": {
+    "40R": "DRAWCTXT_CREATE flags root cause (0x23→0x13)",
+    "41R": "Device enumeration (driver_name kgsl→msm)",
+    "42R": "GPU submit path (deferred submit fix + blit transfer disable)",
+    "43R": "Decision gate — formal close"
+  }
+}

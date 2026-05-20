@@ -1,4 +1,4 @@
-# TurboQuant v4.0.1 — Installation Guide
+# TurboQuant v4.1.0 — Installation Guide
 
 ## Scope
 
@@ -10,6 +10,12 @@ This package is a local MCP server for:
 - Termux/OpenCL/Adreno diagnostics
 
 It is **not** a general-purpose installer for Claude hooks or external Python wrappers.
+
+For a clean export artifact that excludes generated residue and dead release lanes, use:
+
+```bash
+npm run package:release-slice
+```
 
 ## Verified prerequisites
 
@@ -69,8 +75,8 @@ bench/results/open-test-local-YYYYMMDD-HHMMSS.json
 Current committed public artifacts support:
 
 - `5.5x+` measured local corpus compression
-- best committed compression artifact: `5.8943x`
-- committed recall@5 range: `0.10–0.92`
+- best committed compression artifact: `5.8949x`
+- committed recall@5 range: `0.06–0.92`
 
 Do not claim stronger retrieval quality or throughput without committed artifacts.
 
@@ -88,6 +94,8 @@ Important examples:
 - `forensics/opencl-adreno-report.json`
 - `forensics/adreno/loader-report.json`
 - `forensics/RELEASE_EVIDENCE_MANIFEST.json`
+- `forensics/mesa/driver-mesh-recovery-ready.json`
+- `artifacts/safe_benchmark_2026-05-20.json`
 
 These support readiness and claim-gating. They do **not** by themselves prove universal production acceleration.
 

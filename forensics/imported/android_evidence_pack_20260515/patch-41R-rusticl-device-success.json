@@ -1,0 +1,42 @@
+{
+  "patch": "41R",
+  "title": "Rusticl KGSL Full Device Enumeration — SUCCESS",
+  "timestamp": "2026-05-16T00:45:00+03:00",
+  "status": "SUCCESS",
+  "result": {
+    "platform": "rusticl",
+    "opencl_version": "OpenCL 3.1",
+    "device_name": "FD725",
+    "device_type": "GPU",
+    "device_count": 1,
+    "backend": "KGSL (pipe_loader_kgsl → fd_screen_create_kgsl → fd_device_new_kgsl_direct)"
+  },
+  "fixes_applied": [
+    {
+      "file": "src/gallium/auxiliary/pipe-loader/pipe_loader_kgsl.c",
+      "fix": "driver_name changed from 'kgsl' to 'msm' to match Rusticl's enabled_devs filter",
+      "reason": "Rusticl maps 'freedreno' → 'msm' in get_enabled_devs() and filters devices by driver_name"
+    },
+    {
+      "file": "src/freedreno/drm/kgsl/kgsl_pipe.c",
+      "fix": "DRAWCTXT_CREATE flags already correct (0x13 = SAVE_GMEM|NO_GMEM_ALLOC|PREAMBLE)",
+      "reason": "flags=0x23 (with TRASH_STATE) rejected by SM8475 kernel; 0x13 matches Turnip's working pattern"
+    }
+  ],
+  "previous_blockers_resolved": [
+    "DRAWCTXT_CREATE EINVAL — root cause was flags=0x23, fixed to 0x13 (Patch 40R)",
+    "Device not found by Rusticl — root cause was driver_name='kgsl' not matching enabled filter"
+  ],
+  "ioctl_trace": {
+    "DRAWCTXT_CREATE_calls": 3,
+    "all_successful": true,
+    "context_ids": [17, 20],
+    "flags_used": "0x13 (SAVE_GMEM|NO_GMEM_ALLOC|PREAMBLE)"
+  },
+  "icd_dispatch_note": "ICD table slot 0 = magic 'OPENCL31', slot 1 = clGetPlatformInfo, slot 2 = clGetDeviceIDs, slot 3 = clGetDeviceInfo",
+  "backend_state_update": {
+    "rusticl": "DEVICE_ENUMERATION_PROVEN",
+    "previous_state": "research_only (platform_ok, device_fail)",
+    "new_state": "research_only (platform_ok, device_ok, compute_untested)"
+  }
+}

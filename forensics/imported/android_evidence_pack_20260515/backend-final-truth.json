@@ -1,0 +1,39 @@
+{
+  "timestamp": "2025-01-01T00:00:00Z",
+  "device": "Adreno 730 / FD725 / SM8475 / Snapdragon 8+ Gen 1",
+  "vendor_opencl": {
+    "role": "primary",
+    "production": true,
+    "reason": "device-level parity, performance and sustained evidence"
+  },
+  "turnip_vulkan": {
+    "role": "correctness_fallback",
+    "production": false,
+    "reason": "driver/runtime proven, compute parity proven, performance not competitive for TurboQuant workload"
+  },
+  "rusticl_kgsl": {
+    "role": "research_only",
+    "production": false,
+    "reason": "OpenCL API pipeline reaches GPU_COMMAND submit (ret=0, ts=1). Transfer path (Map/Read/Write Buffer) completely broken. Hardware-visible compute side effect not proven. Formal close.",
+    "evidence_chain": [
+      "40R: DRAWCTXT_CREATE flags fixed",
+      "41R: Device enumeration FD725 works",
+      "42R: Deferred submit fixed, GPU_COMMAND accepted",
+      "43R: Output unchanged, initial close",
+      "47R: SPIR-V has 4 OpStore — shader write path exists",
+      "48R: CPU_MAPPING_BROKEN — all transfer paths fail",
+      "49R: NOP IB gets timestamp — timestamp not execution proof",
+      "50R: Turnip works, Rusticl transfer path architectural gap"
+    ]
+  },
+  "native_neon": {
+    "role": "cpu_fallback",
+    "production": true,
+    "reason": "ARM NEON SIMD for CPU-bound operations"
+  },
+  "typescript": {
+    "role": "oracle_reference",
+    "production": false,
+    "reason": "correctness reference implementation"
+  }
+}

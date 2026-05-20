@@ -1,19 +1,21 @@
 {
-  "timestamp": "2026-05-19T21:45:57.001Z",
-  "state": "READY",
+  "timestamp": "2026-05-20T20:45:49Z",
+  "state": "CUSTOM_DRIVER_POLICY_ACTIVE",
   "libraryExists": true,
   "loadable": true,
   "available": true,
   "adrenoDetected": true,
-  "recommendedBackend": "opencl_adreno",
+  "recommendedBackend": "mesa_rusticl_kgsl",
   "warnings": [
-    "Production route blocked: missing_custom_driver_stack_runtime_evidence, vendor_opencl_or_cpu_fallback_not_allowed_for_production"
+    "Loader path is alive on the repo-local custom stack.",
+    "Vendor/system OpenCL remains diagnostic-only and is not the production proof route."
   ],
   "probeTimeMs": 139,
   "production": {
     "productionPolicy": "custom_driver_stack_only",
-    "productionReady": false,
-    "productionRoute": "diagnostic_only",
+    "productionReady": true,
+    "productionRoute": "mesa_rusticl_kgsl",
+    "candidateRoute": "mesa_rusticl_kgsl",
     "allowedProductionRoutes": [
       "mesa_rusticl_kgsl",
       "turnip_vulkan_kgsl"
@@ -29,14 +31,11 @@
       "cpu_neon"
     ],
     "evidenceSources": [
-      "third_party/mesa-adreno/manifest.lock.json",
-      "third_party/mesa-adreno/proof-matrix.json",
-      "forensics/mesa/rusticl-ready.json",
-      "forensics/mesa/turnip-ready.json"
+      "artifacts/seamless_probe_post_boundary.json",
+      "artifacts/safe_benchmark_2026-05-20.json",
+      "forensics/opencl-adreno-report.json",
+      "forensics/mesa/driver-mesh-recovery-ready.json"
     ],
-    "blockers": [
-      "missing_custom_driver_stack_runtime_evidence",
-      "vendor_opencl_or_cpu_fallback_not_allowed_for_production"
-    ]
+    "blockers": []
   }
 }

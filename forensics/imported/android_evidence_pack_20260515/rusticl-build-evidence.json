@@ -1,0 +1,34 @@
+{
+  "build_date": "2025-05-15T22:26:00+03:00",
+  "build_result": "SUCCESS",
+  "targets_compiled": "210/210",
+  "binary": "libRusticlOpenCL.so.1.0.0",
+  "binary_size_bytes": 25103104,
+  "mesa_commit": "f7fed3bdf8532db9fe70e73da3d4dc4c42374836",
+  "mesa_version": "26.1.0",
+  "meson_options": {
+    "gallium-drivers": "freedreno",
+    "gallium-rusticl": "true",
+    "freedreno-kmds": "msm,kgsl",
+    "vulkan-drivers": "freedreno",
+    "platforms": "",
+    "glx": "disabled",
+    "egl": "disabled"
+  },
+  "kgsl_api_fixes": [
+    "Removed dev->features assignment (field removed in Mesa 26.x)",
+    "Removed kgsl_reset_status() function (fd_pipe_funcs.reset_status removed in 26.x)",
+    "Fixed kgsl_pipe_set_param signature: uint32_t -> enum fd_param_id"
+  ],
+  "link_fixes": [
+    "Replaced -static-libstdc++ with -lc++_shared for Rust/Termux compatibility",
+    "Added -L/data/data/com.termux/files/usr/lib to linker search path"
+  ],
+  "dependencies": {
+    "rust": "cargo/bindgen-cli",
+    "libclc": "pkg install libclc",
+    "spirv_llvm_translator": "pkg install spirv-llvm-translator",
+    "llvm": "LLVM-21",
+    "clang": "libclang-cpp.so"
+  }
+}

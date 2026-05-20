@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-05-15T14:56:50.244Z",
+  "state": "ADRENO_VENDOR_OPENCL_READY",
+  "cpu_parity_state": "CPU_REFERENCE_PARITY_PASS",
+  "all_pass": true,
+  "claim_safe": true,
+  "opencl_probe": {
+    "available": true,
+    "platformCount": 1,
+    "deviceCount": 1,
+    "devices": [
+      {
+        "name": "QUALCOMM Adreno(TM)",
+        "vendor": "QUALCOMM",
+        "version": "OpenCL 3.0 Adreno(TM) 730",
+        "hasFp16": true,
+        "hasSubgroups": true,
+        "isAdreno": true,
+        "globalMemBytes": 5880504320,
+        "computeUnits": 4
+      }
+    ],
+    "recommendedBackend": "opencl_adreno",
+    "probeTimeMs": 15.4,
+    "warnings": []
+  },
+  "device": {
+    "ro.product.model": "RMX3709",
+    "ro.soc.model": "SM8475",
+    "ro.board.platform": "taro"
+  },
+  "memory": {
+    "totalKb": 11485360,
+    "availableKb": 3974988
+  },
+  "parity_tests": [
+    {
+      "test": "test_mse_parity",
+      "status": "pass",
+      "elapsed_ms": 14,
+      "output": "PASS token 0: got -4.500000 expected -4.500000\n  PASS token 1: got 0.000000 expected 0.000000\n  PASS token 2: got 0.000000 expected 0.000000\n\nMSE parity: 3 passed, 0 failed"
+    },
+    {
+      "test": "test_qjl_parity",
+      "status": "pass",
+      "elapsed_ms": 18,
+      "output": "PASS token 0: got 26.000000 expected 26.000000\n  PASS token 1: got -27.000000 expected -27.000000\n\nQJL parity: 2 passed, 0 failed"
+    },
+    {
+      "test": "test_value_dequant_parity",
+      "status": "pass",
+      "elapsed_ms": 15,
+      "output": "Value dequant parity: 8 passed, 0 failed"
+    },
+    {
+      "test": "test_fused_attention_parity",
+      "status": "pass",
+      "elapsed_ms": 17,
+      "output": "All dims consistent: 0.758517\nFused attention parity: 4 passed, 0 failed"
+    }
+  ],
+  "tests_run": 4,
+  "tests_passed": 4
+}

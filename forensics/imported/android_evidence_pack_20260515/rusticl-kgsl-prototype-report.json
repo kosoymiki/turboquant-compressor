@@ -1,0 +1,46 @@
+{
+  "report_date": "2025-05-15T23:30:00+03:00",
+  "patch": "39 — Minimal pipe_loader_kgsl_probe() prototype",
+  "build_result": "SUCCESS",
+  "targets": "1066/1066 (full rebuild with KGSL pipe-loader)",
+  "runtime_result": "FAIL",
+  "device_enumerated": false,
+  "failure_chain": [
+    "pipe_loader_kgsl_probe() opens /dev/kgsl-3d0 successfully (fd accessible, crw-rw-rw-)",
+    "fd_screen_create_kgsl() calls fd_device_new_kgsl_direct()",
+    "fd_device_new_kgsl_direct() calls kgsl_device_new(fd)",
+    "kgsl_device_new() calls kgsl_get_prop(KGSL_PROP_DEVICE_INFO) — SUCCESS (chip_id=0x07030002, Adreno 730v3)",
+    "fd_device_new_kgsl_direct() calls fd_pipe_new(dev, FD_PIPE_3D)",
+    "fd_pipe_new() calls kgsl_pipe_new()",
+    "kgsl_pipe_new() calls IOCTL_KGSL_DRAWCTXT_CREATE — FAILS with EINVAL"
+  ],
+  "root_cause": {
+    "ioctl": "IOCTL_KGSL_DRAWCTXT_CREATE (_IOWR(0x09, 0x13, 8) = 0xc0080913)",
+    "error": "EINVAL (22)",
+    "flags_tested": "ALL single bits 0-31, all combinations — ALL fail",
+    "struct_sizes_tested": "8, 12, 16, 20, 24, 32, 48 — ALL fail",
+    "open_modes_tested": "O_RDWR, O_RDWR|O_CLOEXEC, O_RDWR|O_NONBLOCK — ALL fail",
+    "c_vs_cpp": "Both fail identically",
+    "paradox": "Turnip Vulkan successfully calls the SAME ioctl (same flags 0x23, same fd) during vkCreateDevice and it WORKS",
+    "hypothesis_1": "Kernel-level ioctl filtering (SELinux ioctl_xperm or seccomp) that allows ioctl from specific library code paths but not from arbitrary userspace",
+    "hypothesis_2": "KGSL kernel driver internal state machine requires specific initialization sequence before DRAWCTXT_CREATE that Turnip performs implicitly through Vulkan loader path",
+    "hypothesis_3": "The Vulkan loader (libvulkan.so from /system/lib64) performs a domain transition or capability grant that enables the ioctl",
+    "selinux_context": "u:r:untrusted_app_27:s0:c196,c257,c512,c768",
+    "device_selinux": "u:object_r:gpu_device:s0"
+  },
+  "turnip_proof": {
+    "vulkaninfo": "SUCCESS — Vulkan 1.4.350, Adreno 730",
+    "vkCreateDevice": "SUCCESS — context created by Turnip",
+    "same_fd_after_vkCreateDevice": "Our DRAWCTXT_CREATE still FAILS on Turnip's fd"
+  },
+  "conclusion": {
+    "status": "BLOCKED_KERNEL_LEVEL",
+    "explanation": "KGSL kernel driver on this Android 14 device (Adreno 730v3) rejects IOCTL_KGSL_DRAWCTXT_CREATE from direct userspace calls. Turnip succeeds because it goes through the system Vulkan loader which may have special kernel-level permissions or initialization. The freedreno Gallium path cannot create a GPU context without this ioctl.",
+    "rusticl_role": "research_only — confirmed blocked at kernel ioctl level",
+    "next_steps": [
+      "Investigate if system Vulkan loader performs seccomp/SELinux transition",
+      "Check if running from a rooted shell (su) allows the ioctl",
+      "Consider using Turnip Vulkan compute as bridge to Rusticl (not practical)"
+    ]
+  }
+}

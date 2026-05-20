@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-05-20T20:45:49Z",
+  "scope": "TurboQuant custom Adreno driver mesh release slice",
+  "ready": true,
+  "state": "REPROVEN_SAFE_SINGLE_RUN",
+  "device": {
+    "adbSerial": "192.168.50.54:40591",
+    "productModel": "RMX3709",
+    "boardPlatform": "taro",
+    "hardware": "qcom",
+    "socModel": "SM8475",
+    "kgslGpuModel": "Adreno730v3",
+    "recoveryScope": "a7xx-a8xx"
+  },
+  "upstream": {
+    "mesaCommit": "388665c442f2f84fb8bab03eb9042a1fc1c6b97a",
+    "mesaVersion": "26.2.0-devel",
+    "kgslRoute": "freedreno-kmds=kgsl",
+    "rusticlUpstreamNative": true
+  },
+  "mesh": {
+    "computePrimary": "mesa_rusticl_kgsl",
+    "vulkanPrimary": "turnip_vulkan_kgsl",
+    "packaging": "release-slice canonical export plus repo-local runtime-pack",
+    "forensics": "safe_probe_selftest_single_run",
+    "policy": "custom_driver_stack_only"
+  },
+  "constraints": [
+    "This readiness claim is scoped to safe probe, real self-tests, and safe single-run benchmark evidence.",
+    "It is not a sustained stress benchmark claim.",
+    "Vendor/system OpenCL remains diagnostic-only."
+  ],
+  "requiredProofsRemaining": [],
+  "evidenceSources": [
+    "artifacts/seamless_probe_post_boundary.json",
+    "artifacts/safe_benchmark_2026-05-20.json",
+    "forensics/adb-driver-truth.json",
+    "forensics/opencl-adreno-report.json",
+    "forensics/adreno/loader-report.json",
+    "native/opencl/driver-pack/manifest.json"
+  ]
+}

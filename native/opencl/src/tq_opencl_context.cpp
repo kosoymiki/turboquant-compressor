@@ -12,6 +12,26 @@
 
 namespace tq {
 
+namespace {
+
+cl_command_queue create_legacy_command_queue(
+    cl_context ctx,
+    cl_device_id dev,
+    cl_command_queue_properties props,
+    cl_int* err) {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+    cl_command_queue queue = clCreateCommandQueue(ctx, dev, props, err);
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+    return queue;
+}
+
+} // namespace
+
 struct OpenClContext {
     cl_platform_id platform = nullptr;
     cl_device_id device = nullptr;
@@ -21,6 +41,7 @@ struct OpenClContext {
     bool is_adreno = false;
     uint32_t compute_units = 0;
     size_t max_wg_size = 0;
+    bool profiling_enabled = false;
     GpuProfile gpu_profile = {};
 };
 
@@ -34,34 +55,70 @@ bool is_initialized() { return g_ctx.initialized; }
 bool is_adreno() { return g_ctx.is_adreno; }
 uint32_t get_compute_units() { return g_ctx.compute_units; }
 size_t get_max_wg_size() { return g_ctx.max_wg_size; }
+bool profiling_enabled() { return g_ctx.profiling_enabled; }
 const GpuProfile& get_gpu_profile() { return g_ctx.gpu_profile; }
 
 TqStatus init_context() {
     if (g_ctx.initialized) return TqStatus::OK;
 
     cl_uint num_platforms = 0;
-    cl_int err = clGetPlatformIDs(0, nullptr, &num_platforms);
-    if (err != CL_SUCCESS || num_platforms == 0) return TqStatus::ERR_NO_PLATFORM;
+    cl_int err;
+    err = clGetPlatformIDs(0, nullptr, &num_platforms);
+    if (err != CL_SUCCESS || num_platforms == 0) {
+        std::fprintf(stderr, "[tq-opencl] clGetPlatformIDs failed err=%d num_platforms=%u\n", err, num_platforms);
+        return TqStatus::ERR_NO_PLATFORM;
+    }
 
     cl_platform_id plat;
-    clGetPlatformIDs(1, &plat, nullptr);
+    err = clGetPlatformIDs(1, &plat, nullptr);
+    if (err != CL_SUCCESS) {
+        std::fprintf(stderr, "[tq-opencl] clGetPlatformIDs(fetch) failed err=%d\n", err);
+        return TqStatus::ERR_NO_PLATFORM;
+    }
 
     cl_uint num_devices = 0;
     err = clGetDeviceIDs(plat, CL_DEVICE_TYPE_GPU, 0, nullptr, &num_devices);
-    if (err != CL_SUCCESS || num_devices == 0) return TqStatus::ERR_NO_DEVICE;
+    if (err != CL_SUCCESS || num_devices == 0) {
+        std::fprintf(stderr, "[tq-opencl] clGetDeviceIDs(count) failed err=%d num_devices=%u\n", err, num_devices);
+        return TqStatus::ERR_NO_DEVICE;
+    }
 
     cl_device_id dev;
-    clGetDeviceIDs(plat, CL_DEVICE_TYPE_GPU, 1, &dev, nullptr);
+    err = clGetDeviceIDs(plat, CL_DEVICE_TYPE_GPU, 1, &dev, nullptr);
+    if (err != CL_SUCCESS) {
+        std::fprintf(stderr, "[tq-opencl] clGetDeviceIDs(fetch) failed err=%d\n", err);
+        return TqStatus::ERR_NO_DEVICE;
+    }
 
-    cl_context ctx = clCreateContext(nullptr, 1, &dev, nullptr, nullptr, &err);
-    if (err != CL_SUCCESS) return TqStatus::ERR_NO_PLATFORM;
+    cl_context ctx;
+    ctx = clCreateContext(nullptr, 1, &dev, nullptr, nullptr, &err);
+    if (err != CL_SUCCESS || !ctx) {
+        std::fprintf(stderr, "[tq-opencl] clCreateContext failed err=%d\n", err);
+        return TqStatus::ERR_NO_PLATFORM;
+    }
 
     // Create command queue with profiling enabled (OpenCL 2.0+ API)
     cl_queue_properties qprops[] = { CL_QUEUE_PROPERTIES, CL_QUEUE_PROFILING_ENABLE, 0 };
     cl_command_queue queue = clCreateCommandQueueWithProperties(ctx, dev, qprops, &err);
+    bool queue_profiling_enabled = true;
     if (err != CL_SUCCESS) {
-        clReleaseContext(ctx);
-        return TqStatus::ERR_NO_PLATFORM;
+#if defined(CL_TARGET_OPENCL_VERSION) && CL_TARGET_OPENCL_VERSION >= 120
+        err = CL_SUCCESS;
+        queue = create_legacy_command_queue(ctx, dev, CL_QUEUE_PROFILING_ENABLE, &err);
+#else
+        queue = nullptr;
+#endif
+        if (err != CL_SUCCESS || !queue) {
+#if defined(CL_TARGET_OPENCL_VERSION) && CL_TARGET_OPENCL_VERSION >= 120
+            err = CL_SUCCESS;
+            queue = create_legacy_command_queue(ctx, dev, 0, &err);
+#endif
+            queue_profiling_enabled = false;
+            if (err != CL_SUCCESS || !queue) {
+                clReleaseContext(ctx);
+                return TqStatus::ERR_NO_PLATFORM;
+            }
+        }
     }
 
     // Query device info
@@ -82,6 +139,7 @@ TqStatus init_context() {
     g_ctx.is_adreno = (strstr(name_buf, "Adreno") != nullptr || strstr(name_buf, "QUALCOMM") != nullptr);
     g_ctx.compute_units = cu;
     g_ctx.max_wg_size = wg;
+    g_ctx.profiling_enabled = queue_profiling_enabled;
 
     // Detect GPU profile for per-kernel tuning
     g_ctx.gpu_profile = detect_gpu_profile();

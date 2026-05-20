@@ -2,9 +2,9 @@
   "mesa_upstream": {
     "url": "https://gitlab.freedesktop.org/mesa/mesa.git",
     "tracking": "main",
-    "pinned_commit": "f7fed3bdf8532db9fe70e73da3d4dc4c42374836",
-    "pinned_version": "mesa-26.1.0",
-    "pin_date": "2026-05-15",
+    "pinned_commit": "388665c442f2f84fb8bab03eb9042a1fc1c6b97a",
+    "pinned_version": "mesa-26.2.0-devel",
+    "pin_date": "2026-05-20",
     "required_paths": [
       "src/freedreno/common/freedreno_devices.py",
       "src/freedreno/vulkan",
@@ -19,20 +19,21 @@
   "target": {
     "soc": "SM8475",
     "soc_name": "Snapdragon 8+ Gen 1",
-    "gpu": "Adreno 730",
-    "gpu_generation": "a7xx",
+    "gpu": "Adreno730v3",
+    "gpu_generation": "a7xx with a8xx recovery extension target",
     "android_mode": "no-root Termux + optional proot/apk-service",
-    "primary_backend": "vendor_opencl_qualcomm",
+    "primary_backend": "custom_driver_stack_only",
     "mesa_backend_roles": [
-      "turnip_vulkan_fallback",
-      "rusticl_opencl_research",
-      "freedreno_kgsl_android_container"
+      "turnip_vulkan_kgsl_primary",
+      "rusticl_opencl_kgsl_primary",
+      "freedreno_kgsl_device_proof"
     ]
   },
   "policy": {
     "no_ready_without_proof": true,
     "no_blind_patch_apply": true,
     "no_unlicensed_copy": true,
-    "vendor_opencl_remains_primary": true
+    "vendor_opencl_remains_primary": false,
+    "custom_driver_stack_only": true
   }
 }

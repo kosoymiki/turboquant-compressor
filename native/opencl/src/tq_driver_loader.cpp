@@ -3,8 +3,8 @@
  *
  * Multi-tier probe/load with forensic tracing.
  * Inspired by: adrenotools (android_dlopen_ext namespace bypass),
- * kgsl_forensic.h model, pipe_loader_kgsl.c probe pattern,
- * Mesa/Freedreno source analysis (26.1.0-dev).
+ * kgsl_forensic.h model, current pipe_loader_drm.c KGSL route,
+ * Mesa/Freedreno source analysis (26.2.0-dev).
  *
  * adrenotools pattern:
  *   1. android_create_namespace() with custom permitted_paths (app data dir)
@@ -18,6 +18,7 @@
 #include "tq_driver_loader.h"
 #include "../include/tq_driver_manifest.h"
 #include "../include/tq_gpu_profile.h"
+#include "../include/tq_repo_paths.h"
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -43,36 +44,21 @@ static std::string env_or_empty(const char* name) {
     return value ? std::string(value) : std::string();
 }
 
-static std::string home_dir() {
+static std::string home_or_repo_root() {
     auto home = env_or_empty("HOME");
-    return home.empty() ? std::string("/data/local/tmp") : home;
+    if (!home.empty()) return home;
+    auto repo_root = detect_repo_root();
+    return repo_root.empty() ? std::string(".") : repo_root;
 }
 
-static std::string join_path(const std::string& base, const char* suffix) {
-    if (base.empty()) return std::string();
-    if (!base.empty() && base.back() == '/') return base + suffix;
-    return base + "/" + suffix;
+static bool legacy_fallbacks_enabled() {
+    const char* env = getenv("TQ_ENABLE_LEGACY_OPENCL_FALLBACKS");
+    return env && std::strcmp(env, "1") == 0;
 }
 
 static std::vector<std::string> driver_roots() {
     std::vector<std::string> roots;
-    auto env_root = env_or_empty("TQ_DRIVER_ROOT");
-    auto tq_root = env_or_empty("TURBOQUANT_ROOT");
-    auto home = home_dir();
-    if (!env_root.empty()) roots.push_back(env_root);
-    if (!tq_root.empty()) roots.push_back(join_path(tq_root, "native/opencl/driver-pack"));
-    roots.push_back(join_path(home, "turboquant/drivers"));
-    roots.push_back(join_path(home, "drivers"));
-    return roots;
-}
-
-static std::vector<std::string> mesa_roots() {
-    std::vector<std::string> roots;
-    auto env_root = env_or_empty("TQ_MESA_ROOT");
-    auto home = home_dir();
-    if (!env_root.empty()) roots.push_back(env_root);
-    roots.push_back(join_path(home, "mesa-upstream"));
-    roots.push_back(join_path(home, "mesa-upstream-26.2-devel"));
+    for (const auto& root : runtime_pack_roots()) roots.push_back(root);
     return roots;
 }
 
@@ -129,7 +115,7 @@ struct ClFuncs {
     pfn_clReleaseCommandQueue ReleaseQueue;
 };
 
-// --- Tier 0: KGSL direct probe (from pipe_loader_kgsl.c) ---
+// --- Tier 0: KGSL direct probe aligned with current Mesa KGSL route ---
 static bool probe_kgsl(kgsl_devinfo* info) {
     struct stat st;
     if (stat("/dev/kgsl-3d0", &st) != 0) return false;
@@ -223,31 +209,6 @@ static void* try_dlopen(const char* path) {
     return h;
 }
 
-// --- #1: hook_dlopen — intercept dlopen inside loaded vendor .so ---
-// Vendor libOpenCL.so calls dlopen("libgsl.so") etc. internally.
-// We redirect those to /vendor/lib64 via LD_LIBRARY_PATH or preloaded interposition.
-static void* hooked_dlopen(const char* filename, int flags) {
-    if (!filename) return dlopen(nullptr, flags);
-
-    // If it's a bare name (no path), look in /vendor/lib64 first
-    if (filename[0] != '/') {
-        char vendor_path[512];
-        snprintf(vendor_path, sizeof(vendor_path), "/vendor/lib64/%s", filename);
-        struct stat st;
-        if (stat(vendor_path, &st) == 0) {
-            DRV_TRACE("hook_dlopen: redirect %s → %s", filename, vendor_path);
-            return dlopen(vendor_path, flags | RTLD_LOCAL);
-        }
-        // Also try /system/lib64
-        snprintf(vendor_path, sizeof(vendor_path), "/system/lib64/%s", filename);
-        if (stat(vendor_path, &st) == 0) {
-            DRV_TRACE("hook_dlopen: redirect %s → %s", filename, vendor_path);
-            return dlopen(vendor_path, flags | RTLD_LOCAL);
-        }
-    }
-    return dlopen(filename, flags);
-}
-
 // Set LD_PRELOAD-style hook env for vendor driver child dlopen calls
 static void setup_vendor_hook_env(const char* driver_dir) {
     // Set AERO_RUNTIME_VENDOR_LIB hint for any nested loaders
@@ -259,8 +220,7 @@ static void setup_vendor_hook_env(const char* driver_dir) {
 static void ensure_cache_dir() {
     auto cache_dir = env_or_empty("TURBOQUANT_RUSTICL_CACHE_DIR");
     if (cache_dir.empty()) {
-        auto home = home_dir();
-        cache_dir = join_path(home, ".cache/turboquant-rusticl");
+        cache_dir = join_repo_path(home_or_repo_root(), ".cache/turboquant-rusticl");
     }
     auto parent = cache_dir.substr(0, cache_dir.find_last_of('/'));
     if (!parent.empty()) mkdir(parent.c_str(), 0755);
@@ -350,6 +310,8 @@ DriverCaps probe_best_driver() {
     auto t0 = std::chrono::steady_clock::now();
     DriverCaps caps = {};
     caps.tier = DriverTier::CPU_FALLBACK;
+    std::vector<std::string> rusticl_paths;
+    std::vector<std::string> vk_paths;
 
     // #3: Thread-safe atomic KGSL probe (std::call_once)
     std::call_once(g_kgsl_once, []() {
@@ -387,13 +349,16 @@ DriverCaps probe_best_driver() {
     }
 
     // T0: Custom Rusticl/kgsl (adrenotools-style namespace load)
-    std::vector<std::string> rusticl_paths;
     for (const auto& root : driver_roots()) {
-        rusticl_paths.push_back(join_path(root, "layer1-compute/libRusticlOpenCL.so.1"));
-        rusticl_paths.push_back(join_path(root, "libRusticlOpenCL.so"));
+        rusticl_paths.push_back(join_repo_path(root, "layer1-compute/libRusticlOpenCL.so.1"));
+        rusticl_paths.push_back(join_repo_path(root, "libRusticlOpenCL.so"));
     }
     for (const auto& mesa_root : mesa_roots()) {
-        rusticl_paths.push_back(join_path(mesa_root, "build/src/gallium/targets/rusticl/libRusticlOpenCL.so.1"));
+        for (const auto& build_dir : mesa_build_dirs(mesa_root)) {
+            rusticl_paths.push_back(join_repo_path(build_dir, "src/gallium/targets/rusticl/libRusticlOpenCL.so.1"));
+            rusticl_paths.push_back(join_repo_path(build_dir, "src/gallium/targets/rusticl/libRusticlOpenCL.so"));
+            rusticl_paths.push_back(join_repo_path(build_dir, "src/gallium/targets/rusticl/libRusticlOpenCL.so.1.0.0"));
+        }
     }
     for (const auto& path : rusticl_paths) {
         void* lib = try_dlopen(path.c_str());
@@ -409,71 +374,74 @@ DriverCaps probe_best_driver() {
         dlclose(lib);
     }
 
-    // T1: Vendor Qualcomm OpenCL (namespace-restricted, adrenotools bypass)
-    {
-        // #1: Setup hook env for vendor dep resolution
-        setup_vendor_hook_env("/vendor/lib64");
-        static const char* vendor_paths[] = {
-            "/vendor/lib64/libOpenCL.so",
-            "/system/vendor/lib64/libOpenCL.so",
-            nullptr
-        };
-        for (int i = 0; vendor_paths[i]; i++) {
-            void* lib = try_dlopen(vendor_paths[i]);
-            if (!lib) continue;
-            ClFuncs f = {};
-            if (load_cl_funcs(lib, &f) && query_device_caps(&f, &caps)) {
-                caps.tier = DriverTier::VENDOR_CL;
-                caps.lib_path = vendor_paths[i];
-                caps.has_fma = true;
+    if (legacy_fallbacks_enabled()) {
+        // T1: Vendor Qualcomm OpenCL (namespace-restricted, adrenotools bypass)
+        {
+            setup_vendor_hook_env("/vendor/lib64");
+            static const char* vendor_paths[] = {
+                "/vendor/lib64/libOpenCL.so",
+                "/system/vendor/lib64/libOpenCL.so",
+                nullptr
+            };
+            for (int i = 0; vendor_paths[i]; i++) {
+                void* lib = try_dlopen(vendor_paths[i]);
+                if (!lib) continue;
+                ClFuncs f = {};
+                if (load_cl_funcs(lib, &f) && query_device_caps(&f, &caps)) {
+                    caps.tier = DriverTier::VENDOR_CL;
+                    caps.lib_path = vendor_paths[i];
+                    caps.has_fma = true;
+                    dlclose(lib);
+                    goto done;
+                }
                 dlclose(lib);
-                goto done;
             }
-            dlclose(lib);
         }
-    }
 
-    // T2: System ICD (proot-debian)
-    {
-        static const char* icd_paths[] = {
-            "/usr/lib/aarch64-linux-gnu/libRusticlOpenCL.so.1",
-            nullptr
-        };
-        for (int i = 0; icd_paths[i]; i++) {
-            void* lib = try_dlopen(icd_paths[i]);
-            if (!lib) continue;
-            ClFuncs f = {};
-            if (load_cl_funcs(lib, &f) && query_device_caps(&f, &caps)) {
-                caps.tier = DriverTier::SYSTEM_ICD;
-                caps.lib_path = icd_paths[i];
+        // T2: System ICD (proot-debian)
+        {
+            static const char* icd_paths[] = {
+                "/usr/lib/aarch64-linux-gnu/libRusticlOpenCL.so.1",
+                nullptr
+            };
+            for (int i = 0; icd_paths[i]; i++) {
+                void* lib = try_dlopen(icd_paths[i]);
+                if (!lib) continue;
+                ClFuncs f = {};
+                if (load_cl_funcs(lib, &f) && query_device_caps(&f, &caps)) {
+                    caps.tier = DriverTier::SYSTEM_ICD;
+                    caps.lib_path = icd_paths[i];
+                    dlclose(lib);
+                    goto done;
+                }
                 dlclose(lib);
-                goto done;
             }
-            dlclose(lib);
         }
     }
 
     // T3: Turnip Vulkan compute (always works via kgsl)
     if (caps.has_kgsl) {
-        std::vector<std::string> vk_paths;
+        vk_paths.clear();
         for (const auto& root : driver_roots()) {
-            vk_paths.push_back(join_path(root, "layer2-vulkan/libvulkan_freedreno.so"));
-            vk_paths.push_back(join_path(root, "libvulkan_freedreno.so"));
+            vk_paths.push_back(join_repo_path(root, "layer2-vulkan/libvulkan_freedreno.so"));
+            vk_paths.push_back(join_repo_path(root, "libvulkan_freedreno.so"));
         }
         for (const auto& mesa_root : mesa_roots()) {
-            vk_paths.push_back(join_path(mesa_root, "build/src/freedreno/vulkan/libvulkan_freedreno.so"));
+            for (const auto& build_dir : mesa_build_dirs(mesa_root)) {
+                vk_paths.push_back(join_repo_path(build_dir, "src/freedreno/vulkan/libvulkan_freedreno.so"));
+            }
         }
-        vk_paths.push_back(join_path(home_dir(), "turnip/mesa-26.0.6/libvulkan_freedreno.so"));
         for (const auto& path : vk_paths) {
             struct stat st;
             if (stat(path.c_str(), &st) == 0) {
+                GpuProfile profile = profile_from_chip_id(g_kgsl_ok ? g_kgsl_info.chip_id : 0);
                 caps.tier = DriverTier::TURNIP_VK;
                 caps.lib_path = path;
                 caps.device_name = "Turnip Adreno (VkCompute)";
                 caps.compute_units = 2;
                 caps.max_wg_size = 1024;
                 caps.local_mem_size = 32768;
-                caps.subgroup_size = 128;
+                caps.subgroup_size = profile.compute_wave == WaveMode::WAVE128 ? 128 : 64;
                 caps.has_fp16 = true;
                 caps.has_subgroups = true;
                 caps.has_fma = true;

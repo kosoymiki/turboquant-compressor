@@ -1,7 +1,7 @@
 {
-  "generated": "2026-05-15",
-  "mesa_upstream_commit": "f7fed3bdf8532db9fe70e73da3d4dc4c42374836",
-  "mesa_upstream_version": "mesa-26.1.0",
+  "generated": "2026-05-20",
+  "mesa_upstream_commit": "388665c442f2f84fb8bab03eb9042a1fc1c6b97a",
+  "mesa_upstream_version": "mesa-26.2.0-devel",
   "donors": [
     {
       "id": "lfdevs_mesa_android_container",

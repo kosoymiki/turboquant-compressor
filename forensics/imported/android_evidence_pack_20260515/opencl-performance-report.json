@@ -1,0 +1,1077 @@
+{
+  "timestamp": "2026-05-15T15:47:57.603Z",
+  "type": "performance",
+  "device": {
+    "gpu": "QUALCOMM Adreno(TM)",
+    "opencl": "OpenCL 3.0 Adreno(TM) 730",
+    "compute_units": 4,
+    "max_wg_size": 1024,
+    "is_adreno": true
+  },
+  "memory": {
+    "before": {
+      "totalKb": 11485360,
+      "availableKb": 4297176
+    },
+    "after": {
+      "totalKb": 11485360,
+      "availableKb": 4246076
+    }
+  },
+  "thermal": {
+    "before": [
+      {
+        "zone": 0,
+        "type": "pa",
+        "temp_mc": 41491
+      },
+      {
+        "zone": 1,
+        "type": "pa1",
+        "temp_mc": -40000
+      },
+      {
+        "zone": 2,
+        "type": "bcl-warn",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 4,
+        "type": "sdr0",
+        "temp_mc": 41000
+      },
+      {
+        "zone": 6,
+        "type": "sdr1",
+        "temp_mc": 43000
+      },
+      {
+        "zone": 7,
+        "type": "sdr-mmw-therm",
+        "temp_mc": 27000
+      },
+      {
+        "zone": 8,
+        "type": "mmw0",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 9,
+        "type": "mmw1",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 10,
+        "type": "mmw2",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 11,
+        "type": "mmw3",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 12,
+        "type": "mmw_pa1",
+        "temp_mc": 27000
+      },
+      {
+        "zone": 13,
+        "type": "mmw_pa2",
+        "temp_mc": 27000
+      },
+      {
+        "zone": 14,
+        "type": "mmw_pa3",
+        "temp_mc": 27000
+      },
+      {
+        "zone": 15,
+        "type": "mmw-ific0",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 16,
+        "type": "sub1-modem-cfg",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 17,
+        "type": "sub1-lte-cc",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 18,
+        "type": "sub1_mcg_fr1_cc",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 19,
+        "type": "sub1_mcg_fr2_cc",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 20,
+        "type": "sub1_scg_fr1_cc",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 21,
+        "type": "sub1_scg_fr2_cc",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 22,
+        "type": "sdr0-pa",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 23,
+        "type": "sdr1-pa",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 24,
+        "type": "aoss-0",
+        "temp_mc": 49300
+      },
+      {
+        "zone": 25,
+        "type": "cpuss-0",
+        "temp_mc": 54000
+      },
+      {
+        "zone": 26,
+        "type": "cpuss-1",
+        "temp_mc": 53200
+      },
+      {
+        "zone": 27,
+        "type": "cpuss-2",
+        "temp_mc": 54800
+      },
+      {
+        "zone": 28,
+        "type": "cpuss-3",
+        "temp_mc": 54400
+      },
+      {
+        "zone": 29,
+        "type": "cpu-1-0",
+        "temp_mc": 52400
+      }
+    ],
+    "after": [
+      {
+        "zone": 0,
+        "type": "pa",
+        "temp_mc": 41497
+      },
+      {
+        "zone": 1,
+        "type": "pa1",
+        "temp_mc": -40000
+      },
+      {
+        "zone": 2,
+        "type": "bcl-warn",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 4,
+        "type": "sdr0",
+        "temp_mc": 41000
+      },
+      {
+        "zone": 6,
+        "type": "sdr1",
+        "temp_mc": 41000
+      },
+      {
+        "zone": 7,
+        "type": "sdr-mmw-therm",
+        "temp_mc": 27000
+      },
+      {
+        "zone": 8,
+        "type": "mmw0",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 9,
+        "type": "mmw1",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 10,
+        "type": "mmw2",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 11,
+        "type": "mmw3",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 12,
+        "type": "mmw_pa1",
+        "temp_mc": 27000
+      },
+      {
+        "zone": 13,
+        "type": "mmw_pa2",
+        "temp_mc": 27000
+      },
+      {
+        "zone": 14,
+        "type": "mmw_pa3",
+        "temp_mc": 27000
+      },
+      {
+        "zone": 15,
+        "type": "mmw-ific0",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 16,
+        "type": "sub1-modem-cfg",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 17,
+        "type": "sub1-lte-cc",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 18,
+        "type": "sub1_mcg_fr1_cc",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 19,
+        "type": "sub1_mcg_fr2_cc",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 20,
+        "type": "sub1_scg_fr1_cc",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 21,
+        "type": "sub1_scg_fr2_cc",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 22,
+        "type": "sdr0-pa",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 23,
+        "type": "sdr1-pa",
+        "temp_mc": -273000
+      },
+      {
+        "zone": 24,
+        "type": "aoss-0",
+        "temp_mc": 59600
+      },
+      {
+        "zone": 25,
+        "type": "cpuss-0",
+        "temp_mc": 63500
+      },
+      {
+        "zone": 26,
+        "type": "cpuss-1",
+        "temp_mc": 61900
+      },
+      {
+        "zone": 27,
+        "type": "cpuss-2",
+        "temp_mc": 63500
+      },
+      {
+        "zone": 28,
+        "type": "cpuss-3",
+        "temp_mc": 63100
+      },
+      {
+        "zone": 29,
+        "type": "cpu-1-0",
+        "temp_mc": 62300
+      }
+    ]
+  },
+  "run": {
+    "warmup": 5,
+    "iters": 50,
+    "mem_available_kb_before": 4282796,
+    "mem_available_kb_after": 4232556
+  },
+  "results": [
+    {
+      "kernel": "mse_score",
+      "shape": {
+        "tokens": 128,
+        "heads": 4,
+        "headDim": 64,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.0361,
+      "p95_ms": 0.0361,
+      "min_ms": 0.0351,
+      "max_ms": 0.0361,
+      "mean_ms": 0.036,
+      "std_ms": 0.0002,
+      "cpu_mean_ms": 0.042,
+      "speedup_vs_cpu": 1.169,
+      "memory_bytes": 4384
+    },
+    {
+      "kernel": "qjl_score",
+      "shape": {
+        "tokens": 128,
+        "heads": 4,
+        "headDim": 64,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.0069,
+      "p95_ms": 0.0072,
+      "min_ms": 0.0059,
+      "max_ms": 0.0082,
+      "mean_ms": 0.007,
+      "std_ms": 0.0003,
+      "cpu_mean_ms": 0.0225,
+      "speedup_vs_cpu": 3.193,
+      "memory_bytes": 3088
+    },
+    {
+      "kernel": "value_dequant",
+      "shape": {
+        "tokens": 128,
+        "heads": 4,
+        "headDim": 64,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.063,
+      "p95_ms": 0.0632,
+      "min_ms": 0.062,
+      "max_ms": 0.0632,
+      "mean_ms": 0.063,
+      "std_ms": 0.0002,
+      "cpu_mean_ms": 0.1101,
+      "speedup_vs_cpu": 1.748,
+      "memory_bytes": 37888
+    },
+    {
+      "kernel": "fused_attention",
+      "shape": {
+        "tokens": 128,
+        "heads": 4,
+        "headDim": 64,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.1311,
+      "p95_ms": 0.133,
+      "min_ms": 0.13,
+      "max_ms": 0.1339,
+      "mean_ms": 0.1315,
+      "std_ms": 0.0008,
+      "cpu_mean_ms": 0.3328,
+      "speedup_vs_cpu": 2.53,
+      "memory_bytes": 11040
+    },
+    {
+      "kernel": "mse_score",
+      "shape": {
+        "tokens": 128,
+        "heads": 4,
+        "headDim": 64,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.037,
+      "p95_ms": 0.0371,
+      "min_ms": 0.0358,
+      "max_ms": 0.0371,
+      "mean_ms": 0.037,
+      "std_ms": 0.0002,
+      "cpu_mean_ms": 0.0542,
+      "speedup_vs_cpu": 1.465,
+      "memory_bytes": 5440
+    },
+    {
+      "kernel": "qjl_score",
+      "shape": {
+        "tokens": 128,
+        "heads": 4,
+        "headDim": 64,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.0069,
+      "p95_ms": 0.0072,
+      "min_ms": 0.0069,
+      "max_ms": 0.0072,
+      "mean_ms": 0.007,
+      "std_ms": 0.0001,
+      "cpu_mean_ms": 0.0134,
+      "speedup_vs_cpu": 1.914,
+      "memory_bytes": 3088
+    },
+    {
+      "kernel": "value_dequant",
+      "shape": {
+        "tokens": 128,
+        "heads": 4,
+        "headDim": 64,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.0589,
+      "p95_ms": 0.0596,
+      "min_ms": 0.0579,
+      "max_ms": 0.0602,
+      "mean_ms": 0.059,
+      "std_ms": 0.0004,
+      "cpu_mean_ms": 0.1502,
+      "speedup_vs_cpu": 2.546,
+      "memory_bytes": 38912
+    },
+    {
+      "kernel": "fused_attention",
+      "shape": {
+        "tokens": 128,
+        "heads": 4,
+        "headDim": 64,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.1174,
+      "p95_ms": 0.121,
+      "min_ms": 0.116,
+      "max_ms": 0.1229,
+      "mean_ms": 0.1178,
+      "std_ms": 0.0014,
+      "cpu_mean_ms": 0.2575,
+      "speedup_vs_cpu": 2.185,
+      "memory_bytes": 13120
+    },
+    {
+      "kernel": "mse_score",
+      "shape": {
+        "tokens": 512,
+        "heads": 8,
+        "headDim": 64,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.0671,
+      "p95_ms": 0.0671,
+      "min_ms": 0.0668,
+      "max_ms": 0.3991,
+      "mean_ms": 0.0737,
+      "std_ms": 0.047,
+      "cpu_mean_ms": 0.3151,
+      "speedup_vs_cpu": 4.277,
+      "memory_bytes": 16672
+    },
+    {
+      "kernel": "qjl_score",
+      "shape": {
+        "tokens": 512,
+        "heads": 8,
+        "headDim": 64,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.0079,
+      "p95_ms": 0.0092,
+      "min_ms": 0.0079,
+      "max_ms": 0.0092,
+      "mean_ms": 0.0082,
+      "std_ms": 0.0004,
+      "cpu_mean_ms": 0.0321,
+      "speedup_vs_cpu": 3.895,
+      "memory_bytes": 12304
+    },
+    {
+      "kernel": "value_dequant",
+      "shape": {
+        "tokens": 512,
+        "heads": 8,
+        "headDim": 64,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.1149,
+      "p95_ms": 0.116,
+      "min_ms": 0.1132,
+      "max_ms": 0.1162,
+      "mean_ms": 0.1149,
+      "std_ms": 0.0006,
+      "cpu_mean_ms": 0.5933,
+      "speedup_vs_cpu": 5.164,
+      "memory_bytes": 151552
+    },
+    {
+      "kernel": "fused_attention",
+      "shape": {
+        "tokens": 512,
+        "heads": 8,
+        "headDim": 64,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.4349,
+      "p95_ms": 0.4445,
+      "min_ms": 0.4329,
+      "max_ms": 0.45,
+      "mean_ms": 0.4363,
+      "std_ms": 0.0037,
+      "cpu_mean_ms": 1.2054,
+      "speedup_vs_cpu": 2.763,
+      "memory_bytes": 43296
+    },
+    {
+      "kernel": "mse_score",
+      "shape": {
+        "tokens": 512,
+        "heads": 8,
+        "headDim": 64,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.075,
+      "p95_ms": 0.075,
+      "min_ms": 0.075,
+      "max_ms": 0.076,
+      "mean_ms": 0.075,
+      "std_ms": 0.0002,
+      "cpu_mean_ms": 0.224,
+      "speedup_vs_cpu": 2.985,
+      "memory_bytes": 20800
+    },
+    {
+      "kernel": "qjl_score",
+      "shape": {
+        "tokens": 512,
+        "heads": 8,
+        "headDim": 64,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.0079,
+      "p95_ms": 0.0086,
+      "min_ms": 0.0069,
+      "max_ms": 0.009,
+      "mean_ms": 0.008,
+      "std_ms": 0.0003,
+      "cpu_mean_ms": 0.0389,
+      "speedup_vs_cpu": 4.844,
+      "memory_bytes": 12304
+    },
+    {
+      "kernel": "value_dequant",
+      "shape": {
+        "tokens": 512,
+        "heads": 8,
+        "headDim": 64,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.108,
+      "p95_ms": 0.1091,
+      "min_ms": 0.1078,
+      "max_ms": 0.1121,
+      "mean_ms": 0.1082,
+      "std_ms": 0.0006,
+      "cpu_mean_ms": 0.5198,
+      "speedup_vs_cpu": 4.805,
+      "memory_bytes": 155648
+    },
+    {
+      "kernel": "fused_attention",
+      "shape": {
+        "tokens": 512,
+        "heads": 8,
+        "headDim": 64,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.3891,
+      "p95_ms": 0.4044,
+      "min_ms": 0.3878,
+      "max_ms": 0.7199,
+      "mean_ms": 0.3973,
+      "std_ms": 0.0468,
+      "cpu_mean_ms": 0.9535,
+      "speedup_vs_cpu": 2.4,
+      "memory_bytes": 51520
+    },
+    {
+      "kernel": "mse_score",
+      "shape": {
+        "tokens": 2048,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.288,
+      "p95_ms": 0.289,
+      "min_ms": 0.286,
+      "max_ms": 0.29,
+      "mean_ms": 0.2876,
+      "std_ms": 0.001,
+      "cpu_mean_ms": 2.41,
+      "speedup_vs_cpu": 8.378,
+      "memory_bytes": 115232
+    },
+    {
+      "kernel": "qjl_score",
+      "shape": {
+        "tokens": 2048,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.0201,
+      "p95_ms": 0.021,
+      "min_ms": 0.02,
+      "max_ms": 0.022,
+      "mean_ms": 0.0204,
+      "std_ms": 0.0005,
+      "cpu_mean_ms": 0.0929,
+      "speedup_vs_cpu": 4.546,
+      "memory_bytes": 81952
+    },
+    {
+      "kernel": "value_dequant",
+      "shape": {
+        "tokens": 2048,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.6001,
+      "p95_ms": 0.605,
+      "min_ms": 0.596,
+      "max_ms": 0.606,
+      "mean_ms": 0.6005,
+      "std_ms": 0.0025,
+      "cpu_mean_ms": 2.4844,
+      "speedup_vs_cpu": 4.137,
+      "memory_bytes": 1212416
+    },
+    {
+      "kernel": "fused_attention",
+      "shape": {
+        "tokens": 2048,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 2.2376,
+      "p95_ms": 2.361,
+      "min_ms": 2.228,
+      "max_ms": 2.5649,
+      "mean_ms": 2.2555,
+      "std_ms": 0.0567,
+      "cpu_mean_ms": 3.3,
+      "speedup_vs_cpu": 1.463,
+      "memory_bytes": 336416
+    },
+    {
+      "kernel": "mse_score",
+      "shape": {
+        "tokens": 2048,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.2939,
+      "p95_ms": 0.297,
+      "min_ms": 0.287,
+      "max_ms": 0.298,
+      "mean_ms": 0.293,
+      "std_ms": 0.0026,
+      "cpu_mean_ms": 1.6598,
+      "speedup_vs_cpu": 5.664,
+      "memory_bytes": 148032
+    },
+    {
+      "kernel": "qjl_score",
+      "shape": {
+        "tokens": 2048,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.021,
+      "p95_ms": 0.022,
+      "min_ms": 0.02,
+      "max_ms": 0.023,
+      "mean_ms": 0.0209,
+      "std_ms": 0.0008,
+      "cpu_mean_ms": 0.0097,
+      "speedup_vs_cpu": 0.463,
+      "memory_bytes": 81952
+    },
+    {
+      "kernel": "value_dequant",
+      "shape": {
+        "tokens": 2048,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.5821,
+      "p95_ms": 0.5856,
+      "min_ms": 0.577,
+      "max_ms": 0.6062,
+      "mean_ms": 0.5826,
+      "std_ms": 0.0039,
+      "cpu_mean_ms": 3.2607,
+      "speedup_vs_cpu": 5.597,
+      "memory_bytes": 1245184
+    },
+    {
+      "kernel": "fused_attention",
+      "shape": {
+        "tokens": 2048,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 2.1719,
+      "p95_ms": 2.703,
+      "min_ms": 2.0339,
+      "max_ms": 2.8452,
+      "mean_ms": 2.2249,
+      "std_ms": 0.2256,
+      "cpu_mean_ms": 1.4514,
+      "speedup_vs_cpu": 0.652,
+      "memory_bytes": 401984
+    },
+    {
+      "kernel": "mse_score",
+      "shape": {
+        "tokens": 4096,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.3296,
+      "p95_ms": 0.3359,
+      "min_ms": 0.3238,
+      "max_ms": 0.3369,
+      "mean_ms": 0.3295,
+      "std_ms": 0.0037,
+      "cpu_mean_ms": 0.9629,
+      "speedup_vs_cpu": 2.922,
+      "memory_bytes": 229920
+    },
+    {
+      "kernel": "qjl_score",
+      "shape": {
+        "tokens": 4096,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.0241,
+      "p95_ms": 0.0255,
+      "min_ms": 0.022,
+      "max_ms": 0.0271,
+      "mean_ms": 0.024,
+      "std_ms": 0.0011,
+      "cpu_mean_ms": 0.0192,
+      "speedup_vs_cpu": 0.801,
+      "memory_bytes": 163872
+    },
+    {
+      "kernel": "value_dequant",
+      "shape": {
+        "tokens": 4096,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.9641,
+      "p95_ms": 1.0001,
+      "min_ms": 0.9372,
+      "max_ms": 1.4751,
+      "mean_ms": 0.9792,
+      "std_ms": 0.0824,
+      "cpu_mean_ms": 1.2218,
+      "speedup_vs_cpu": 1.248,
+      "memory_bytes": 2424832
+    },
+    {
+      "kernel": "fused_attention",
+      "shape": {
+        "tokens": 4096,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 4.582,
+      "p95_ms": 5.1132,
+      "min_ms": 4.3,
+      "max_ms": 5.1348,
+      "mean_ms": 4.6425,
+      "std_ms": 0.2525,
+      "cpu_mean_ms": 2.7663,
+      "speedup_vs_cpu": 0.596,
+      "memory_bytes": 672288
+    },
+    {
+      "kernel": "mse_score",
+      "shape": {
+        "tokens": 4096,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.384,
+      "p95_ms": 0.8921,
+      "min_ms": 0.3781,
+      "max_ms": 0.959,
+      "mean_ms": 0.4265,
+      "std_ms": 0.1473,
+      "cpu_mean_ms": 0.7688,
+      "speedup_vs_cpu": 1.802,
+      "memory_bytes": 295488
+    },
+    {
+      "kernel": "qjl_score",
+      "shape": {
+        "tokens": 4096,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.0241,
+      "p95_ms": 0.0257,
+      "min_ms": 0.022,
+      "max_ms": 0.0271,
+      "mean_ms": 0.024,
+      "std_ms": 0.0011,
+      "cpu_mean_ms": 0.0521,
+      "speedup_vs_cpu": 2.169,
+      "memory_bytes": 163872
+    },
+    {
+      "kernel": "value_dequant",
+      "shape": {
+        "tokens": 4096,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 1.0015,
+      "p95_ms": 1.1791,
+      "min_ms": 0.94,
+      "max_ms": 1.5959,
+      "mean_ms": 1.0258,
+      "std_ms": 0.1163,
+      "cpu_mean_ms": 1.2739,
+      "speedup_vs_cpu": 1.242,
+      "memory_bytes": 2490368
+    },
+    {
+      "kernel": "fused_attention",
+      "shape": {
+        "tokens": 4096,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 4.214,
+      "p95_ms": 4.626,
+      "min_ms": 3.9332,
+      "max_ms": 4.8172,
+      "mean_ms": 4.2584,
+      "std_ms": 0.2027,
+      "cpu_mean_ms": 4.1327,
+      "speedup_vs_cpu": 0.97,
+      "memory_bytes": 803392
+    },
+    {
+      "kernel": "mse_score",
+      "shape": {
+        "tokens": 8192,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.4905,
+      "p95_ms": 0.5053,
+      "min_ms": 0.478,
+      "max_ms": 0.51,
+      "mean_ms": 0.49,
+      "std_ms": 0.0084,
+      "cpu_mean_ms": 2.6236,
+      "speedup_vs_cpu": 5.354,
+      "memory_bytes": 459296
+    },
+    {
+      "kernel": "qjl_score",
+      "shape": {
+        "tokens": 8192,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 0.03,
+      "p95_ms": 0.033,
+      "min_ms": 0.0269,
+      "max_ms": 0.034,
+      "mean_ms": 0.0301,
+      "std_ms": 0.0017,
+      "cpu_mean_ms": 0.0487,
+      "speedup_vs_cpu": 1.618,
+      "memory_bytes": 327712
+    },
+    {
+      "kernel": "value_dequant",
+      "shape": {
+        "tokens": 8192,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 2.6111,
+      "p95_ms": 3.0135,
+      "min_ms": 2.367,
+      "max_ms": 3.4061,
+      "mean_ms": 2.6443,
+      "std_ms": 0.1793,
+      "cpu_mean_ms": 3.1213,
+      "speedup_vs_cpu": 1.18,
+      "memory_bytes": 4849664
+    },
+    {
+      "kernel": "fused_attention",
+      "shape": {
+        "tokens": 8192,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 3
+      },
+      "parity": true,
+      "p50_ms": 8.4086,
+      "p95_ms": 9.3726,
+      "min_ms": 8.225,
+      "max_ms": 9.5941,
+      "mean_ms": 8.5994,
+      "std_ms": 0.3744,
+      "cpu_mean_ms": 4.9431,
+      "speedup_vs_cpu": 0.575,
+      "memory_bytes": 1344032
+    },
+    {
+      "kernel": "mse_score",
+      "shape": {
+        "tokens": 8192,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.6615,
+      "p95_ms": 0.6777,
+      "min_ms": 0.6479,
+      "max_ms": 1.0089,
+      "mean_ms": 0.6748,
+      "std_ms": 0.0648,
+      "cpu_mean_ms": 1.6646,
+      "speedup_vs_cpu": 2.467,
+      "memory_bytes": 590400
+    },
+    {
+      "kernel": "qjl_score",
+      "shape": {
+        "tokens": 8192,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 0.031,
+      "p95_ms": 0.0346,
+      "min_ms": 0.0279,
+      "max_ms": 0.0358,
+      "mean_ms": 0.0311,
+      "std_ms": 0.0022,
+      "cpu_mean_ms": 0.0344,
+      "speedup_vs_cpu": 1.105,
+      "memory_bytes": 327712
+    },
+    {
+      "kernel": "value_dequant",
+      "shape": {
+        "tokens": 8192,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 2.859,
+      "p95_ms": 3.0518,
+      "min_ms": 2.623,
+      "max_ms": 3.2,
+      "mean_ms": 2.8476,
+      "std_ms": 0.1125,
+      "cpu_mean_ms": 2.45,
+      "speedup_vs_cpu": 0.86,
+      "memory_bytes": 4980736
+    },
+    {
+      "kernel": "fused_attention",
+      "shape": {
+        "tokens": 8192,
+        "heads": 8,
+        "headDim": 128,
+        "bits": 4
+      },
+      "parity": true,
+      "p50_ms": 7.7891,
+      "p95_ms": 8.4028,
+      "min_ms": 7.627,
+      "max_ms": 8.4188,
+      "mean_ms": 7.8547,
+      "std_ms": 0.2446,
+      "cpu_mean_ms": 5.479,
+      "speedup_vs_cpu": 0.698,
+      "memory_bytes": 1606208
+    }
+  ],
+  "all_pass": true,
+  "claim_safe": true
+}

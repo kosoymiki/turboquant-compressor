@@ -1,0 +1,24 @@
+{
+  "captured_at": "2026-05-20T20:45:49Z",
+  "adb_serial_last_success": "192.168.50.54:40591",
+  "capture_mode": "live_wireless_adb_poll_in_current_session",
+  "product_model": "RMX3709",
+  "board_platform": "taro",
+  "hardware": "qcom",
+  "soc_model": "SM8475",
+  "android_release": "16",
+  "kgsl_gpu_model": "Adreno730v3",
+  "vulkan_vendor_baseline": {
+    "device_name": "Adreno (TM) 730",
+    "driver_name": "Qualcomm Technologies Inc. Adreno Vulkan Driver",
+    "driver_build": "b82916be04",
+    "subgroup_size": 64,
+    "max_compute_shared_memory_size": 32768,
+    "max_compute_workgroup_invocations": 1024
+  },
+  "notes": [
+    "40591 is the latest working Wi-Fi ADB transport used in this release-prep session.",
+    "KGSL frequency and busy sysfs nodes remain permission-gated without elevated device privileges.",
+    "Vendor Vulkan baseline is evidence-only; TurboQuant production route is the custom repo-local stack."
+  ]
+}

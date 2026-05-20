@@ -31,6 +31,7 @@ bool is_initialized();
 bool is_adreno();
 uint32_t get_compute_units();
 size_t get_max_wg_size();
+bool profiling_enabled();
 const GpuProfile& get_gpu_profile();
 
 // Program/kernel compilation

@@ -40,6 +40,15 @@ const staticChecks = [
   'verify-release-evidence.mjs',
 ];
 
+const requiredWasmAssets = [
+  'dist/native/wasm/pkg/turboquant_wasm_bg.wasm',
+  'dist/native/wasm/pkg/turboquant_wasm.js',
+];
+for (const rel of requiredWasmAssets) {
+  const abs = join(rootDir, rel);
+  if (!existsSync(abs)) fail(`required WASM release asset missing: ${rel}`);
+}
+
 for (const check of staticChecks) {
   run(check);
 }
@@ -49,7 +58,7 @@ console.log('[GATE] running live mcp-conformance.mjs...');
 run('mcp-conformance.mjs');
 console.log('[OK] live mcp-conformance passed');
 
-// Live transcript — verifies all 10 tools callable with isError=false
+// Live transcript — verifies all 13 tools callable with isError=false
 console.log('[GATE] running live mcp-transcript.mjs...');
 run('mcp-transcript.mjs');
 

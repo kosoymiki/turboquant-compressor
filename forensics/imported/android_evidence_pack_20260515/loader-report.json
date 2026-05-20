@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-05-15T14:54:24.916Z",
+  "state": "READY",
+  "libraryExists": true,
+  "loadable": true,
+  "available": true,
+  "adrenoDetected": true,
+  "recommendedBackend": "opencl_adreno",
+  "warnings": [],
+  "probeTimeMs": 143
+}

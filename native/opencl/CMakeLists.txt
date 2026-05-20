@@ -14,14 +14,18 @@ find_path(OPENCL_INCLUDE_DIR CL/cl.h
 )
 
 # OpenCL library
-find_library(OPENCL_LIB OpenCL
-  PATHS
-    /system/vendor/lib64
-    /vendor/lib64
-    /system/lib64
-    $ENV{PREFIX}/lib
-    $ENV{PREFIX}/opt/vendor/lib
-)
+if(DEFINED ENV{TQ_OPENCL_LIBRARY} AND EXISTS "$ENV{TQ_OPENCL_LIBRARY}")
+  set(OPENCL_LIB "$ENV{TQ_OPENCL_LIBRARY}")
+else()
+  find_library(OPENCL_LIB OpenCL
+    PATHS
+      /system/vendor/lib64
+      /vendor/lib64
+      /system/lib64
+      $ENV{PREFIX}/lib
+      $ENV{PREFIX}/opt/vendor/lib
+  )
+endif()
 
 if(NOT OPENCL_INCLUDE_DIR)
   message(WARNING "OpenCL headers not found — install: pkg install opencl-headers")
@@ -40,6 +44,7 @@ add_executable(tq_opencl_cli
   src/tq_opencl_fused_attention_tiled.cpp
   src/tq_opencl_benchmark.cpp
   src/tq_driver_loader.cpp
+  src/tq_repo_paths.cpp
   src/tq_gpu_profile.cpp
   src/tq_kernel_tune.cpp
   src/tq_driver_manifest.cpp

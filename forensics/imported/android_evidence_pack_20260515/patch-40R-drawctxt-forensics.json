@@ -1,0 +1,35 @@
+{
+  "patch": "40R",
+  "title": "KGSL DRAWCTXT_CREATE Differential Forensics",
+  "timestamp": "2026-05-16T00:15:00+03:00",
+  "status": "RESOLVED",
+  "root_cause": "INVALID_FLAGS_VALUE",
+  "summary": "DRAWCTXT_CREATE EINVAL was caused by flags=0x23 containing KGSL_CONTEXT_TRASH_STATE (0x20) which this kernel rejects. Turnip uses flags=0x13 (SAVE_GMEM|NO_GMEM_ALLOC|PREAMBLE) which succeeds.",
+  "evidence": {
+    "working_flags": "0x00000013 = KGSL_CONTEXT_SAVE_GMEM | KGSL_CONTEXT_NO_GMEM_ALLOC | KGSL_CONTEXT_PREAMBLE",
+    "failing_flags": "0x00000023 = KGSL_CONTEXT_SAVE_GMEM | KGSL_CONTEXT_NO_GMEM_ALLOC | KGSL_CONTEXT_TRASH_STATE",
+    "kernel_output_flags": "0x00008052 (kernel adds PER_CONTEXT_TS + priority bits)",
+    "context_ids_created": [15, 20],
+    "destroy_confirmed": true
+  },
+  "rejected_hypotheses": [
+    "SELinux blocking (same context, same process)",
+    "Bionic ioctl ABI mismatch (unsigned vs unsigned long)",
+    "fd state dependency (fresh fd works with correct flags)",
+    "ioctl sequence dependency (no prior ioctls needed)",
+    "DRAWCTXT_CREATE_V2 (0x46 is GPUOBJ_FREE, not V2)"
+  ],
+  "interposer_findings": {
+    "LD_PRELOAD_ioctl": "Captured our calls but NOT Turnip's (dlopen PLT binding order)",
+    "syscall_intercept": "Also missed Turnip (not using syscall() wrapper)",
+    "turnip_ioctl_sequence": ["0x40 SYNCSOURCE_CREATE", "0x41 SYNCSOURCE_DESTROY", "0x02 GETPROPERTY x14", "0x34 GPUMEM_ALLOC_ID", "0x35 GPUMEM_FREE_ID", "0x45 GPUOBJ_ALLOC", "0x46 GPUOBJ_FREE", "0x56 GPUMEM_BIND_RANGES"],
+    "turnip_drawctxt_invisible": "Turnip's DRAWCTXT_CREATE not captured by interposer due to dlopen PLT resolution"
+  },
+  "fix_for_mesa_kgsl_pipe": {
+    "file": "src/freedreno/drm/kgsl/kgsl_pipe.c",
+    "change": "Replace flags 0x23 with (KGSL_CONTEXT_SAVE_GMEM | KGSL_CONTEXT_NO_GMEM_ALLOC | KGSL_CONTEXT_PREAMBLE) = 0x13",
+    "reference": "src/freedreno/vulkan/tu_knl_kgsl.cc line 53-56"
+  },
+  "cl_context_flags": "0x00200013 = Turnip flags + KGSL_CONTEXT_TYPE_CL (verified working, ctx_id=20)",
+  "next_steps": ["Apply fix to kgsl_pipe.c in Mesa build", "Rebuild Rusticl with corrected context flags", "Re-run pipe_loader_kgsl probe"]
+}

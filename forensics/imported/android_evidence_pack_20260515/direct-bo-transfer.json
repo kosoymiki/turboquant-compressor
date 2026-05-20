@@ -1,0 +1,9 @@
+{
+  "kgsl_fd": 3,
+  "alloc": {"ret": 0, "id": 1, "gpuaddr": "0x4000000000", "size": 4096, "mmapsize": 4096},
+  "mmap": {"ptr": "0x723a943000", "status": "pass"},
+  "cpu_write_read": "pass",
+  "cpu_zero_verify": "pass",
+  "classification": "KGSL_BO_MMAP_WORKS",
+  "implication": "Direct KGSL BO alloc+mmap+CPU write/read works. Blocker is in Gallium/Rusticl transfer layer, not KGSL."
+}

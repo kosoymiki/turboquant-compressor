@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-05-20T00:09:57.199Z",
+  "timestamp": "2026-05-20T18:33:15.423Z",
   "required": [
     {
       "path": "forensics/opencl-adreno-report.json",
       "status": "present",
-      "state": "ADRENO_VENDOR_OPENCL_UNAVAILABLE"
+      "state": "CUSTOM_RUSTICL_STACK_READY"
     },
     {
       "path": "forensics/adreno/loader-report.json",
       "status": "present",
-      "state": "READY"
+      "state": "CUSTOM_DRIVER_POLICY_ACTIVE"
     }
   ],
   "optional": [

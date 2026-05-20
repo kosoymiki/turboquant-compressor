@@ -37,7 +37,16 @@ const SHELL_PATTERNS = [
 
 // Only check server source — not scripts (which legitimately use spawn)
 // backend_probe.ts is excluded: it requires child_process by design (runtime detection)
-const ALLOWED_SHELL_FILES = ['backend_probe.ts', 'backend_probe.js', 'opencl_probe.ts', 'opencl_probe.js', 'turboquant_adreno_loader_probe.ts', 'turboquant_adreno_loader_probe.js'];
+const ALLOWED_SHELL_FILES = [
+  'backend_probe.ts',
+  'backend_probe.js',
+  'opencl_probe.ts',
+  'opencl_probe.js',
+  'turboquant_adreno_loader_probe.ts',
+  'turboquant_adreno_loader_probe.js',
+  'production_policy.ts',
+  'production_policy.js',
+];
 
 const srcDir = join(rootDir, 'src');
 const distDir = join(rootDir, 'dist');

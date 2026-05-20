@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-05-16T03:00:00Z",
+  "trace_lines": 46,
+  "trace_file": "forensics/gallium-transfer-trace.log",
+  "key_findings": {
+    "compute_submit": {"ctx": 17, "ncmds": 1, "ret": 0, "ts": 1},
+    "transfer_submit": {"ctx": 20, "ncmds": 1, "ret": 0, "ts": 1},
+    "fence_issue": "need fence, last_fence=0x0 — transfer pipe has no valid fence to wait on",
+    "flush_behavior": "reuse last_fence with empty remaining set"
+  },
+  "root_cause": "Transfer pipe (ctx=20) submits blit/copy command but cannot synchronize with compute pipe (ctx=17) because last_fence=0x0. The fd_batch fence coordination between separate KGSL contexts is broken — Gallium assumes DRM syncobj/fence_fd which KGSL path does not provide.",
+  "first_failing_function": "fd_resource_transfer_map → needs fence from compute batch → fence is NULL → transfer IB submitted blind → result undefined",
+  "classification": "GALLIUM_FENCE_COORDINATION_BROKEN",
+  "implication": "This is the exact mechanism: Gallium freedreno uses inter-pipe fences for transfer synchronization. KGSL backend does not produce valid fences between contexts. Transfer submits without waiting → data not coherent → err=-5 propagated to OpenCL layer."
+}

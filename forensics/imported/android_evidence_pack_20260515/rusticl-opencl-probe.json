@@ -1,0 +1,30 @@
+{
+  "probe_date": "2025-05-15T22:30:00+03:00",
+  "build_result": "SUCCESS",
+  "binary": "libRusticlOpenCL.so.1.0.0",
+  "binary_size_bytes": 25103104,
+  "mesa_commit": "f7fed3bdf8532db9fe70e73da3d4dc4c42374836",
+  "mesa_version": "26.1.0",
+  "platform_probe": {
+    "result": "SUCCESS",
+    "platform_name": "rusticl",
+    "platform_version": "OpenCL 3.1",
+    "num_platforms": 1
+  },
+  "device_probe": {
+    "result": "FAIL",
+    "error_code": -34,
+    "error_name": "CL_INVALID_DEVICE",
+    "num_devices": 0,
+    "root_cause": "freedreno Gallium pipe-loader requires /dev/dri/renderD128 (DRM render node). Termux has no DRM subsystem. KGSL device /dev/kgsl-3d0 is accessible but pipe_loader_drm_probe() only scans /dev/dri/renderD* nodes.",
+    "kgsl_driver_descriptor_note": "kgsl_driver_descriptor is DRM_DRIVER_DESCRIPTOR_ALIAS(msm, kgsl) — it still expects a DRM fd, not a raw KGSL fd",
+    "turnip_comparison": "Turnip Vulkan works because tu_knl_kgsl.cc opens /dev/kgsl-3d0 directly, bypassing DRM entirely"
+  },
+  "conclusion": {
+    "rusticl_status": "BUILD_SUCCESS_RUNTIME_NO_DEVICE",
+    "backend_role": "research_only",
+    "reason": "Rusticl platform initializes (OpenCL 3.1) but cannot enumerate GPU device without DRM render node. Fundamental architectural limitation of Gallium pipe-loader on non-DRM Android/Termux. Would require custom pipe-loader KGSL path (not upstream).",
+    "possible_fix": "Implement pipe_loader_kgsl_probe() that opens /dev/kgsl-3d0 and creates fd_device via kgsl_device_new() — significant upstream-incompatible work",
+    "vendor_opencl_remains_primary": true
+  }
+}

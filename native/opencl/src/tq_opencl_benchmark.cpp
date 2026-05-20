@@ -5,6 +5,7 @@
  */
 
 #include "tq_opencl.h"
+#include "../include/tq_repo_paths.h"
 #include <CL/cl.h>
 #include <cstdio>
 #include <cstdlib>
@@ -369,7 +370,12 @@ static KernelResult bench_fused_attention(const BenchShape& shape, int warmup, i
         std::fill(output_gpu.begin(), output_gpu.end(), 0.0f);
         input.output = output_gpu.data();
         uint64_t ns;
+        auto t0 = std::chrono::steady_clock::now();
         fused_attention_tiled_opencl_profiled(input, &ns);
+        auto t1 = std::chrono::steady_clock::now();
+        if (ns == 0) {
+            ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+        }
     }
 
     std::vector<double> times_ms;
@@ -377,7 +383,12 @@ static KernelResult bench_fused_attention(const BenchShape& shape, int warmup, i
         std::fill(output_gpu.begin(), output_gpu.end(), 0.0f);
         input.output = output_gpu.data();
         uint64_t ns;
+        auto t0 = std::chrono::steady_clock::now();
         fused_attention_tiled_opencl_profiled(input, &ns);
+        auto t1 = std::chrono::steady_clock::now();
+        if (ns == 0) {
+            ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+        }
         times_ms.push_back((double)ns / 1e6);
     }
 
@@ -460,7 +471,7 @@ int run_benchmark(int argc, char* argv[]) {
     int warmup = 10;
     int iters = 100;
     bool json_output = true;
-    std::string kernel_dir = "native/opencl/kernels";
+    std::string kernel_dir;
 
     // Parse args
     for (int i = 0; i < argc; i++) {
@@ -468,6 +479,7 @@ int run_benchmark(int argc, char* argv[]) {
         else if (std::string(argv[i]) == "--iters" && i + 1 < argc) iters = atoi(argv[++i]);
         else if (std::string(argv[i]) == "--kernel-dir" && i + 1 < argc) kernel_dir = argv[++i];
     }
+    kernel_dir = tq::resolve_kernel_dir(kernel_dir);
 
     // Initialize OpenCL context
     TqStatus st = init_context();
@@ -478,8 +490,11 @@ int run_benchmark(int argc, char* argv[]) {
 
     // Load kernels
     load_kernel(kernel_dir + "/tq_mse_score.cl", "tq_mse_score");
+    load_kernel(kernel_dir + "/tq_mse_score.cl", "tq_mse_score_tiled");
     load_kernel(kernel_dir + "/tq_qjl_score.cl", "tq_qjl_score");
+    load_kernel(kernel_dir + "/tq_qjl_score.cl", "tq_qjl_score_tiled");
     load_kernel(kernel_dir + "/tq_value_dequant.cl", "tq_value_dequant");
+    load_kernel(kernel_dir + "/tq_value_dequant.cl", "tq_value_weighted_accum");
     load_kernel(kernel_dir + "/tq_fused_attention.cl", "tq_fused_attention");
     load_kernel(kernel_dir + "/tq_attention_logits.cl", "tq_attention_logits");
     load_kernel(kernel_dir + "/tq_attention_apply_values.cl", "tq_attention_apply_values");

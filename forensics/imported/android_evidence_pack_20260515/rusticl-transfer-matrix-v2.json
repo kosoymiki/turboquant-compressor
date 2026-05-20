@@ -1,0 +1,16 @@
+{
+  "platform": "rusticl",
+  "device": "FD725",
+  "kgsl_bo_direct": "works",
+  "tests": [
+    {"name":"T01_copy_host_ptr_read", "err":-5, "output_ok":false, "detail":"ReadBuffer fail"},
+    {"name":"T02_write_read", "err":-99, "output_ok":false, "detail":"WriteBuffer fail"},
+    {"name":"T03_fill_read", "err":-5, "output_ok":false, "detail":"ReadBuffer fail"},
+    {"name":"T04_map_read", "err":-5, "output_ok":false, "detail":"MapBuffer fail"},
+    {"name":"T05_map_write_unmap_read", "err":-5, "output_ok":false, "detail":"MapBuffer WRITE fail"},
+    {"name":"T06_alloc_host_ptr_map", "err":-5, "output_ok":false, "detail":"MapBuffer ALLOC_HOST_PTR fail"},
+    {"name":"T07_use_host_ptr_read", "err":-5, "output_ok":false, "detail":"ReadBuffer USE_HOST_PTR fail"}
+  ],
+  "classification": "ALL_TRANSFER_OPS_FAIL",
+  "implication": "KGSL BO mmap works directly. Failure is in Gallium/Rusticl resource_transfer_map or staging path."
+}

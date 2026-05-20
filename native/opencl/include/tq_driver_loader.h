@@ -2,16 +2,22 @@
  * TurboQuant Custom Driver Loader — multi-backend GPU dispatch.
  *
  * Priority tiers (forensic-validated):
- *   T0: Custom Rusticl/kgsl (our fork, max perf, full control)
- *   T1: Vendor Qualcomm OpenCL (libOpenCL.so, namespace-restricted)
- *   T2: System Rusticl via ICD (proot-debian, LLVM collision risk)
- *   T3: Turnip Vulkan compute (SPIR-V dispatch, always works via kgsl)
+ *   T0: Custom Rusticl/kgsl (our fork, max perf, full control, production path)
+ *   T1: Vendor Qualcomm OpenCL (legacy opt-in fallback only)
+ *   T2: System Rusticl via ICD (legacy opt-in fallback only)
+ *   T3: Turnip Vulkan compute (stack-local fallback via kgsl)
  *   T4: CPU fallback (WASM SIMD128 or scalar)
  *
  * Forensic backing:
  *   - kgsl_forensic.h tracing model
- *   - pipe_loader_kgsl.c probe pattern
+ *   - current Mesa KGSL probe route through pipe_loader_kgsl.c / freedreno kgsl backend
  *   - Turnip kgsl direct ioctl path
+ *
+ * Runtime contract:
+ *   - Production execution is env.sh + OCL ICD + packaged Rusticl layer.
+ *   - This loader is a stack-aware selector and forensic validator.
+ *   - Vendor/system OpenCL fallbacks are disabled unless
+ *     TQ_ENABLE_LEGACY_OPENCL_FALLBACKS=1 is set explicitly.
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */

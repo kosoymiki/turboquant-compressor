@@ -9,6 +9,7 @@
 #include "tq_opencl.h"
 #include "../include/tq_kernel_tune.h"
 #include <CL/cl.h>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -291,13 +292,21 @@ TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input,
         return TqStatus::OK;
     }
 
+    auto wall_start = std::chrono::steady_clock::now();
     clWaitForEvents(1, &ev2);
+    auto wall_end = std::chrono::steady_clock::now();
 
-    // Total time = logits start to values end
-    cl_ulong t1_start = 0, t2_end = 0;
-    clGetEventProfilingInfo(ev1, CL_PROFILING_COMMAND_START, sizeof(t1_start), &t1_start, nullptr);
-    clGetEventProfilingInfo(ev2, CL_PROFILING_COMMAND_END, sizeof(t2_end), &t2_end, nullptr);
-    *kernel_ns = (uint64_t)(t2_end - t1_start);
+    if (profiling_enabled()) {
+        cl_ulong t1_start = 0, t2_end = 0;
+        if (clGetEventProfilingInfo(ev1, CL_PROFILING_COMMAND_START, sizeof(t1_start), &t1_start, nullptr) == CL_SUCCESS &&
+            clGetEventProfilingInfo(ev2, CL_PROFILING_COMMAND_END, sizeof(t2_end), &t2_end, nullptr) == CL_SUCCESS) {
+            *kernel_ns = (uint64_t)(t2_end - t1_start);
+        } else {
+            *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
+        }
+    } else {
+        *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
+    }
 
     clEnqueueReadBuffer(queue, d_output, CL_TRUE, 0, dim * sizeof(float), input.output, 0, nullptr, nullptr);
 

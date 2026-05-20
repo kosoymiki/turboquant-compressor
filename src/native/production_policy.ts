@@ -1,5 +1,5 @@
 /**
- * TurboQuant production policy for corpus-control-plane.
+ * TurboQuant production policy for the standalone repo and mirrored deployments.
  * Custom driver stack is the only allowed production route.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */

@@ -9,6 +9,7 @@
  */
 
 #include "../include/tq_vk_probe.h"
+#include "../include/tq_repo_paths.h"
 #include <dlfcn.h>
 #include <cstring>
 #include <chrono>
@@ -110,17 +111,6 @@ static std::string env_or_empty(const char* name) {
     return value ? std::string(value) : std::string();
 }
 
-static std::string home_dir() {
-    auto home = env_or_empty("HOME");
-    return home.empty() ? std::string("/data/local/tmp") : home;
-}
-
-static std::string join_path(const std::string& base, const char* suffix) {
-    if (base.empty()) return std::string();
-    if (!base.empty() && base.back() == '/') return base + suffix;
-    return base + "/" + suffix;
-}
-
 VkProbeResult probe_vulkan(const char* driver_path) {
     auto t0 = std::chrono::steady_clock::now();
     VkProbeResult r = {};
@@ -132,22 +122,19 @@ VkProbeResult probe_vulkan(const char* driver_path) {
         // Try alternate paths
         std::vector<std::string> fallbacks;
         auto driver_root = env_or_empty("TQ_DRIVER_ROOT");
-        auto tq_root = env_or_empty("TURBOQUANT_ROOT");
-        auto mesa_root = env_or_empty("TQ_MESA_ROOT");
-        auto home = home_dir();
         if (!driver_root.empty()) {
-            fallbacks.push_back(join_path(driver_root, "layer2-vulkan/libvulkan_freedreno.so"));
-            fallbacks.push_back(join_path(driver_root, "libvulkan_freedreno.so"));
+            fallbacks.push_back(join_repo_path(driver_root, "layer2-vulkan/libvulkan_freedreno.so"));
+            fallbacks.push_back(join_repo_path(driver_root, "libvulkan_freedreno.so"));
         }
-        if (!tq_root.empty()) {
-            fallbacks.push_back(join_path(tq_root, "native/opencl/driver-pack/layer2-vulkan/libvulkan_freedreno.so"));
+        for (const auto& root : runtime_pack_roots()) {
+            fallbacks.push_back(join_repo_path(root, "layer2-vulkan/libvulkan_freedreno.so"));
+            fallbacks.push_back(join_repo_path(root, "libvulkan_freedreno.so"));
         }
-        if (!mesa_root.empty()) {
-            fallbacks.push_back(join_path(mesa_root, "build/src/freedreno/vulkan/libvulkan_freedreno.so"));
+        for (const auto& mesa_root : tq::mesa_roots()) {
+            for (const auto& build_dir : tq::mesa_build_dirs(mesa_root)) {
+                fallbacks.push_back(join_repo_path(build_dir, "src/freedreno/vulkan/libvulkan_freedreno.so"));
+            }
         }
-        fallbacks.push_back(join_path(home, "turboquant/drivers/layer2-vulkan/libvulkan_freedreno.so"));
-        fallbacks.push_back(join_path(home, "mesa-upstream/build/src/freedreno/vulkan/libvulkan_freedreno.so"));
-        fallbacks.push_back(join_path(home, "mesa-upstream-26.2-devel/build/src/freedreno/vulkan/libvulkan_freedreno.so"));
         for (const auto& fallback : fallbacks) {
             vk_lib = dlopen(fallback.c_str(), RTLD_LOCAL | RTLD_NOW);
             if (vk_lib) break;

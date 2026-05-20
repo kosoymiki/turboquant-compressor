@@ -1,0 +1,10 @@
+{
+  "context_id": 5,
+  "alloc": {"id": 2, "gpuaddr": "0x4000030000", "size": 4096, "mmapsize": 4096},
+  "mmap": "OK",
+  "noop_ib_1": {"submit_ret": 0, "errno": "none", "timestamp": 1, "wait_ret": -1},
+  "noop_ib_2": {"submit_ret": 0, "errno": "none", "timestamp": 2, "wait_ret": -1},
+  "timestamp_increments": true,
+  "interpretation": "timestamp_retirement_proves_command_consumed_not_compute_executed",
+  "note": "NOP IBs get timestamps and retire. This proves timestamp is about command consumption, not about meaningful GPU work output."
+}

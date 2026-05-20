@@ -1,0 +1,9 @@
+{
+  "spirv_present": true,
+  "opstore_count": 4,
+  "store_path": true,
+  "ir3_isa_proven": false,
+  "ir3_isa_inferred": true,
+  "overclaim": false,
+  "conclusion": "Shader representation has write path. Failure is post-compilation."
+}

@@ -1,0 +1,44 @@
+{
+  "timestamp": "2025-01-01T00:00:00Z",
+  "device": {
+    "model": "RMX3709",
+    "soc": "SM8475",
+    "platform": "taro",
+    "hardware": "qcom",
+    "android_version": "16",
+    "gpu": "Adreno 730",
+    "chip_id": "FD725"
+  },
+  "interfaces": {
+    "kgsl": {
+      "path": "/dev/kgsl-3d0",
+      "permissions": "crw-rw-rw-",
+      "owner": "system:system",
+      "major": 505,
+      "minor": 0,
+      "accessible": true
+    },
+    "drm_render": {
+      "path": "/dev/dri/renderD128",
+      "permissions": "crw-rw-rw-",
+      "owner": "root:graphics",
+      "major": 226,
+      "minor": 128,
+      "accessible_from_termux": false,
+      "note": "Permission denied from Termux userspace"
+    }
+  },
+  "termux": {
+    "path": "/data/data/com.termux/files",
+    "user": "u0_a291",
+    "kgsl_access": true,
+    "drm_access": false
+  },
+  "adb": {
+    "endpoint": "192.168.50.54:41473",
+    "transport": "wifi",
+    "state": "device"
+  },
+  "gpu_logcat": "no GPU errors in recent logcat",
+  "note": "Device is Realme GT Neo 3T with Snapdragon 8+ Gen 1. KGSL accessible, DRM render node exists but not accessible from Termux."
+}

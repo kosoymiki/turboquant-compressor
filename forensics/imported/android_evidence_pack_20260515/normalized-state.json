@@ -1,0 +1,45 @@
+{
+  "ingested_at": "2026-05-15T23:51:56.152Z",
+  "device": {
+    "model": "RMX3709",
+    "soc": "SM8475",
+    "gpu": "Adreno 730",
+    "chip_id": "FD725",
+    "kgsl_accessible": true,
+    "drm_render_accessible_from_termux": false
+  },
+  "rusticl": {
+    "build": "pass",
+    "platform": "pass",
+    "device": "pass",
+    "context_queue_kernel": "pass",
+    "submit": "pass",
+    "shader_store_path": true,
+    "spirv_opstore_count": 4,
+    "transfer_path": "fail",
+    "memory_classification": "CPU_MAPPING_BROKEN",
+    "timestamp_execution_proof": false,
+    "final_state": "FORMAL_CLOSE",
+    "reason": "Gallium KGSL winsys transfer path broken: MapBuffer/ReadBuffer/WriteBuffer fail"
+  },
+  "vendor_opencl": {
+    "role": "primary",
+    "production": true
+  },
+  "turnip_vulkan": {
+    "role": "correctness_fallback",
+    "production": false
+  },
+  "evidence_sources": [
+    "patch-40R-drawctxt-forensics.json",
+    "patch-41R-rusticl-device-success.json",
+    "patch-42R-final-gpu-submit.json",
+    "patch-43R-decision-gate-close.json",
+    "ir3/rusticl-kernel.json",
+    "kgsl/memory-visibility-report.json",
+    "kgsl/timestamp-report.json",
+    "kgsl/turnip-rusticl-compute-diff.json",
+    "rusticl-kgsl-final-decision.json",
+    "backend-final-truth.json"
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "generated": "2026-05-15T21:07:00Z",
+  "build_result": "SUCCESS",
+  "mesa_commit": "f7fed3bdf8532db9fe70e73da3d4dc4c42374836",
+  "mesa_version": "26.2.0-devel (git-f7fed3bdf8)",
+  "target": {
+    "arch": "aarch64",
+    "os": "android",
+    "api_level": 28,
+    "environment": "Termux"
+  },
+  "configuration": {
+    "gallium_drivers": ["freedreno"],
+    "vulkan_drivers": ["freedreno"],
+    "freedreno_kmds": ["msm", "kgsl"],
+    "llvm": "21.1.8",
+    "buildtype": "release"
+  },
+  "artifacts": {
+    "libvulkan_freedreno.so": {
+      "size_bytes": 16636544,
+      "format": "ELF 64-bit LSB shared object, ARM aarch64",
+      "build_id": "3697bf734d6419b7dad2f2921eae9b1af8276e28"
+    }
+  },
+  "vulkaninfo": {
+    "api_version": "1.4.350",
+    "driver_version": "26.1.99",
+    "vendor_id": "0x5143",
+    "device_id": "0x7030002",
+    "device_type": "INTEGRATED_GPU",
+    "device_name": "Turnip Adreno (TM) 725",
+    "driver_id": "DRIVER_ID_MESA_TURNIP",
+    "driver_name": "turnip Mesa driver",
+    "conformance_version": "1.4.0.0"
+  },
+  "kgsl_backend": {
+    "files_applied": [
+      "src/freedreno/drm/kgsl/kgsl_bo.c",
+      "src/freedreno/drm/kgsl/kgsl_device.c",
+      "src/freedreno/drm/kgsl/kgsl_pipe.c",
+      "src/freedreno/drm/kgsl/kgsl_priv.h",
+      "src/freedreno/drm/kgsl/kgsl_ringbuffer_sp.c"
+    ],
+    "meson_build_rebased": true,
+    "freedreno_device_c_patched": true,
+    "source": "droidvm/mesa-freedreno-patchs (0011) + manual rebase"
+  },
+  "termux_workarounds": {
+    "android_ndk_stubs": ["cutils/native_handle.h", "vndk/hardware_buffer.h", "android/hardware_buffer.h", "android/sync.h"],
+    "pthread_cancel_stub": true,
+    "api_level_override": "__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__=1",
+    "liblog_link": "-L/system/lib64 -llog"
+  }
+}

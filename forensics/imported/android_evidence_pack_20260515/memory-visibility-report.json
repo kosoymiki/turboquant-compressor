@@ -1,0 +1,34 @@
+{
+  "timestamp": "2025-01-01T00:00:00Z",
+  "device": "Adreno 730 / FD725",
+  "backend": "rusticl_gallium_kgsl",
+  "tests": {
+    "cpu_mapping": {"pass": false, "detail": "MapBuffer failed"},
+    "copy_host_ptr_read": {"pass": false, "detail": "ReadBuffer failed (transfer path broken)"},
+    "use_host_ptr_write": {"pass": false, "detail": "host ptr unchanged after kernel"},
+    "alloc_host_ptr_write": {"pass": false, "detail": "MapBuffer failed after kernel"},
+    "plain_map_after_kernel": {"pass": false, "detail": "WriteBuffer failed"}
+  },
+  "classification": "CPU_MAPPING_BROKEN",
+  "analysis": {
+    "cpu_mapping_works": false,
+    "transfer_path_works": false,
+    "gpu_write_visible": false,
+    "readbuffer_err": -5,
+    "writebuffer_fails": true,
+    "mapbuffer_fails": true
+  },
+  "interpretation": {
+    "primary": "Gallium KGSL transfer/map path is fundamentally broken. clEnqueueMapBuffer, clEnqueueReadBuffer, and clEnqueueWriteBuffer all fail.",
+    "secondary": "Cannot determine if GPU executes compute kernel because ALL data access paths fail — not just post-kernel read.",
+    "implication": "The blocker is not specifically 'GPU does not execute compute'. The blocker is that Gallium KGSL winsys does not support the buffer transfer operations that Rusticl requires for ANY data movement.",
+    "root_cause": "freedreno KGSL backend lacks working resource_transfer / buffer_map / blit implementation for the Rusticl use case. The texture_transfer_modes=0 fix (Patch 42R) disabled blit but did not provide a working CPU map fallback.",
+    "note": "This is a more fundamental issue than previously understood. Even if GPU compute dispatch works correctly, results cannot be read back."
+  },
+  "comparison_with_turnip": {
+    "turnip_uses": "Vulkan memory model with explicit vkMapMemory on host-visible allocations",
+    "rusticl_needs": "Gallium resource_transfer API which maps to kgsl_bo_map internally",
+    "difference": "Turnip manages its own memory mapping; Rusticl depends on Gallium pipe transfer which is broken in KGSL backend"
+  },
+  "conclusion": "FORMAL_CLOSE confirmed. Transfer path broken = no data in/out regardless of compute execution. This is an architectural gap in freedreno Gallium KGSL backend, not a small patchable bug."
+}

@@ -1,12 +1,13 @@
 {
-  "mesa_commit": "TBD — pin before any patch application",
-  "last_updated": "2026-05-15",
-  "target_device": "Qualcomm Adreno 730 (SM8475)",
+  "mesa_commit": "388665c442f2f84fb8bab03eb9042a1fc1c6b97a",
+  "last_updated": "2026-05-20",
+  "target_device": "Qualcomm Adreno730v3 (SM8475) with a7xx-a8xx recovery scope",
   "android_version": "Android 13+",
   "termux_mode": "native (no proot)",
   "notes": [
     "No Mesa/Rusticl readiness claim without: build log + clinfo + kernel parity",
     "All patches are research-only until proven on device",
-    "Vendor OpenCL (Qualcomm) remains primary production backend"
+    "Custom driver stack is the intended production route; vendor OpenCL is evidence-only and not authoritative",
+    "Mesa 26.2+ already exposes freedreno-kmds=kgsl upstream; semantic patch reconstruction is required"
   ]
 }

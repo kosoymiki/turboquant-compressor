@@ -1,0 +1,40 @@
+{
+  "patch": "42R",
+  "title": "Rusticl KGSL Compute Pipeline — Full API Success, GPU Dispatch Pending",
+  "timestamp": "2026-05-16T01:20:00+03:00",
+  "status": "PARTIAL_SUCCESS",
+  "verified_working": {
+    "platform": "rusticl (OpenCL 3.1)",
+    "device": "FD725 (Adreno 730 / Gen 7)",
+    "context_creation": true,
+    "command_queue": true,
+    "buffer_creation": true,
+    "program_build": true,
+    "kernel_creation": true,
+    "enqueue_ndrange": "returns 0 (accepted)",
+    "finish": "returns 0 (no error)"
+  },
+  "remaining_blockers": [
+    {
+      "id": "GPU_SUBMIT_NOT_TRIGGERED",
+      "description": "clEnqueueNDRangeKernel returns success but IOCTL_KGSL_GPU_COMMAND is never called for compute context. Only init context (ctx=16) submits. Deferred submit mechanism doesn't flush compute commands.",
+      "evidence": "KGSL_SUBMIT trace shows only ctx=16 init submit, no ctx=17 compute submit",
+      "root_cause_hypothesis": "fd_pipe_sp_flush early-return (last_submit_fence >= fence) or threaded submit queue not draining for compute pipe"
+    },
+    {
+      "id": "READBUFFER_ERR_MINUS_5",
+      "description": "clEnqueueReadBuffer returns -5 (CL_OUT_OF_RESOURCES). Buffer data initialized via CL_MEM_COPY_HOST_PTR IS readable (verified in readback_test: out[0]=42), but formal ReadBuffer call returns error code -5.",
+      "evidence": "readback_test shows data present but err=-5; compute test shows c[0]=-1 (buffer never written by GPU)",
+      "root_cause_hypothesis": "Transfer path uses blit/copy which requires GPU submit (same blocker as above), or mmap/staging buffer issue"
+    }
+  ],
+  "icd_loader_verified": true,
+  "vendor_file": "/data/data/com.termux/files/usr/etc/OpenCL/vendors/rusticl.icd",
+  "architecture_proven": "pipe_loader_kgsl → fd_device_new_kgsl_direct → kgsl_pipe (flags=0x13) → ir3_compiler → fd6_screen_init → Rusticl Device(FD725)",
+  "next_steps": [
+    "Debug deferred submit flush for compute pipe",
+    "Trace fd_pipe_sp_flush fence comparison for compute ctx",
+    "Check if threaded_submit=true prevents immediate flush",
+    "May need to disable threaded submit for KGSL or fix flush path"
+  ]
+}

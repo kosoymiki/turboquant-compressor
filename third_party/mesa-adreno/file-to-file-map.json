@@ -1,0 +1,589 @@
+{
+  "generated": "2026-05-20T10:57:55.605700+00:00",
+  "mesa_head": "388665c442f2f84fb8bab03eb9042a1fc1c6b97a",
+  "tracks": [
+    {
+      "id": "kgsl_backend_core",
+      "goal": "recover or validate the userspace KGSL backend surfaces used by Gallium/Freedreno and Turnip on Android",
+      "upstream_files": [
+        {
+          "relative": "src/freedreno/drm/meson.build",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/drm/meson.build",
+          "exists": true
+        },
+        {
+          "relative": "src/freedreno/vulkan/tu_knl_kgsl.cc",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/vulkan/tu_knl_kgsl.cc",
+          "exists": true
+        }
+      ],
+      "native_tq_files": [
+        {
+          "relative": "native/opencl/src/tq_driver_loader.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_driver_loader.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_opencl_probe.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_opencl_probe.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_vk_probe.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_vk_probe.cpp",
+          "exists": true
+        }
+      ],
+      "historical_evidence": [
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/mesa-turnip-build-evidence.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/mesa-turnip-build-evidence.json",
+          "exists": true
+        },
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/rusticl-build-evidence.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/rusticl-build-evidence.json",
+          "exists": true
+        },
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/patch-42R-final-gpu-submit.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/patch-42R-final-gpu-submit.json",
+          "exists": true
+        },
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/patch-43R-decision-gate-close.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/patch-43R-decision-gate-close.json",
+          "exists": true
+        }
+      ],
+      "donor_hints": [
+        {
+          "relative": "raw/repos/mesa-driver-donors/mesa-freedreno-patchs/freedreno-kgsl-patchs-for-24.2.8/0011-freedreno-drm-kgsl-Add-KGSL-backend-for-freedreno.patch",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/mesa-freedreno-patchs/freedreno-kgsl-patchs-for-24.2.8/0011-freedreno-drm-kgsl-Add-KGSL-backend-for-freedreno.patch",
+          "exists": true
+        },
+        {
+          "relative": "raw/repos/mesa-driver-donors/mesa-freedreno-patchs/freedreno-kgsl-patchs-for-24.2.8/0012-freedreno-drm-Add-more-APIs-to-per-backend-API.patch",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/mesa-freedreno-patchs/freedreno-kgsl-patchs-for-24.2.8/0012-freedreno-drm-Add-more-APIs-to-per-backend-API.patch",
+          "exists": true
+        }
+      ],
+      "proof_targets": [
+        {
+          "relative": "forensics/adb-driver-truth.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/forensics/adb-driver-truth.json",
+          "exists": true
+        },
+        {
+          "relative": "forensics/mesa/driver-mesh-recovery-ready.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/forensics/mesa/driver-mesh-recovery-ready.json",
+          "exists": true
+        },
+        {
+          "relative": "forensics/opencl-adreno-report.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/forensics/opencl-adreno-report.json",
+          "exists": true
+        }
+      ],
+      "missing_upstream_surfaces": [
+        {
+          "relative": "src/freedreno/drm/kgsl/kgsl_bo.c",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/drm/kgsl/kgsl_bo.c",
+          "exists": false
+        },
+        {
+          "relative": "src/freedreno/drm/kgsl/kgsl_device.c",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/drm/kgsl/kgsl_device.c",
+          "exists": false
+        },
+        {
+          "relative": "src/freedreno/drm/kgsl/kgsl_pipe.c",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/drm/kgsl/kgsl_pipe.c",
+          "exists": false
+        },
+        {
+          "relative": "src/freedreno/drm/kgsl/kgsl_priv.h",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/drm/kgsl/kgsl_priv.h",
+          "exists": false
+        },
+        {
+          "relative": "src/freedreno/drm/kgsl/kgsl_ringbuffer_sp.c",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/drm/kgsl/kgsl_ringbuffer_sp.c",
+          "exists": false
+        }
+      ]
+    },
+    {
+      "id": "pipe_loader_and_driver_selection",
+      "goal": "rebuild deterministic driver selection and probe order without reviving stale legacy loader logic",
+      "upstream_files": [
+        {
+          "relative": "src/gallium/auxiliary/pipe-loader/pipe_loader_drm.c",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/gallium/auxiliary/pipe-loader/pipe_loader_drm.c",
+          "exists": true
+        },
+        {
+          "relative": "src/gallium/auxiliary/target-helpers/drm_helper.h",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/gallium/auxiliary/target-helpers/drm_helper.h",
+          "exists": true
+        },
+        {
+          "relative": "src/gallium/targets/dril/dril_target.c",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/gallium/targets/dril/dril_target.c",
+          "exists": true
+        },
+        {
+          "relative": "meson.build",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/meson.build",
+          "exists": true
+        },
+        {
+          "relative": "meson.options",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/meson.options",
+          "exists": true
+        }
+      ],
+      "native_tq_files": [
+        {
+          "relative": "native/opencl/src/tq_driver_loader.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_driver_loader.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_driver_manifest.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_driver_manifest.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/include/tq_driver_loader.h",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/include/tq_driver_loader.h",
+          "exists": true
+        }
+      ],
+      "historical_evidence": [
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/kgsl-pipe-loader-plan.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/kgsl-pipe-loader-plan.json",
+          "exists": true
+        },
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/loader-report.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/loader-report.json",
+          "exists": true
+        }
+      ],
+      "donor_hints": [
+        {
+          "relative": "raw/repos/mesa-driver-donors/mesa-freedreno-patchs/freedreno-kgsl-patchs-for-24.2.8/0015-termux-x11-kgsl.patch",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/mesa-freedreno-patchs/freedreno-kgsl-patchs-for-24.2.8/0015-termux-x11-kgsl.patch",
+          "exists": true
+        },
+        {
+          "relative": "raw/repos/mesa-driver-donors/mesa-for-android-container/meson.build",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/mesa-for-android-container/meson.build",
+          "exists": true
+        }
+      ],
+      "proof_targets": [
+        {
+          "relative": "third_party/mesa-adreno/reconstruction-plan.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/third_party/mesa-adreno/reconstruction-plan.json",
+          "exists": true
+        },
+        {
+          "relative": "third_party/mesa-adreno/proof-matrix.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/third_party/mesa-adreno/proof-matrix.json",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "id": "android_stub_and_cutils_surface",
+      "goal": "restore Android stub and cutils compatibility without brittle duplicated stub hacks",
+      "upstream_files": [
+        {
+          "relative": "src/android_stub/meson.build",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/android_stub/meson.build",
+          "exists": true
+        },
+        {
+          "relative": "src/android_stub/hardware_stub.cpp",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/android_stub/hardware_stub.cpp",
+          "exists": true
+        },
+        {
+          "relative": "src/android_stub/log_stub.cpp",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/android_stub/log_stub.cpp",
+          "exists": true
+        },
+        {
+          "relative": "src/android_stub/sync_stub.cpp",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/android_stub/sync_stub.cpp",
+          "exists": true
+        },
+        {
+          "relative": "include/android_stub/cutils/native_handle.h",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/include/android_stub/cutils/native_handle.h",
+          "exists": false
+        },
+        {
+          "relative": "include/android_stub/vndk/hardware_buffer.h",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/include/android_stub/vndk/hardware_buffer.h",
+          "exists": false
+        },
+        {
+          "relative": "include/android_stub/android/hardware_buffer.h",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/include/android_stub/android/hardware_buffer.h",
+          "exists": false
+        }
+      ],
+      "native_tq_files": [
+        {
+          "relative": "native/opencl/driver-pack/manifest.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/driver-pack/manifest.json",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/driver-pack/build_mesa.sh",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/driver-pack/build_mesa.sh",
+          "exists": true
+        }
+      ],
+      "historical_evidence": [
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/mesa-turnip-build-evidence.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/mesa-turnip-build-evidence.json",
+          "exists": true
+        },
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/rusticl-build-evidence.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/rusticl-build-evidence.json",
+          "exists": true
+        }
+      ],
+      "donor_hints": [
+        {
+          "relative": "raw/repos/mesa-driver-donors/mesa-turnip-android-driver/mesa-implement-android_stub.patch",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/mesa-turnip-android-driver/mesa-implement-android_stub.patch",
+          "exists": true
+        },
+        {
+          "relative": "raw/repos/mesa-driver-donors/mesa-for-android-container/bin/update-android-headers.sh",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/mesa-for-android-container/bin/update-android-headers.sh",
+          "exists": true
+        },
+        {
+          "relative": "raw/repos/mesa-driver-donors/Adreno-Tools-Drivers/build_turnip.sh",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/Adreno-Tools-Drivers/build_turnip.sh",
+          "exists": true
+        }
+      ],
+      "proof_targets": [
+        {
+          "relative": "forensics/mesa/driver-mesh-recovery-ready.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/forensics/mesa/driver-mesh-recovery-ready.json",
+          "exists": true
+        },
+        {
+          "relative": "third_party/mesa-adreno/build-matrix.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/third_party/mesa-adreno/build-matrix.json",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "id": "turnip_a7xx_a8xx_behavior",
+      "goal": "port A7xx/A8xx-specific Turnip behavior semantically instead of replaying force-wave hacks",
+      "upstream_files": [
+        {
+          "relative": "src/freedreno/vulkan/tu_device.cc",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/vulkan/tu_device.cc",
+          "exists": true
+        },
+        {
+          "relative": "src/freedreno/vulkan/tu_knl_kgsl.cc",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/vulkan/tu_knl_kgsl.cc",
+          "exists": true
+        },
+        {
+          "relative": "src/freedreno/vulkan/tu_shader.cc",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/vulkan/tu_shader.cc",
+          "exists": true
+        },
+        {
+          "relative": "src/freedreno/common/freedreno_devices.py",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/common/freedreno_devices.py",
+          "exists": true
+        },
+        {
+          "relative": "src/freedreno/common/fd6_gmem_cache.h",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/freedreno/common/fd6_gmem_cache.h",
+          "exists": true
+        }
+      ],
+      "native_tq_files": [
+        {
+          "relative": "native/opencl/src/tq_vk_probe.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_vk_probe.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_kernel_tune.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_kernel_tune.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_gpu_profile.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_gpu_profile.cpp",
+          "exists": true
+        }
+      ],
+      "historical_evidence": [
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/device-identity.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/device-identity.json",
+          "exists": true
+        },
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/turnip-rusticl-compute-diff.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/turnip-rusticl-compute-diff.json",
+          "exists": true
+        },
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/vulkan-compute-benchmark.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/vulkan-compute-benchmark.json",
+          "exists": true
+        }
+      ],
+      "donor_hints": [
+        {
+          "relative": "raw/repos/mesa-driver-donors/Adreno-Tools-Drivers/tu_gen8.patch",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/Adreno-Tools-Drivers/tu_gen8.patch",
+          "exists": true
+        },
+        {
+          "relative": "raw/repos/mesa-driver-donors/Adreno-Tools-Drivers/patches/force_sysmem_no_autotuner.patch",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/Adreno-Tools-Drivers/patches/force_sysmem_no_autotuner.patch",
+          "exists": true
+        },
+        {
+          "relative": "raw/repos/mesa-driver-donors/Adreno-Tools-Drivers/patches/quest3.patch",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/Adreno-Tools-Drivers/patches/quest3.patch",
+          "exists": true
+        },
+        {
+          "relative": "raw/repos/mesa-driver-donors/mesa-tu8/src/freedreno",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/mesa-tu8/src/freedreno",
+          "exists": true
+        }
+      ],
+      "proof_targets": [
+        {
+          "relative": "forensics/adb-driver-truth.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/forensics/adb-driver-truth.json",
+          "exists": true
+        },
+        {
+          "relative": "forensics/mesa/driver-mesh-recovery-ready.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/forensics/mesa/driver-mesh-recovery-ready.json",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "id": "rusticl_compute_path",
+      "goal": "revalidate Rusticl over Freedreno/KGSL against old transfer failures and current Mesa surfaces",
+      "upstream_files": [
+        {
+          "relative": "src/gallium/frontends/rusticl",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/src/gallium/frontends/rusticl",
+          "exists": true
+        },
+        {
+          "relative": "meson.options",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/meson.options",
+          "exists": true
+        },
+        {
+          "relative": "meson.build",
+          "path": "/data/data/com.termux/files/home/mesa-upstream-26.2-devel/meson.build",
+          "exists": true
+        }
+      ],
+      "native_tq_files": [
+        {
+          "relative": "native/opencl/src/tq_opencl_context.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_opencl_context.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_opencl_program.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_opencl_program.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_opencl_memory.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_opencl_memory.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_opencl_qjl_score.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_opencl_qjl_score.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_opencl_mse_score.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_opencl_mse_score.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_opencl_value_dequant.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_opencl_value_dequant.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_opencl_fused_attention.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_opencl_fused_attention.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/src/tq_opencl_fused_attention_tiled.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/src/tq_opencl_fused_attention_tiled.cpp",
+          "exists": true
+        }
+      ],
+      "historical_evidence": [
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/rusticl-kgsl-final-decision.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/rusticl-kgsl-final-decision.json",
+          "exists": true
+        },
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/rusticl-transfer-final-decision.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/rusticl-transfer-final-decision.json",
+          "exists": true
+        },
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/memory-visibility-report.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/memory-visibility-report.json",
+          "exists": true
+        },
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/direct-bo-transfer.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/direct-bo-transfer.json",
+          "exists": true
+        }
+      ],
+      "donor_hints": [
+        {
+          "relative": "raw/repos/mesa-driver-donors/mesa-tu8/meson.build",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/mesa-tu8/meson.build",
+          "exists": true
+        },
+        {
+          "relative": "raw/repos/mesa-driver-donors/mesa-for-android-container/meson.build",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/mesa-for-android-container/meson.build",
+          "exists": true
+        }
+      ],
+      "proof_targets": [
+        {
+          "relative": "native/opencl/test/test_qjl_parity.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/test/test_qjl_parity.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/test/test_mse_parity.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/test/test_mse_parity.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/test/test_value_dequant_parity.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/test/test_value_dequant_parity.cpp",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/test/test_fused_attention_parity.cpp",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/test/test_fused_attention_parity.cpp",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "id": "packaging_and_release_delivery",
+      "goal": "retain delivery/packaging strengths without letting packaging repos define backend truth",
+      "upstream_files": [
+        {
+          "relative": "docs.mesa3d.org/android.html",
+          "path": "docs.mesa3d.org/android.html",
+          "exists": null
+        }
+      ],
+      "native_tq_files": [
+        {
+          "relative": "native/opencl/driver-pack/build_mesa.sh",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/driver-pack/build_mesa.sh",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/driver-pack/pack_driver.sh",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/driver-pack/pack_driver.sh",
+          "exists": true
+        },
+        {
+          "relative": "native/opencl/driver-pack/manifest.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/native/opencl/driver-pack/manifest.json",
+          "exists": true
+        }
+      ],
+      "historical_evidence": [
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/RELEASE_EVIDENCE_MANIFEST.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/RELEASE_EVIDENCE_MANIFEST.json",
+          "exists": true
+        },
+        {
+          "relative": "raw/forensics/android_evidence_pack_20260515/release-truth-lock.json",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/forensics/android_evidence_pack_20260515/release-truth-lock.json",
+          "exists": true
+        }
+      ],
+      "donor_hints": [
+        {
+          "relative": "raw/repos/mesa-driver-donors/Mesa-Turnip-Builder/build-turnip.sh",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/Mesa-Turnip-Builder/build-turnip.sh",
+          "exists": true
+        },
+        {
+          "relative": "raw/repos/mesa-driver-donors/mesa-turnip-android-driver/README.md",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/mesa-turnip-android-driver/README.md",
+          "exists": true
+        },
+        {
+          "relative": "raw/repos/mesa-driver-donors/Adreno-Tools-Drivers/build_turnip.sh",
+          "path": "/data/data/com.termux/files/home/corpus-control-plane/raw/repos/mesa-driver-donors/Adreno-Tools-Drivers/build_turnip.sh",
+          "exists": true
+        }
+      ],
+      "proof_targets": [
+        {
+          "relative": "forensics/RELEASE_EVIDENCE_MANIFEST.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/forensics/RELEASE_EVIDENCE_MANIFEST.json",
+          "exists": true
+        },
+        {
+          "relative": "forensics/mesa/driver-mesh-recovery-ready.json",
+          "path": "/data/data/com.termux/files/home/tmp_turboquant/forensics/mesa/driver-mesh-recovery-ready.json",
+          "exists": true
+        }
+      ]
+    }
+  ],
+  "global_rules": [
+    "upstream mesa remains canonical for current source layout",
+    "native/opencl remains canonical for TurboQuant runtime semantics",
+    "historical evidence packs are explanatory and replay aids, not current production truth",
+    "donor repos are semantic hint sources only",
+    "do not replay old force-wave or vendor-primary assumptions without live proof"
+  ]
+}

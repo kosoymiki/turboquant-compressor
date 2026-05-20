@@ -20,9 +20,9 @@ function readServerVersion(): string {
   try {
     const packageJsonPath = new URL('../package.json', import.meta.url);
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { version?: string };
-    return packageJson.version ?? '4.0.1';
+    return packageJson.version ?? '4.1.0';
   } catch {
-    return '4.0.1';
+    return '4.1.0';
   }
 }
 
@@ -468,6 +468,7 @@ server.registerTool(
 
 // Auto-init WASM backend (non-blocking, falls back to TS)
 initWasmBackend().then(ok => {
+  if (process.env.TURBOQUANT_MCP_QUIET === '1') return;
   if (ok) process.stderr.write('[turboquant] WASM SIMD128 backend: ready (17KB)\n');
   else process.stderr.write('[turboquant] WASM unavailable, using TS fallback\n');
 }).catch(() => {});

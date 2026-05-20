@@ -1,0 +1,49 @@
+{
+  "generated": "2026-05-15T21:35:00Z",
+  "device": "Turnip Adreno (TM) 725",
+  "backend": "turnip_kgsl",
+  "vulkan_api": "1.4.350",
+  "driver": "Mesa 26.2.0-devel (git-f7fed3bdf8)",
+  "kernels": {
+    "value_dequant": {
+      "parity": "PASS",
+      "cosine": 1.0,
+      "max_err": 1.192e-7,
+      "tokens": 32,
+      "dim": 128,
+      "bits": 4
+    },
+    "fused_attention": {
+      "parity": "PASS",
+      "cosine": 1.0,
+      "tokens": 64,
+      "dim": 128,
+      "mse_bits": 4,
+      "val_bits": 4,
+      "time_ms": 9.79
+    }
+  },
+  "benchmark": {
+    "fused_attention": [
+      {"tokens":64, "dim":128, "gpu_p50_ms":9.230, "cpu_ms":0.263, "speedup_vs_cpu":0.03},
+      {"tokens":128, "dim":128, "gpu_p50_ms":17.945, "cpu_ms":0.741, "speedup_vs_cpu":0.04},
+      {"tokens":512, "dim":128, "gpu_p50_ms":42.932, "cpu_ms":2.741, "speedup_vs_cpu":0.06},
+      {"tokens":1024, "dim":128, "gpu_p50_ms":44.537, "cpu_ms":5.902, "speedup_vs_cpu":0.13},
+      {"tokens":2048, "dim":128, "gpu_p50_ms":88.188, "cpu_ms":7.815, "speedup_vs_cpu":0.09},
+      {"tokens":4096, "dim":128, "gpu_p50_ms":176.298, "cpu_ms":5.404, "speedup_vs_cpu":0.03}
+    ]
+  },
+  "analysis": {
+    "parity": "PASS — both kernels produce bit-exact results vs CPU reference",
+    "performance": "FAIL — GPU slower than CPU on all shapes",
+    "root_cause": "Turnip KGSL dispatch overhead ~9ms dominates; single-workgroup sequential logits computation; dim=128 too small for GPU parallelism benefit",
+    "vendor_opencl_remains_faster": true,
+    "recommendation": "Turnip KGSL proven for correctness but not competitive for TurboQuant fused attention workload. Vendor OpenCL with tiled two-pass kernel remains primary backend."
+  },
+  "claim_state": {
+    "VULKAN_COMPUTE_PARITY": "PASS",
+    "VULKAN_COMPUTE_SPEEDUP": "FAIL",
+    "ADRENO_TURNIP_VULKAN_COMPUTE_READY": false,
+    "VENDOR_OPENCL_REMAINS_PRIMARY": true
+  }
+}

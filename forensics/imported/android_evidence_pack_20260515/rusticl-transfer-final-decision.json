@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-05-15T23:57:32.417Z",
+  "decision": "GALLIUM_TRANSFER_LAYER_BROKEN",
+  "reason": "Direct KGSL BO alloc+mmap+CPU read/write works. All Rusticl OpenCL transfer ops (Read/Write/Map/Fill) fail with err=-5. Blocker is in Gallium/Freedreno resource_transfer_map or staging path.",
+  "confidence": "high",
+  "evidence": {
+    "kgsl_bo_direct": "KGSL_BO_MMAP_WORKS",
+    "transfer_matrix": "ALL_TRANSFER_OPS_FAIL",
+    "memory_visibility": "CPU_MAPPING_BROKEN",
+    "timestamp_proves_execution": false,
+    "shader_store_present": true
+  },
+  "rusticl_role": "research_only",
+  "vendor_opencl_role": "primary",
+  "turnip_vulkan_role": "correctness_fallback",
+  "formal_close": true,
+  "next_action": "Instrument fd_resource_transfer_map in freedreno_resource.c to find exact failure point in Gallium transfer path.",
+  "forbidden_claims": [
+    "Rusticl ready",
+    "Rusticl production",
+    "Turnip primary",
+    "Full Snapdragon high-end ready",
+    "clFinish proves execution"
+  ]
+}

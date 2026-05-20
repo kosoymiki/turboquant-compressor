@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-05-15T23:30:58.112Z",
+  "final_state": "FORMAL_CLOSE",
+  "rusticl_role": "research_only",
+  "vendor_opencl_role": "primary",
+  "turnip_vulkan_role": "correctness_fallback",
+  "reason": "Gallium KGSL winsys transfer path broken: MapBuffer, ReadBuffer, WriteBuffer all fail. Cannot transfer data in or out regardless of compute execution. Architectural gap, not patchable bug.",
+  "confidence": "high",
+  "evidence_chain": {
+    "40R": "DRAWCTXT_CREATE flags fixed (0x13)",
+    "41R": "Device enumeration FD725 works (driver_name msm)",
+    "42R": "Deferred submit fixed, GPU_COMMAND accepted",
+    "43R": "Output unchanged — initial close",
+    "47R": "SPIR-V has 4 OpStore — shader has write path",
+    "48R": "Memory visibility: CPU_MAPPING_BROKEN",
+    "49R": "NOP IB gets timestamp — timestamp not proof of execution",
+    "50R": "Compute diff: RUSTICL_KGSL_TRANSFER_PATH_BROKEN"
+  },
+  "evidence_files": [
+    "forensics/patch-40R-drawctxt-forensics.json",
+    "forensics/patch-41R-rusticl-device-success.json",
+    "forensics/patch-42R-compute-pipeline-partial.json",
+    "forensics/patch-42R-final-gpu-submit.json",
+    "forensics/patch-43R-decision-gate-close.json",
+    "forensics/kgsl/pm4-ib-diff.json",
+    "forensics/ir3/rusticl-kernel.json",
+    "forensics/kgsl/memory-visibility-report.json",
+    "forensics/kgsl/timestamp-report.json",
+    "forensics/kgsl/turnip-rusticl-compute-diff.json"
+  ],
+  "forbidden_claims": [
+    "Rusticl ready",
+    "Rusticl compute backend ready",
+    "Turnip performance backend",
+    "Full Snapdragon high-end ready",
+    "clFinish proves GPU execution",
+    "GPU_COMMAND ret=0 proves shader executed"
+  ]
+}

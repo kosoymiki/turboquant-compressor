@@ -1,0 +1,7 @@
+{
+  "nop_ib_gets_timestamp": true,
+  "timestamp_increments_without_compute": true,
+  "submit_ret_0_proves_execution": false,
+  "clfinish_proves_execution": false,
+  "conclusion": "Timestamp assignment proves kernel accepted command buffer. Does NOT prove GPU executed compute shader or produced memory side effects."
+}

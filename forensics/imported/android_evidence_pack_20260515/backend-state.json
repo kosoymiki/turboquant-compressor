@@ -1,0 +1,65 @@
+{
+  "timestamp": "2025-05-15T22:35:00+03:00",
+  "device": "Snapdragon 8+ Gen 1 / Adreno 730",
+  "environment": "Android 14 / Termux",
+  "backends": {
+    "vendor_opencl": {
+      "role": "primary",
+      "status": "READY",
+      "evidence": "forensics/opencl-adreno-report.json",
+      "device_name": "QUALCOMM Adreno(TM)",
+      "opencl_version": "OpenCL 2.0",
+      "kernels_proven": ["mse_score", "qjl_score", "value_dequant", "fused_attention"],
+      "performance": "baseline (fastest)",
+      "notes": "Qualcomm vendor OpenCL driver. Full kernel parity proven. Production primary."
+    },
+    "turnip_vulkan": {
+      "role": "correctness_fallback",
+      "status": "READY_CORRECTNESS_ONLY",
+      "evidence": "forensics/mesa-turnip-build-evidence.json",
+      "device_name": "Turnip Adreno (TM) 730",
+      "vulkan_version": "1.3",
+      "binary": "libvulkan_freedreno.so",
+      "binary_size_bytes": 16638304,
+      "kernels_proven": ["value_dequant", "fused_attention"],
+      "correctness": "PASS (cosine=1.0 both kernels)",
+      "performance": "FAIL (10-30x slower than CPU due to dispatch overhead)",
+      "speedup_vs_cpu": false,
+      "notes": "Mesa Turnip via KGSL. Correct but too slow for production. Fallback for correctness verification only."
+    },
+    "rusticl_opencl": {
+      "role": "research_only",
+      "status": "BUILD_SUCCESS_NO_DEVICE",
+      "evidence": "forensics/rusticl-opencl-probe.json",
+      "build_result": "SUCCESS (210/210 targets)",
+      "binary": "libRusticlOpenCL.so.1.0.0",
+      "binary_size_bytes": 25103104,
+      "platform_name": "rusticl",
+      "platform_version": "OpenCL 3.1",
+      "device_enumerated": false,
+      "device_error": "CL_INVALID_DEVICE (-34)",
+      "root_cause": "Gallium pipe-loader requires /dev/dri/renderD128. Termux has no DRM render nodes.",
+      "kernels_proven": [],
+      "performance": "N/A",
+      "notes": "Builds and platform initializes but cannot access GPU without DRM. Research only."
+    }
+  },
+  "routing_policy": {
+    "primary_backend": "vendor_opencl",
+    "fallback_order": ["vendor_opencl", "turnip_vulkan"],
+    "correctness_reference": "turnip_vulkan",
+    "research_backends": ["rusticl_opencl"],
+    "rules": [
+      "vendor_opencl is always preferred for production workloads",
+      "turnip_vulkan used only for correctness cross-validation",
+      "rusticl_opencl cannot be used until DRM render node available",
+      "No backend claims READY without device evidence"
+    ]
+  },
+  "truth_assertions": [
+    "Vendor OpenCL is the only production-viable backend",
+    "Turnip Vulkan compute is correct but 10-30x slower than CPU",
+    "Rusticl builds but has zero runtime capability on this device",
+    "No false READY claims exist in this manifest"
+  ]
+}

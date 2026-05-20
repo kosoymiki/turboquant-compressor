@@ -1,0 +1,57 @@
+{
+  "lock_date": "2025-05-15T22:40:00+03:00",
+  "lock_version": "1.0.0",
+  "device": "Snapdragon 8+ Gen 1 / Adreno 730 / Android 14 / Termux",
+  "mesa_version": "26.1.0",
+  "mesa_commit": "f7fed3bdf8532db9fe70e73da3d4dc4c42374836",
+  "patches_completed": {
+    "patch_30_backend_state": "PASS — evidence-driven state contract, no false READY claims",
+    "patch_31_rusticl_build": "PASS — 210/210 targets, libRusticlOpenCL.so.1.0.0 (25MB)",
+    "patch_32_rusticl_probe": "PASS — platform=rusticl OpenCL 3.1, device=FAIL (no DRM render node)",
+    "patch_33_rusticl_parity": "BLOCKED — no device available, role=research_only",
+    "patch_34_rusticl_benchmark": "BLOCKED — no device available, role=research_only",
+    "patch_35_backend_routing": "PASS — vendor_opencl=primary, turnip=fallback, rusticl=research_only",
+    "patch_36_release_truth_lock": "PASS — this file"
+  },
+  "backend_truth": {
+    "vendor_opencl": {
+      "role": "primary",
+      "status": "READY",
+      "proven": true
+    },
+    "turnip_vulkan": {
+      "role": "correctness_fallback",
+      "status": "READY_CORRECTNESS_ONLY",
+      "proven": true,
+      "performance_viable": false
+    },
+    "rusticl_opencl": {
+      "role": "research_only",
+      "status": "BUILD_SUCCESS_NO_DEVICE",
+      "proven": false,
+      "blocker": "Gallium pipe-loader requires DRM render node (/dev/dri/renderD128)"
+    }
+  },
+  "kgsl_api_adaptation": {
+    "files_modified": [
+      "src/freedreno/drm/kgsl/kgsl_device.c",
+      "src/freedreno/drm/kgsl/kgsl_pipe.c"
+    ],
+    "changes": [
+      "Removed dev->features (field removed in Mesa 26.x fd_device struct)",
+      "Removed kgsl_reset_status() and .reset_status from fd_pipe_funcs (removed in 26.x)",
+      "Fixed kgsl_pipe_set_param signature: uint32_t param -> enum fd_param_id param"
+    ]
+  },
+  "link_workaround": {
+    "issue": "Rust librusticl.a injects -lc++_shared (Android NDK convention)",
+    "fix": "Replace -static-libstdc++ with -L$PREFIX/lib -lc++_shared in build.ninja"
+  },
+  "assertions": [
+    "No backend claims READY without device-level evidence",
+    "Turnip Vulkan is NOT performance-viable (10-30x slower than CPU)",
+    "Rusticl has ZERO runtime capability without DRM render nodes",
+    "Vendor OpenCL remains the ONLY production backend",
+    "All evidence is reproducible from source + scripts in this repo"
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "study_date": "2025-05-15T22:50:00+03:00",
+  "objective": "Determine feasibility of adding KGSL device probe to Gallium pipe-loader for Rusticl on Termux",
+  "current_architecture": {
+    "pipe_loader_probe()": "src/gallium/auxiliary/pipe-loader/pipe_loader.c:56 — iterates backends[] array",
+    "backends[]": ["pipe_loader_drm_probe (HAVE_LIBDRM)", "pipe_loader_sw_probe"],
+    "pipe_loader_drm_probe": "src/gallium/auxiliary/pipe-loader/pipe_loader_drm.c:251 — scans /dev/dri/renderD128..191",
+    "rusticl_device_discovery": "src/gallium/frontends/rusticl/mesa/pipe/device.rs:54 — calls pipe_loader_probe()",
+    "kgsl_driver_descriptor": "DRM_DRIVER_DESCRIPTOR_ALIAS(msm, kgsl) — expects DRM fd, not raw KGSL fd",
+    "freedreno_screen_create": "src/gallium/drivers/freedreno/freedreno_screen.c — fd_screen_create(fd_device*)"
+  },
+  "required_new_entrypoints": [
+    "pipe_loader_kgsl_probe() — open /dev/kgsl-3d0, create fd_device, wrap as pipe_loader_device",
+    "pipe_loader_kgsl_create_screen() — call fd_screen_create() with kgsl fd_device"
+  ],
+  "files_to_modify": [
+    {
+      "file": "src/gallium/auxiliary/pipe-loader/pipe_loader.c",
+      "change": "Add pipe_loader_kgsl_probe to backends[] array (guarded by HAVE_FREEDRENO_KGSL)"
+    },
+    {
+      "file": "src/gallium/auxiliary/pipe-loader/pipe_loader_drm.c",
+      "change": "Add pipe_loader_kgsl_probe() implementation or new file pipe_loader_kgsl.c"
+    },
+    {
+      "file": "src/gallium/auxiliary/pipe-loader/meson.build",
+      "change": "Add pipe_loader_kgsl.c to sources when freedreno-kgsl enabled"
+    },
+    {
+      "file": "src/gallium/auxiliary/pipe-loader/pipe_loader.h",
+      "change": "Declare pipe_loader_kgsl_probe()"
+    }
+  ],
+  "files_to_create": [
+    {
+      "file": "src/gallium/auxiliary/pipe-loader/pipe_loader_kgsl.c",
+      "purpose": "KGSL-specific device probe: open /dev/kgsl-3d0, call kgsl_device_new(), create pipe_screen"
+    }
+  ],
+  "key_api_chain": [
+    "open(\"/dev/kgsl-3d0\", O_RDWR | O_CLOEXEC)",
+    "kgsl_device_new(fd) → struct fd_device*",
+    "fd_screen_create(fd_device*, ...) → struct pipe_screen*",
+    "Wrap pipe_screen in pipe_loader_device with driver_name=\"kgsl\""
+  ],
+  "api_gaps": [
+    {
+      "gap": "fd_screen_create() expects fd_device from fd_device_new() which calls fd_device_open()",
+      "issue": "fd_device_open() in freedreno_device.c tries drmGetVersion() on the fd — will fail on raw KGSL fd",
+      "fix": "Bypass fd_device_open(), call kgsl_device_new() directly (already exists in kgsl/kgsl_device.c)"
+    },
+    {
+      "gap": "pipe_loader_drm_device stores DRM fd and uses loader_get_driver_for_fd()",
+      "issue": "KGSL fd is not a DRM fd, loader_get_driver_for_fd() will fail",
+      "fix": "New pipe_loader_kgsl_device struct or hardcode driver_name=\"kgsl\""
+    },
+    {
+      "gap": "fd_screen_create() signature in freedreno_screen.c",
+      "issue": "Takes (struct pipe_screen_config*) via u_pipe_screen_lookup_or_create callback",
+      "fix": "Need to trace exact call path: fd_drm_screen_create_renderonly → u_pipe_screen_lookup_or_create → fd_screen_create"
+    }
+  ],
+  "risk_assessment": {
+    "risk": "high",
+    "upstreamability": "low — Android/KGSL-specific, no DRM subsystem",
+    "android_termux_specific": true,
+    "estimated_complexity": "~200-400 lines new C code",
+    "testing_difficulty": "high — requires device with /dev/kgsl-3d0 access"
+  },
+  "alternative_approaches": [
+    {
+      "approach": "proot with DRM emulation",
+      "feasibility": "low — proot can't emulate kernel DRM ioctls"
+    },
+    {
+      "approach": "LD_PRELOAD shim for open(/dev/dri/renderD128) → /dev/kgsl-3d0",
+      "feasibility": "very_low — DRM ioctls incompatible with KGSL ioctls"
+    },
+    {
+      "approach": "Custom pipe_loader_kgsl.c (direct approach)",
+      "feasibility": "medium — cleanest path, requires understanding fd_screen_create chain"
+    }
+  ],
+  "conclusion": {
+    "feasible": true,
+    "effort": "significant (1-2 days focused work)",
+    "primary_challenge": "Bridging kgsl_device_new() output into fd_screen_create() without DRM fd",
+    "recommendation": "Attempt Patch 39 prototype with minimal pipe_loader_kgsl.c"
+  }
+}

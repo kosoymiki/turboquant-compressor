@@ -1,16 +1,16 @@
 {
-  "id": "tq-adreno730-kgsl",
-  "version": "0.1.0",
+  "id": "tq-adreno-a7xx-a8xx-kgsl",
+  "version": "26.2.0-devel-tq-recovery1",
   "provider": "turboquant",
-  "target_gpu": "Adreno 730 (A730v3)",
-  "target_chip_id": "0x07030001",
-  "build_source": "mesa-upstream 26.1.0-dev + kgsl patches",
+  "target_gpu": "Adreno a7xx-a8xx family",
+  "target_chip_id": "family:a7xx-a8xx",
+  "build_source": "mesa-upstream 26.2.0-devel + TurboQuant custom stack source state",
   "layers": {
     "compute": {
       "tier": "RUSTICL_KGSL",
       "library_name": "libRusticlOpenCL.so.1",
-      "backend": "freedreno/a6xx (A7XX template)",
-      "pipe_loader": "pipe_loader_kgsl.c",
+      "backend": "freedreno/rusticl via gallium on kgsl",
+      "pipe_loader": "upstream pipe_loader_kgsl.c / freedreno kgsl route",
       "device_node": "/dev/kgsl-3d0",
       "features": [
         "cl_khr_fp16",
@@ -18,11 +18,11 @@
         "cl_khr_subgroup_shuffle",
         "cl_khr_subgroup_arithmetic"
       ],
-      "subgroup_size": 128,
+      "subgroup_size": "a7xx:128-when-exposed,a8xx:64x2",
       "max_wg_size": 1024,
       "local_mem_kb": 32,
       "gmem_kb": 512,
-      "compute_units": 2
+      "compute_units": "device-dependent"
     },
     "vulkan_backend": {
       "tier": "TURNIP_VK",
@@ -35,16 +35,27 @@
         "VK_EXT_subgroup_size_control",
         "VK_KHR_cooperative_matrix"
       ],
-      "role": "shader_compile_backend + vkcompute_fallback"
+      "role": "shader_compile_backend + vkcompute_fallback + command stream evidence path"
     }
   },
   "build": {
-    "meson_options": "-Dgallium-rusticl=true -Dvulkan-drivers=freedreno -Dgallium-drivers=freedreno -Dfreedreno-kgsl=true -Dllvm=enabled -Dshared-llvm=disabled",
-    "compiler": "clang-19",
+    "meson_options": "-Dplatforms=android -Dplatform-sdk-version=34 -Dandroid-stub=true -Dandroid-libbacktrace=disabled -Dgallium-rusticl=true -Dgallium-rusticl-enable-drivers=freedreno -Dvulkan-drivers=freedreno -Dgallium-drivers=freedreno -Dfreedreno-kmds=kgsl -Dllvm=enabled -Dshared-llvm=enabled -Dbuildtype=debugoptimized -Dstrip=false",
+    "compiler": "llvm/clang (Termux canonical toolchain)",
     "linker": "lld",
-    "static_libcxx": true,
-    "strip": true
+    "static_libcxx": false,
+    "strip": false
   },
   "validated": false,
-  "sha256": {}
+  "sha256": {},
+  "policy": {
+    "production_route": "custom_driver_stack_only",
+    "vendor_opencl_primary": false,
+    "generic_opencl_allowed": false,
+    "notes": [
+      "This manifest is a recovery target, not a production proof by itself.",
+      "Mesa 26.2+ already exposes freedreno-kmds=kgsl upstream; old freedreno-kgsl=true guidance is stale.",
+        "Per-device subgroup and workgroup tuning must be revalidated on real A7xx/A8xx hardware.",
+        "Treat A7xx as wave128-capable when the stack explicitly exposes it; treat A8xx as dual wave64."
+      ]
+  }
 }

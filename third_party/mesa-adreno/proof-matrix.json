@@ -1,9 +1,10 @@
 {
   "ADRENO_TURNIP_VULKAN_READY": {
-    "description": "Turnip Vulkan compute path proven on device",
+    "description": "Turnip Vulkan KGSL compute/backend path proven on device",
     "proof": [
       "vulkaninfo_success",
       "device_is_adreno",
+      "kgsl_devnode_present",
       "vulkan_compute_shader_dispatch",
       "tq_value_dequant_vulkan_parity",
       "tq_fused_attention_vulkan_parity",
@@ -31,6 +32,18 @@
       "mesa_runtime_log_clean",
       "one_graphics_or_compute_smoke_pass",
       "tq_kernel_parity_any_one"
+    ]
+  },
+  "ADRENO_DRIVER_MESH_RECOVERY_READY": {
+    "description": "Full TurboQuant custom driver stack is observable, rebuildable, and replayable across compute/backend/forensics layers",
+    "proof": [
+      "mesa_26_2_upstream_pinned",
+      "driver_pack_manifest_current",
+      "rusticl_or_turnip_build_script_current",
+      "kgsl_probe_positive",
+      "runtime_forensics_present",
+      "parity_tests_indexed",
+      "adb_device_truth_captured"
     ]
   }
 }
