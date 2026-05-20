@@ -36,7 +36,8 @@ These zones are explicitly excluded from export truth:
 The current system is no longer blocked by runtime bring-up.
 The main release risk was truth drift between:
 - executable code
-- native/opencl/driver-root state
+- native/opencl/driver-pack/tq-driver-pack-adreno-a7xx-a8xx.tar.zst
+- installed native/opencl/driver-root state
 - forensic evidence
 - mirror copy
 

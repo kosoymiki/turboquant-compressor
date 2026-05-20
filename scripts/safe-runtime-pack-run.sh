@@ -13,6 +13,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+INSTALLER="$ROOT_DIR/scripts/install-driver-root.sh"
 resolve_cli() {
   if [ -n "${TQ_OPENCL_CLI:-}" ] && [ -x "${TQ_OPENCL_CLI}" ]; then
     printf '%s\n' "${TQ_OPENCL_CLI}"
@@ -46,7 +47,20 @@ resolve_driver_root() {
   return 1
 }
 
-DRIVER_ROOT="$(resolve_driver_root || true)"
+ensure_driver_root() {
+  if DRIVER_ROOT="$(resolve_driver_root || true)" && [ -n "${DRIVER_ROOT}" ]; then
+    printf '%s\n' "${DRIVER_ROOT}"
+    return 0
+  fi
+  if [ -f "$INSTALLER" ]; then
+    bash "$INSTALLER" >&2 || true
+  fi
+  DRIVER_ROOT="$(resolve_driver_root || true)"
+  [ -n "${DRIVER_ROOT}" ] || return 1
+  printf '%s\n' "${DRIVER_ROOT}"
+}
+
+DRIVER_ROOT="$(ensure_driver_root || true)"
 ENV_SH="${DRIVER_ROOT:+$DRIVER_ROOT/env.sh}"
 
 if [ -z "${CLI}" ] || [ ! -x "$CLI" ]; then

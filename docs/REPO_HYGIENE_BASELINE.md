@@ -18,6 +18,7 @@ These paths are expected to be versioned as authoring truth:
 - `native/opencl/driver-pack/build_mesa.sh`
 - `native/opencl/driver-pack/pack_driver.sh`
 - `native/opencl/driver-pack/manifest.json`
+- `native/opencl/driver-pack/tq-driver-pack-adreno-a7xx-a8xx.tar.zst`
 - `scripts/`
 - `docs/`
 
@@ -62,7 +63,7 @@ Rules:
 
 Before export/build release:
 1. `git status` should clearly separate source changes from generated churn.
-2. driver-root and driver-pack outputs should be regenerated intentionally, not accumulated passively.
+2. tracked driver artifact and installed driver-root should be regenerated intentionally, not accumulated passively.
 3. new evidence files should correspond to actual replay, probe, or release assertions.
 4. mirror sync must be proven with `SYNC_MANIFEST`.
 

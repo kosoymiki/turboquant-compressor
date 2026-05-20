@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node scripts/copy-wasm-assets.mjs",
+    "postinstall": "bash scripts/install-driver-root.sh || true",
     "start": "node dist/server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "smoke:api": "node scripts/smoke-public-api.mjs",
@@ -19,6 +20,7 @@
     "verify:adreno-loader": "node scripts/verify-adreno-loader.mjs",
     "probe:opencl": "bash scripts/termux-opencl-probe.sh",
     "build:opencl": "bash scripts/build-opencl-native.sh",
+    "install:driver-root": "bash scripts/install-driver-root.sh",
     "bench:opencl": "node scripts/benchmark-opencl-adreno.mjs",
     "verify:opencl-claims": "node scripts/verify-opencl-claims.mjs",
     "verify:release-evidence": "node scripts/verify-release-evidence.mjs",

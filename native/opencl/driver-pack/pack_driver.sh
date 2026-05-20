@@ -3,7 +3,7 @@
 # Layer 1 (compute): Rusticl/Freedreno/KGSL
 # Layer 2 (backend): Turnip/KGSL
 #
-# Output: tq-driver-pack-adreno-a7xx-a8xx.tar.zst in native/opencl/driver-pack/out plus unpacked canonical native/opencl/driver-root
+# Output: tq-driver-pack-adreno-a7xx-a8xx.tar.zst in native/opencl/driver-pack plus unpacked canonical native/opencl/driver-root
 # Usage: ./pack_driver.sh [mesa_build_dir] [driver_root_dir]
 # The unpacked canonical artifact lives at tmp_turboquant/native/opencl/driver-root by default.
 #
@@ -53,7 +53,7 @@ resolve_mesa_build() {
 
 MESA_BUILD="${1:-$(resolve_mesa_build || true)}"
 OUT_DIR="${2:-${TQ_DRIVER_ROOT_DIR:-${TQ_STACK_ROOT}/driver-root}}"
-ARCHIVE_DIR="${TQ_DRIVER_ARCHIVE_DIR:-${TQ_STACK_ROOT}/driver-pack/out}"
+ARCHIVE_DIR="${TQ_DRIVER_ARCHIVE_DIR:-${TQ_STACK_ROOT}/driver-pack}"
 MANIFEST="$(dirname "$0")/manifest.json"
 BUILD_META_JSON="${MESA_BUILD}/tq-build-metadata.json"
 

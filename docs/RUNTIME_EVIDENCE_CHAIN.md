@@ -2,7 +2,7 @@
 
 ## Goal
 
-This document defines the canonical evidence chain for release preparation of the custom `native/opencl/driver-root` stack.
+This document defines the canonical evidence chain for release preparation of the custom driver artifact and its installed `native/opencl/driver-root` execution surface.
 
 ## Chain
 

@@ -3,7 +3,7 @@
 ## Goal
 
 This document defines the canonical source-of-truth boundaries for the standalone TurboQuant repo.
-It exists to prevent drift between executable code, assembled driver-root state, forensic evidence,
+It exists to prevent drift between executable code, tracked driver artifacts, installed driver-root state, forensic evidence,
 and the corpus mirror.
 
 ## Canonical Layers
@@ -36,13 +36,14 @@ Canonical paths:
 - `native/opencl/driver-pack/build_mesa.sh`
 - `native/opencl/driver-pack/pack_driver.sh`
 - `native/opencl/driver-pack/manifest.json`
+- `native/opencl/driver-pack/tq-driver-pack-adreno-a7xx-a8xx.tar.zst`
 
 Rules:
 - This is the only authoritative source for Rusticl/Freedreno/KGSL/Turnip runtime behavior in this repo.
 - Historical patch-centric recovery residue has been removed from tracked release truth.
 - Any runtime claim must be explainable from these paths first.
 
-### 3. Driver-Root Truth
+### 3. Installed Driver Runtime
 
 Purpose: assembled, executable stack for safe on-device replay.
 
@@ -58,7 +59,7 @@ Rules:
 - This layer is generated from the Custom GPU Runtime Stack.
 - It is not the authoring surface.
 - It is the execution surface used by safe replay and export validation.
-- Repo-local `native/opencl/driver-root/` is the primary assembled runtime contract.
+- Repo-local `native/opencl/driver-root/` is installed from the tracked driver archive.
 
 ### 4. Forensic Evidence
 
@@ -124,6 +125,7 @@ Rules:
 
 A release is considered structurally valid only when:
 - source truth is modified only in canonical authoring layers
-- driver-root is regenerated from canonical stack sources
+- driver artifact is regenerated from canonical stack sources
+- driver-root is installed from the tracked driver artifact
 - forensic evidence is refreshed intentionally
 - mirror parity is proven by `SYNC_MANIFEST`

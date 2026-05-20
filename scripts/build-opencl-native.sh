@@ -25,7 +25,7 @@ cmake --build "$BUILD_DIR" -j"$(nproc 2>/dev/null || echo 4)" 2>&1
 
 if [ -f "$BUILD_DIR/tq_opencl_cli" ]; then
   echo "[build-opencl-native] SUCCESS: $BUILD_DIR/tq_opencl_cli"
-  if [ -x "$ROOT_DIR/scripts/safe-runtime-pack-run.sh" ] && [ -f "$ROOT_DIR/native/opencl/driver-root/env.sh" ]; then
+  if [ -x "$ROOT_DIR/scripts/safe-runtime-pack-run.sh" ] && [ -f "$ROOT_DIR/native/opencl/driver-pack/tq-driver-pack-adreno-a7xx-a8xx.tar.zst" ]; then
     TQ_OPENCL_CLI="$BUILD_DIR/tq_opencl_cli" "$ROOT_DIR/scripts/safe-runtime-pack-run.sh" probe || true
   fi
 else

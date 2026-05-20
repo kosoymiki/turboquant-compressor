@@ -16,7 +16,8 @@ The current public benchmark evidence supports **5.5x+ local corpus compression*
 **Transport:** MCP stdio  
 **License:** GPL-3.0-or-later
 
-**Canonical custom driver runtime:** `native/opencl/driver-root/`
+**Canonical custom driver artifact:** `native/opencl/driver-pack/tq-driver-pack-adreno-a7xx-a8xx.tar.zst`
+It installs into `native/opencl/driver-root/` through `npm install`, `npm run install:driver-root`, or the first safe runtime call.
 
 This repository currently ships:
 
