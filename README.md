@@ -49,14 +49,14 @@ The public benchmark artifacts in `bench/results/` show **5.5x+ compression** on
 | `bench/results/open-test-local-20260514-220247.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | — | Early open local test |
 | `bench/results/open-test-local-20260514-224444.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | 0.708 | 50-query evaluation |
 | `bench/results/open-test-local-20260514-233707.json` | 57 | 78 | 384 | **5.8844x** | 0.58 | 0.92 | 0.7047 | Larger corpus evaluation |
-| `bench/results/open-test-local-20260521-021053.json` | 103 | 151 | 384 | **5.8957x** | 0.02 | 0.12 | 0.0540 | Current truthful broader repo sweep with quantization/vectorizer profiles |
+| `bench/results/open-test-local-20260521-022922.json` | 103 | 151 | 384 | **5.8957x** | 0.34 | 0.66 | 0.4633 | Current truthful broader repo sweep on the shipped Beta Lloyd-Max public path |
 
 ### Practical headline
 
 ```text
 Measured local corpus compression: 5.5x+
 Best public artifact:              5.8957x
-Recall@5 range:                    0.10–0.92
+Recall@5 range:                    0.66–0.92
 Format version:                    3
 Algorithm level:                   LEVEL_0_TURBOQUANT_INSPIRED_MVP
 ````
@@ -65,7 +65,7 @@ The benchmark artifacts intentionally include warnings when a feature is not par
 
 ```text
 include_qjl: false
-QJL residual sketch/correction is not implemented in LEVEL_0
+Public path uses TurboQuant Beta Lloyd-Max scalar quantization without QJL correction
 ```
 
 This keeps the README honest: **5.5x+ compression is measured**, while higher-quality QJL-assisted retrieval remains gated until it is committed as public benchmark evidence.
@@ -322,7 +322,7 @@ The current committed public local-corpus evidence shows:
 
 ```text
 compression_ratio: 5.8759x–5.8955x
-recall_at_5:       0.10–0.92
+recall_at_5:       0.66–0.92
 dimensions:        384
 format_version:    3
 ```
@@ -478,7 +478,7 @@ Adreno loader report when claiming Adreno
 
 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260514-220247.json
- https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260521-021053.json
+ https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260521-022922.json
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/forensics/mcp-conformance-transcript.json 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/scripts/verify-release-evidence.mjs
 

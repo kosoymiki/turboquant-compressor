@@ -4,11 +4,13 @@
  */
 
 import { parseSearchInput } from './validation.js';
+import { unpackValues } from '../core/pack.js';
 import { RotationEngine } from '../core/rotation.js';
 import { UniformSymmetricCodebook } from '../core/quantizer.js';
 import { decodeCompressedDatabase } from '../core/format.js';
 import { validateSearchParams } from '../core/limits.js';
 import type { SearchResult, SearchResultItem } from './types.js';
+import { TurboQuantBetaCodebook } from '../core/codebook.js';
 
 export type SearchVectorsInput = {
   compressed_database_b64?: string;
@@ -68,8 +70,27 @@ function runSearch(input: SearchVectorsInput): SearchResult {
     throw new Error(`Query vector length ${query.length} does not match database dimensions ${db.dimensions}`);
   }
 
-  const codebook = new UniformSymmetricCodebook(db.bitsPerValue);
+  const uniformCodebook = new UniformSymmetricCodebook(db.bitsPerValue);
+  const betaCodebook = db.codebookType === 'turboquant_beta' && db.bitsPerValue !== 8
+    ? (() => {
+        const cb = new TurboQuantBetaCodebook(db.dimensions, db.bitsPerValue as 2 | 3 | 4);
+        cb.compute();
+        return cb;
+      })()
+    : null;
   const rotation = new RotationEngine(db.dimensions, db.rotationSeed);
+
+  function decodeWithConfiguredCodebook(packed: Uint8Array, count: number): Float32Array {
+    if (db.codebookType === 'uniform' || !betaCodebook) {
+      return uniformCodebook.decode(packed, count);
+    }
+    const out = new Float32Array(count);
+    const indices = unpackValues(packed, count, db.bitsPerValue);
+    for (let i = 0; i < count; i++) {
+      out[i] = betaCodebook.dequantize(indices[i]!);
+    }
+    return out;
+  }
 
   // Convert query to Float32Array for internal processing
   const queryFloat = new Float32Array(query.length);
@@ -99,7 +120,7 @@ function runSearch(input: SearchVectorsInput): SearchResult {
   const top: SearchResultItem[] = [];
 
   for (let i = 0; i < db.vectors.length; i++) {
-    const decoded = codebook.decode(db.vectors[i]!, db.paddedDimensions);
+    const decoded = decodeWithConfiguredCodebook(db.vectors[i]!, db.paddedDimensions);
 
     let score: number;
     if (metric === 'cosine') {
@@ -151,6 +172,7 @@ function runSearch(input: SearchVectorsInput): SearchResult {
     results: top,
     metric,
     vector_count: db.vectors.length,
+    codebook_type: db.codebookType,
     algorithm_level: algorithmLevel,
     warnings,
   };

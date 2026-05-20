@@ -27,7 +27,7 @@ const ContextPackBuildInputSchema = z.object({
   dimensions: z.number().min(1).max(8192).default(384),
   chunkBytes: z.number().min(256).max(65536).default(4096),
   bitsPerValue: z.number().min(2).max(8).default(4),
-  vectorizer: z.enum(['token_hash', 'hashed_tfidf']).default('token_hash'),
+  vectorizer: z.enum(['token_hash', 'hashed_tfidf']).default('hashed_tfidf'),
   storageMode: z.enum(['inline_text', 'preview_only', 'external_store']).default('preview_only'),
   maxInlineChunkBytes: z.number().min(0).max(65536).default(4096),
 });
@@ -101,6 +101,7 @@ export function turboquantContextPackBuild(
     dimensions: input.dimensions,
     bitsPerValue: input.bitsPerValue,
     seed: 42,
+    codebookType: input.bitsPerValue === 8 ? 'uniform' : 'turboquant_beta',
   });
 
   const rootFingerprint = sha256Text(allChunks.map((c) => c.fingerprint).join(''));

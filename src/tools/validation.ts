@@ -5,6 +5,7 @@ export const CompressInputSchema = z.object({
   dimensions: z.number().int().positive().optional(),
   seed: z.number().int().optional(),
   bitsPerValue: z.union([z.literal(2), z.literal(3), z.literal(4), z.literal(8)]).optional(),
+  codebookType: z.enum(['uniform', 'turboquant_beta']).optional(),
   includeQJL: z.boolean().optional(),
 
   // legacy aliases

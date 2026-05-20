@@ -4,10 +4,12 @@
  */
 
 import { RotationEngine } from '../core/rotation.js';
+import { packValues, unpackValues } from '../core/pack.js';
 import { UniformSymmetricCodebook } from '../core/quantizer.js';
 import { encodeCompressedDatabase, encodeBase64 } from '../core/format.js';
 import { validateCompressionParams, estimateCompressionMemory } from '../core/limits.js';
 import { QJLResidualEstimator } from '../core/qjl.js';
+import { TurboQuantBetaCodebook } from '../core/codebook.js';
 import { parseCompressInput } from './validation.js';
 import type { CompressResult } from './types.js';
 
@@ -17,6 +19,7 @@ export function compressVectors(
     dimensions?: number;
     seed?: number;
     bitsPerValue?: number;
+    codebookType?: 'uniform' | 'turboquant_beta';
     includeQJL?: boolean;
     rotationSeed?: number;
   }
@@ -27,19 +30,58 @@ export function compressVectors(
   const dimensions = parsed.dimensions ?? vectors[0]!.length;
   const seed = parsed.seed ?? parsed.rotationSeed ?? 0;
   const bitsPerValue = parsed.bitsPerValue ?? 4;
+  const requestedCodebookType = parsed.codebookType ?? 'turboquant_beta';
+  const codebookType = requestedCodebookType === 'turboquant_beta' && bitsPerValue !== 8
+    ? 'turboquant_beta'
+    : 'uniform';
   const includeQJL = parsed.includeQJL ?? false;
 
   validateCompressionParams(dimensions, vectors.length, bitsPerValue);
 
   const rotation = new RotationEngine(dimensions!, seed);
-  const codebook = new UniformSymmetricCodebook(bitsPerValue);
+  const uniformCodebook = new UniformSymmetricCodebook(bitsPerValue);
+  const betaCodebook = codebookType === 'turboquant_beta'
+    ? (() => {
+        const cb = new TurboQuantBetaCodebook(dimensions!, bitsPerValue as 2 | 3 | 4);
+        cb.compute();
+        return cb;
+      })()
+    : null;
+
+  function encodeWithConfiguredCodebook(values: Float32Array): Uint8Array {
+    if (codebookType === 'uniform' || !betaCodebook) {
+      return uniformCodebook.encode(values);
+    }
+    const paddedDimensions = Number.isInteger(dimensions) && dimensions > 0
+      ? 1 << Math.ceil(Math.log2(dimensions))
+      : values.length;
+    const indices: number[] = [];
+    for (let i = 0; i < paddedDimensions; i++) {
+      indices.push(betaCodebook.quantizeIndex(values[i] ?? 0));
+    }
+    return packValues(indices, bitsPerValue);
+  }
+
+  function decodeWithConfiguredCodebook(packed: Uint8Array, count: number): Float32Array {
+    if (codebookType === 'uniform' || !betaCodebook) {
+      return uniformCodebook.decode(packed, count);
+    }
+    const out = new Float32Array(count);
+    const indices = unpackValues(packed, count, bitsPerValue);
+    for (let i = 0; i < count; i++) {
+      out[i] = betaCodebook.dequantize(indices[i]!);
+    }
+    return out;
+  }
 
   const warnings: string[] = [];
   if (includeQJL) {
     warnings.push('LEVEL_1_EXPERIMENTAL_QJL: Experimental residual sketch path; not paper-faithful and not wired into public search correction.');
   } else {
-    warnings.push('LEVEL_0_TURBOQUANT_INSPIRED_MVP: Proof-of-concept public path with fixed uniform quantization and no QJL correction.');
-    warnings.push('Uniform quantizer has fixed step size - may not be optimal for all distributions');
+    warnings.push(`LEVEL_0_TURBOQUANT_INSPIRED_MVP: Public path uses ${codebookType === 'turboquant_beta' ? 'TurboQuant Beta Lloyd-Max scalar quantization' : 'fixed uniform quantization'} without QJL correction.`);
+    if (codebookType === 'uniform') {
+      warnings.push('Uniform quantizer has fixed step size - may not be optimal for all distributions');
+    }
     warnings.push('QJL residual sketch/correction is not implemented in the public search path.');
   }
 
@@ -76,12 +118,12 @@ export function compressVectors(
             }
             return normalized;
           })();
-    const encoded = codebook.encode(normalizedRotated);
+    const encoded = encodeWithConfiguredCodebook(normalizedRotated);
     encodedVectors.push(encoded);
 
     // QJL: compute residual and compress sign-bit sketch
     if (qjlEstimator) {
-      const decoded = codebook.decode(encoded);
+      const decoded = decodeWithConfiguredCodebook(encoded, normalizedRotated.length);
       const residual = new Float32Array(normalizedRotated.length);
       for (let k = 0; k < residual.length; k++) {
         residual[k] = (normalizedRotated[k] ?? 0) - (decoded[k] ?? 0);
@@ -109,7 +151,8 @@ export function compressVectors(
     bitsPerValue,
     seed,
     norms,
-    includeQJL && qjlSketches.length > 0 ? Buffer.from(qjlSketchesB64!, 'base64') : undefined
+    includeQJL && qjlSketches.length > 0 ? Buffer.from(qjlSketchesB64!, 'base64') : undefined,
+    codebookType
   );
   const compressedData = encodeBase64(binary);
 
@@ -122,6 +165,7 @@ export function compressVectors(
     dimensions: dimensions!,
     vector_count: vectors.length,
     bits_per_value: bitsPerValue,
+    codebook_type: codebookType,
     include_qjl: includeQJL,
     qjl_sketches_b64: qjlSketchesB64,
     algorithm_level: includeQJL ? 'LEVEL_1_EXPERIMENTAL_QJL' : 'LEVEL_0_TURBOQUANT_INSPIRED_MVP',

@@ -30,6 +30,16 @@ const MAGIC = new Uint8Array([0x54, 0x51, 0x4D, 0x43]); // 'TQMC'
 const VERSION_V2 = 2;
 const VERSION_V3 = 3;
 const HEADER_SIZE_V3 = 80;
+const CODEBOOK_UNIFORM = 0;
+const CODEBOOK_TURBOQUANT_BETA = 1;
+
+function encodeCodebookType(codebookType: 'uniform' | 'turboquant_beta'): number {
+  return codebookType === 'turboquant_beta' ? CODEBOOK_TURBOQUANT_BETA : CODEBOOK_UNIFORM;
+}
+
+function decodeCodebookType(code: number): 'uniform' | 'turboquant_beta' {
+  return code === CODEBOOK_TURBOQUANT_BETA ? 'turboquant_beta' : 'uniform';
+}
 
 export interface CompressedDatabase {
   magic: Uint8Array;
@@ -38,6 +48,7 @@ export interface CompressedDatabase {
   paddedDimensions: number;
   vectorCount: number;
   bitsPerValue: number;
+  codebookType: 'uniform' | 'turboquant_beta';
   rotationSeed: number;
   flags: number;
   headerLength: number;
@@ -79,12 +90,13 @@ export function encodeCompressedDatabase(
   rotationSeed: number,
   norms: Float32Array,
   qjlSketch?: Uint8Array,
+  codebookType: 'uniform' | 'turboquant_beta' = 'uniform',
   version: number = VERSION_V3
 ): Uint8Array {
   if (version === VERSION_V2) {
-    return encodeV2(vectors, dimensions, bitsPerValue, rotationSeed, norms, qjlSketch);
+    return encodeV2(vectors, dimensions, bitsPerValue, rotationSeed, norms, qjlSketch, codebookType);
   }
-  return encodeV3(vectors, dimensions, bitsPerValue, rotationSeed, norms, qjlSketch);
+  return encodeV3(vectors, dimensions, bitsPerValue, rotationSeed, norms, qjlSketch, codebookType);
 }
 
 function encodeV2(
@@ -93,7 +105,8 @@ function encodeV2(
   bitsPerValue: number,
   rotationSeed: number,
   norms: Float32Array,
-  qjlSketch?: Uint8Array
+  qjlSketch?: Uint8Array,
+  codebookType: 'uniform' | 'turboquant_beta' = 'uniform'
 ): Uint8Array {
   const paddedDimensions = isPowerOfTwo(dimensions) ? dimensions : nextPowerOfTwo(dimensions);
   const vectorLength = Math.ceil(paddedDimensions * bitsPerValue / 8);
@@ -120,7 +133,7 @@ function encodeV2(
   headerView.setUint32(16, vectors.length, true);
   headerView.setUint8(20, bitsPerValue);
   headerView.setUint32(21, rotationSeed, true);
-  headerView.setUint8(25, 0);
+  headerView.setUint8(25, encodeCodebookType(codebookType));
   headerView.setUint32(28, HEADER_SIZE, true);
   headerView.setUint32(32, normsOffset, true);
   headerView.setUint32(36, normsLength, true);
@@ -162,7 +175,8 @@ function encodeV3(
   bitsPerValue: number,
   rotationSeed: number,
   norms: Float32Array,
-  qjlSketch?: Uint8Array
+  qjlSketch?: Uint8Array,
+  codebookType: 'uniform' | 'turboquant_beta' = 'uniform'
 ): Uint8Array {
   const paddedDimensions = isPowerOfTwo(dimensions) ? dimensions : nextPowerOfTwo(dimensions);
   const vectorLength = Math.ceil(paddedDimensions * bitsPerValue / 8);
@@ -200,7 +214,7 @@ function encodeV3(
   headerView.setUint32(24, rotationSeed, true);
 
   // flags (28) + reserved (29-31)
-  headerView.setUint8(28, 0);
+  headerView.setUint8(28, encodeCodebookType(codebookType));
   headerView.setUint8(29, 0);
   headerView.setUint8(30, 0);
   headerView.setUint8(31, 0);
@@ -280,6 +294,7 @@ function decodeV2(binary: Uint8Array, binaryView: DataView): CompressedDatabase 
   const paddedDimensions = binaryView.getUint32(12, true);
   const vectorCount = binaryView.getUint32(16, true);
   const bitsPerValue = binaryView.getUint8(20);
+  const codebookType = decodeCodebookType(binaryView.getUint8(25) & 0x03);
   const rotationSeed = binaryView.getUint32(21, true);
   const flags = binaryView.getUint8(25);
   const headerLength = binaryView.getUint32(28, true);
@@ -356,6 +371,7 @@ function decodeV2(binary: Uint8Array, binaryView: DataView): CompressedDatabase 
     paddedDimensions,
     vectorCount,
     bitsPerValue,
+    codebookType,
     rotationSeed,
     flags,
     headerLength,
@@ -379,6 +395,7 @@ function decodeV3(binary: Uint8Array, binaryView: DataView): CompressedDatabase 
   const bitsPerValue = binaryView.getUint8(20);
   const rotationSeed = binaryView.getUint32(24, true);
   const flags = binaryView.getUint8(28);
+  const codebookType = decodeCodebookType(flags & 0x03);
   const headerLength = binaryView.getUint32(32, true);
   const normsOffset = binaryView.getUint32(40, true);
   const normsLength = binaryView.getUint32(44, true);
@@ -453,6 +470,7 @@ function decodeV3(binary: Uint8Array, binaryView: DataView): CompressedDatabase 
     paddedDimensions,
     vectorCount,
     bitsPerValue,
+    codebookType,
     rotationSeed,
     flags,
     headerLength,

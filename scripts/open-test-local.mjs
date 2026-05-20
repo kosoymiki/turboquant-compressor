@@ -292,20 +292,21 @@ for (const [vectorizerName, vectorizer] of vectorizerEntries) {
     dimensions: DIM,
     bitsPerValue: BITS_PER_VALUE,
     seed: ROTATION_SEED,
+    codebookType: BITS_PER_VALUE === 8 ? 'uniform' : 'turboquant_beta',
     includeQJL: false,
   });
   const t1 = performance.now();
 
   const exactScorer = (queryVector) => vectors.map((vector) => dot(queryVector, vector));
-  const uniformApproxScorer = (queryVector) => searchVectors({
+  const publicApproxScorer = (queryVector) => searchVectors({
     compressed_database_b64: compressed.compressed_database_b64,
     query_vector: queryVector,
     top_k: 5,
     metric: 'cosine',
   }).results;
 
-  const uniformQuantization = buildQuantizationProfile(queryVectors, exactScorer, uniformApproxScorer);
-  const uniformRetrieval = buildRetrievalProfile(queryRecords, vectors, uniformApproxScorer);
+  const publicQuantization = buildQuantizationProfile(queryVectors, exactScorer, publicApproxScorer);
+  const publicRetrieval = buildRetrievalProfile(queryRecords, vectors, publicApproxScorer);
 
   const rotation = new RotationEngine(DIM, ROTATION_SEED);
   const lloydMax = computeLloydMaxBetaCodebook(DIM, 4);
@@ -337,39 +338,39 @@ for (const [vectorizerName, vectorizer] of vectorizerEntries) {
     compress_ms: t1 - t0,
     query_count: queryRecords.length,
     quantization: {
-      uniform: uniformQuantization,
+      uniform: publicQuantization,
       lloyd_max_beta: lloydQuantization,
     },
     retrieval: {
-      uniform: uniformRetrieval,
+      uniform: publicRetrieval,
       lloyd_max_beta: lloydRetrieval,
     },
     comparison: {
       quantization_ranking_loss_delta:
-        lloydQuantization.ranking_loss_at_5 - uniformQuantization.ranking_loss_at_5,
+        lloydQuantization.ranking_loss_at_5 - publicQuantization.ranking_loss_at_5,
       retrieval_recall_at_5_delta:
-        lloydRetrieval.relevant_recall_at_5 - uniformRetrieval.relevant_recall_at_5,
+        lloydRetrieval.relevant_recall_at_5 - publicRetrieval.relevant_recall_at_5,
       score_mae_exact_topk_delta:
-        lloydQuantization.score_mae_on_exact_topk - uniformQuantization.score_mae_on_exact_topk,
+        lloydQuantization.score_mae_on_exact_topk - publicQuantization.score_mae_on_exact_topk,
     },
     algorithm_level: compressed.algorithm_level,
     format_version: compressed.format_version,
     include_qjl: compressed.include_qjl,
     warnings: [
       ...compressed.warnings,
-      'Lloyd-Max comparison is a sidecar benchmark path; public search.ts remains the uniform quantizer route.',
+      'Lloyd-Max comparison is retained as a sidecar benchmark for contrast with the shipped public path.',
       'Experimental QJL is kept research-only until an estimator/search path is reproducible on this corpus.',
     ],
   };
 
   vectorizerProfiles[vectorizerName] = profile;
-  if (vectorizerName === 'token_hash') {
+  if (vectorizerName === 'hashed_tfidf') {
     canonicalProfile = profile;
   }
 }
 
 if (!canonicalProfile) {
-  throw new Error('token_hash canonical profile missing');
+  throw new Error('hashed_tfidf canonical profile missing');
 }
 
 function assertFinite(name, value) {

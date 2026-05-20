@@ -18,7 +18,7 @@
     {
       "test": "tools/call:turboquant_compress",
       "status": "PASS",
-      "detail": "ok, 681b"
+      "detail": "ok, 635b"
     },
     {
       "test": "tools/call:turboquant_cost_analyze",
@@ -68,7 +68,7 @@
     {
       "test": "tools/call:turboquant_vector_search",
       "status": "PASS",
-      "detail": "two-step compress→search ok, 186b"
+      "detail": "two-step compress→search ok, 219b"
     },
     {
       "test": "tools/call:turboquant_context_pack_build",
