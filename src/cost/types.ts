@@ -93,8 +93,13 @@ export interface ContextPackManifest {
   dimensions: number;
   vectorizer: {
     id: string;
-    kind: 'token_hash' | 'semantic_embedding';
+    kind: 'token_hash' | 'hashed_tfidf' | 'semantic_embedding';
     dimensions: number;
+    config?: {
+      documentCount?: number;
+      maxFeaturesPerDocument?: number;
+      idfWeights?: number[];
+    };
   };
   provenance: import('../context/provenance.js').ContextPackProvenance;
   replay: import('../context/replay_manifest.js').ReplayManifest;

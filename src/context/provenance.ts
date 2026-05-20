@@ -17,7 +17,7 @@ export interface ContextPackProvenance {
   schemaVersion: 1;
   builtAt: string;
   vectorizerId: string;
-  vectorizerKind: 'token_hash' | 'semantic_embedding';
+  vectorizerKind: 'token_hash' | 'hashed_tfidf' | 'semantic_embedding';
   dimensions: number;
   chunkBytes: number;
   bitsPerValue: number;
@@ -30,7 +30,7 @@ export interface ContextPackProvenance {
 
 export function buildProvenance(params: {
   vectorizerId: string;
-  vectorizerKind: 'token_hash' | 'semantic_embedding';
+  vectorizerKind: 'token_hash' | 'hashed_tfidf' | 'semantic_embedding';
   dimensions: number;
   chunkBytes: number;
   bitsPerValue: number;

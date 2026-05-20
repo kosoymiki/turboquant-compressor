@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { ContextPackBuildResult, ContextPackManifest, ContextPackStorageMode } from '../cost/types.js';
 import { compressVectors } from '../index.js';
 import { sha256Text, approximateTokens } from '../cost/fingerprint.js';
-import { createTokenHashVectorizer } from '../context/vectorizer.js';
+import { buildHashedTfidfVectorizer, createTokenHashVectorizer } from '../context/vectorizer.js';
 import { buildProvenance } from '../context/provenance.js';
 import { buildReplayManifest } from '../context/replay_manifest.js';
 import {
@@ -27,6 +27,7 @@ const ContextPackBuildInputSchema = z.object({
   dimensions: z.number().min(1).max(8192).default(384),
   chunkBytes: z.number().min(256).max(65536).default(4096),
   bitsPerValue: z.number().min(2).max(8).default(4),
+  vectorizer: z.enum(['token_hash', 'hashed_tfidf']).default('token_hash'),
   storageMode: z.enum(['inline_text', 'preview_only', 'external_store']).default('preview_only'),
   maxInlineChunkBytes: z.number().min(0).max(65536).default(4096),
 });
@@ -90,7 +91,9 @@ export function turboquantContextPackBuild(
     throw new Error('No chunks generated for context pack');
   }
 
-  const vectorizer = createTokenHashVectorizer(input.dimensions);
+  const vectorizer = input.vectorizer === 'hashed_tfidf'
+    ? buildHashedTfidfVectorizer(input.dimensions, allChunks.map((c) => c.text))
+    : createTokenHashVectorizer(input.dimensions);
   const vectors = allChunks.map((c) => vectorizer.embed(c.text));
 
   const compressed = compressVectors({
@@ -132,9 +135,7 @@ export function turboquantContextPackBuild(
     rootFingerprint,
     dimensions: input.dimensions,
     vectorizer: {
-      id: vectorizer.id,
-      kind: vectorizer.kind,
-      dimensions: vectorizer.dimensions,
+      ...vectorizer.spec,
     },
     provenance,
     replay,
@@ -163,7 +164,7 @@ export function turboquantContextPackBuild(
   };
 
   const warnings: string[] = [
-    'Token hashing is deterministic and local; this is not semantic embedding quality.',
+    'Deterministic local vectorizers are lexical baselines, not semantic embedding quality.',
     'LEVEL_0 implementation does not store QJL payload.',
     'This tool does not reduce Anthropic API token billing directly.',
   ];

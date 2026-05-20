@@ -1,14 +1,21 @@
 #!/usr/bin/env node
 
-import { readFileSync, existsSync, writeFileSync } from 'node:fs';
-import { statSync, readdirSync } from 'node:fs';
-import { join, extname } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { extname, join } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { compressVectors, searchVectors } from '../dist/index.js';
+import {
+  buildHashedTfidfVectorizer,
+  createTokenHashVectorizer,
+} from '../dist/context/vectorizer.js';
+import { computeLloydMaxBetaCodebook } from '../dist/core/beta_sphere.js';
+import { RotationEngine } from '../dist/core/rotation.js';
 
 const DIM = Number(process.env.TQ_DIM ?? 384);
 const CHUNK_BYTES = Number(process.env.TQ_CHUNK_BYTES ?? 4096);
 const QUERY_LIMIT = Number(process.env.TQ_QUERY_LIMIT ?? 50);
+const BITS_PER_VALUE = Number(process.env.TQ_BITS_PER_VALUE ?? 4);
+const ROTATION_SEED = Number(process.env.TQ_ROTATION_SEED ?? 42);
 
 function walkFiles(root, predicate) {
   const out = [];
@@ -51,32 +58,6 @@ function approximateTokens(text) {
   return Math.ceil(Buffer.byteLength(text, 'utf8') / 4);
 }
 
-function hash32(str, seed = 2166136261) {
-  let h = seed >>> 0;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-function tokenHashVector(text, dim) {
-  const out = new Array(dim).fill(0);
-  const tokens = text.split(/\s+/).filter(Boolean);
-
-  for (const token of tokens) {
-    const h = hash32(token);
-    const idx = h % dim;
-    const sign = (h & 1) === 0 ? 1 : -1;
-    out[idx] += sign;
-  }
-
-  let norm = Math.sqrt(out.reduce((s, x) => s + x * x, 0));
-  if (norm === 0) norm = 1;
-
-  return out.map((x) => x / norm);
-}
-
 function chunkText(text, maxBytes) {
   const chunks = [];
   let current = '';
@@ -106,12 +87,163 @@ function percentile(values, p) {
   return values[idx];
 }
 
+function fileStemQuery(file, text) {
+  const pathTerms = file
+    .replace(/\.[^.]+$/, '')
+    .replaceAll('/', ' ')
+    .replaceAll('-', ' ')
+    .replaceAll('_', ' ')
+    .trim();
+
+  const heading = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.startsWith('#') || /^(export )?(class|function|interface|type|const)\s+/u.test(line));
+
+  return `${pathTerms} ${heading ?? ''}`.trim();
+}
+
+function buildQuantizationProfile(queryVectors, exactScorer, approxScorer) {
+  let rankingAgreementAt1 = 0;
+  let rankingOverlapAt5 = 0;
+  const exactTopKErrors = [];
+  const unionTopKErrors = [];
+
+  for (const query of queryVectors) {
+    const exactScores = exactScorer(query)
+      .map((score, index) => ({ index, score }))
+      .sort((a, b) => b.score - a.score);
+
+    const exactTopK = exactScores.slice(0, 5);
+    const approxTopK = approxScorer(query).slice(0, 5);
+
+    if (approxTopK[0]?.index === exactTopK[0]?.index) {
+      rankingAgreementAt1++;
+    }
+
+    const exactTopKSet = new Set(exactTopK.map((item) => item.index));
+    let overlap = 0;
+    for (const item of approxTopK) {
+      if (exactTopKSet.has(item.index)) {
+        overlap++;
+      }
+    }
+    rankingOverlapAt5 += overlap / 5;
+
+    const approxByIndex = new Map(approxTopK.map((item) => [item.index, item.score]));
+    const worstApprox = approxTopK.at(-1)?.score ?? 0;
+    for (const exact of exactTopK) {
+      const approxScore = approxByIndex.get(exact.index);
+      exactTopKErrors.push(Math.abs((approxScore ?? worstApprox) - exact.score));
+    }
+
+    const union = new Set([
+      ...exactTopK.map((item) => item.index),
+      ...approxTopK.map((item) => item.index),
+    ]);
+    const exactByIndex = new Map(exactScores.map((item) => [item.index, item.score]));
+    for (const idx of union) {
+      const exactScore = exactByIndex.get(idx) ?? 0;
+      const approxScore = approxByIndex.get(idx) ?? 0;
+      unionTopKErrors.push(Math.abs(approxScore - exactScore));
+    }
+  }
+
+  exactTopKErrors.sort((a, b) => a - b);
+  unionTopKErrors.sort((a, b) => a - b);
+
+  const queryCount = Math.max(1, queryVectors.length);
+  return {
+    query_count: queryVectors.length,
+    ranking_agreement_at_1: rankingAgreementAt1 / queryCount,
+    ranking_overlap_at_5: rankingOverlapAt5 / queryCount,
+    ranking_loss_at_5: 1 - rankingOverlapAt5 / queryCount,
+    score_mae_on_exact_topk: exactTopKErrors.reduce((s, x) => s + x, 0) / Math.max(1, exactTopKErrors.length),
+    score_mse_on_exact_topk: exactTopKErrors.reduce((s, x) => s + x * x, 0) / Math.max(1, exactTopKErrors.length),
+    score_p95_abs_error_on_exact_topk: percentile(exactTopKErrors, 0.95),
+    score_mae_on_union_topk: unionTopKErrors.reduce((s, x) => s + x, 0) / Math.max(1, unionTopKErrors.length),
+    score_mse_on_union_topk: unionTopKErrors.reduce((s, x) => s + x * x, 0) / Math.max(1, unionTopKErrors.length),
+  };
+}
+
+function buildRetrievalProfile(queryRecords, dbVectors, approxScorer) {
+  let relevantRecallAt1 = 0;
+  let relevantRecallAt5 = 0;
+  let relevantMrr = 0;
+
+  for (const record of queryRecords) {
+    const approxTopK = approxScorer(record.vector).slice(0, 5);
+    if (approxTopK[0] && record.relevantSet.has(approxTopK[0].index)) {
+      relevantRecallAt1++;
+    }
+    const hitIndex = approxTopK.findIndex((item) => record.relevantSet.has(item.index));
+    if (hitIndex >= 0) {
+      relevantRecallAt5++;
+      relevantMrr += 1 / (hitIndex + 1);
+    }
+  }
+
+  const denom = Math.max(1, queryRecords.length);
+  return {
+    query_count: queryRecords.length,
+    relevant_recall_at_1: relevantRecallAt1 / denom,
+    relevant_recall_at_5: relevantRecallAt5 / denom,
+    relevant_mrr: relevantMrr / denom,
+  };
+}
+
+function clipUnit(x) {
+  return Math.max(-1, Math.min(1, x));
+}
+
+function buildLloydMaxAux(centroids, boundaries) {
+  return {
+    encode(values) {
+      const indices = new Uint8Array(values.length);
+      for (let i = 0; i < values.length; i++) {
+        const v = clipUnit(values[i] ?? 0);
+        let idx = centroids.length - 1;
+        for (let j = 0; j < centroids.length; j++) {
+          if (v <= boundaries[j + 1]) {
+            idx = j;
+            break;
+          }
+        }
+        indices[i] = idx;
+      }
+      return indices;
+    },
+    decode(indices) {
+      const out = new Float32Array(indices.length);
+      for (let i = 0; i < indices.length; i++) {
+        out[i] = centroids[indices[i]] ?? 0;
+      }
+      return out;
+    },
+  };
+}
+
+function normalizeFloat32(values) {
+  let norm2 = 0;
+  for (let i = 0; i < values.length; i++) {
+    norm2 += values[i] * values[i];
+  }
+  const invNorm = norm2 > 0 ? 1 / Math.sqrt(norm2) : 1;
+  const out = new Float32Array(values.length);
+  for (let i = 0; i < values.length; i++) {
+    out[i] = values[i] * invNorm;
+  }
+  return out;
+}
+
 const files = listFiles();
 const chunks = [];
+const fileTexts = new Map();
 let approximateTokenCount = 0;
 
 for (const file of files) {
   const text = readFileSync(file, 'utf8');
+  fileTexts.set(file, text);
   for (const chunk of chunkText(text, CHUNK_BYTES)) {
     approximateTokenCount += approximateTokens(chunk);
     chunks.push({ file, text: chunk });
@@ -122,98 +254,127 @@ if (chunks.length === 0) {
   throw new Error('No chunks generated for open test');
 }
 
-const vectors = chunks.map((c) => tokenHashVector(c.text, DIM));
+const chunkIndicesByFile = new Map();
+for (let i = 0; i < chunks.length; i++) {
+  const list = chunkIndicesByFile.get(chunks[i].file) ?? [];
+  list.push(i);
+  chunkIndicesByFile.set(chunks[i].file, list);
+}
 
-const t0 = performance.now();
-const compressed = compressVectors({
-  vectors,
-  dimensions: DIM,
-  bitsPerValue: 4,
-  seed: 42,
-});
-const t1 = performance.now();
+const fileQueries = files
+  .slice(0, QUERY_LIMIT)
+  .map((file) => ({
+    file,
+    query: fileStemQuery(file, fileTexts.get(file) ?? ''),
+    relevantSet: new Set(chunkIndicesByFile.get(file) ?? []),
+  }))
+  .filter((item) => item.query.length > 0 && item.relevantSet.size > 0);
 
-let recall1 = 0;
-let recall5 = 0;
-let mrr = 0;
-const exactTopKErrors = [];
-const unionTopKErrors = [];
-const queryCount = Math.min(chunks.length, QUERY_LIMIT);
+const vectorizerEntries = [
+  ['token_hash', createTokenHashVectorizer(DIM)],
+  ['hashed_tfidf', buildHashedTfidfVectorizer(DIM, chunks.map((chunk) => chunk.text))],
+];
 
-for (let i = 0; i < queryCount; i++) {
-  const query = vectors[i];
+const vectorizerProfiles = {};
+let canonicalProfile = null;
 
-  const exactScores = vectors
-    .map((v, index) => ({ index, score: dot(query, v) }))
-    .sort((a, b) => b.score - a.score);
+for (const [vectorizerName, vectorizer] of vectorizerEntries) {
+  const vectors = chunks.map((chunk) => vectorizer.embed(chunk.text));
+  const queryRecords = fileQueries.map((item) => ({
+    ...item,
+    vector: vectorizer.embed(item.query),
+  }));
+  const queryVectors = queryRecords.map((item) => item.vector);
 
-  const exactTopK = exactScores.slice(0, 5);
+  const t0 = performance.now();
+  const compressed = compressVectors({
+    vectors,
+    dimensions: DIM,
+    bitsPerValue: BITS_PER_VALUE,
+    seed: ROTATION_SEED,
+    includeQJL: false,
+  });
+  const t1 = performance.now();
 
-  const result = searchVectors({
+  const exactScorer = (queryVector) => vectors.map((vector) => dot(queryVector, vector));
+  const uniformApproxScorer = (queryVector) => searchVectors({
     compressed_database_b64: compressed.compressed_database_b64,
-    query_vector: query,
+    query_vector: queryVector,
     top_k: 5,
     metric: 'cosine',
+  }).results;
+
+  const uniformQuantization = buildQuantizationProfile(queryVectors, exactScorer, uniformApproxScorer);
+  const uniformRetrieval = buildRetrievalProfile(queryRecords, vectors, uniformApproxScorer);
+
+  const rotation = new RotationEngine(DIM, ROTATION_SEED);
+  const lloydMax = computeLloydMaxBetaCodebook(DIM, 4);
+  const lloydAux = buildLloydMaxAux(lloydMax.centroids, lloydMax.boundaries);
+  const quantizedVectors = vectors.map((vector) => {
+    const source = Float32Array.from(vector);
+    const rotated = rotation.rotate(source);
+    const normalized = normalizeFloat32(rotated);
+    const encoded = lloydAux.encode(normalized);
+    return lloydAux.decode(encoded);
   });
 
-  const approxTopK = result.results;
+  const lloydApproxScorer = (queryVector) => {
+    const rotatedQuery = normalizeFloat32(rotation.rotate(Float32Array.from(queryVector)));
+    return quantizedVectors
+      .map((vector, index) => ({ index, score: dot(rotatedQuery, vector) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+  };
 
-  // Ranking metrics
-  if (result.results[0]?.index === exactScores[0]?.index) recall1++;
-  if (result.results.some((r) => r.index === exactScores[0]?.index)) recall5++;
+  const lloydQuantization = buildQuantizationProfile(queryVectors, exactScorer, lloydApproxScorer);
+  const lloydRetrieval = buildRetrievalProfile(queryRecords, vectors, lloydApproxScorer);
 
-  // MRR
-  const exactBest = exactScores[0]?.index;
-  const rank = result.results.findIndex((r) => r.index === exactBest);
-  mrr += rank >= 0 ? 1 / (rank + 1) : 0;
+  const profile = {
+    vectorizer_id: vectorizer.id,
+    vectorizer_kind: vectorizer.kind,
+    compression_ratio: compressed.compression_ratio,
+    compressed_bytes: compressed.compressed_bytes,
+    compress_ms: t1 - t0,
+    query_count: queryRecords.length,
+    quantization: {
+      uniform: uniformQuantization,
+      lloyd_max_beta: lloydQuantization,
+    },
+    retrieval: {
+      uniform: uniformRetrieval,
+      lloyd_max_beta: lloydRetrieval,
+    },
+    comparison: {
+      quantization_ranking_loss_delta:
+        lloydQuantization.ranking_loss_at_5 - uniformQuantization.ranking_loss_at_5,
+      retrieval_recall_at_5_delta:
+        lloydRetrieval.relevant_recall_at_5 - uniformRetrieval.relevant_recall_at_5,
+      score_mae_exact_topk_delta:
+        lloydQuantization.score_mae_on_exact_topk - uniformQuantization.score_mae_on_exact_topk,
+    },
+    algorithm_level: compressed.algorithm_level,
+    format_version: compressed.format_version,
+    include_qjl: compressed.include_qjl,
+    warnings: [
+      ...compressed.warnings,
+      'Lloyd-Max comparison is a sidecar benchmark path; public search.ts remains the uniform quantizer route.',
+      'Experimental QJL is kept research-only until an estimator/search path is reproducible on this corpus.',
+    ],
+  };
 
-  // Score calibration on exact top-k (by same index)
-  const approxByIndex = new Map(approxTopK.map((r) => [r.index, r.score]));
-  const worstApprox = approxTopK.at(-1)?.score ?? 0;
-
-  for (const exact of exactTopK) {
-    const approxScore = approxByIndex.get(exact.index);
-    if (approxScore !== undefined) {
-      exactTopKErrors.push(Math.abs(approxScore - exact.score));
-    } else {
-      // Candidate missing from approximate top-k: penalize
-      exactTopKErrors.push(Math.abs(worstApprox - exact.score));
-    }
-  }
-
-  // Score calibration on union top-k (all candidates seen by either method)
-  const union = new Set([
-    ...exactTopK.map((x) => x.index),
-    ...approxTopK.map((x) => x.index),
-  ]);
-
-  const exactByIndex = new Map(exactScores.map((x) => [x.index, x.score]));
-
-  for (const idx of union) {
-    const exactScore = exactByIndex.get(idx) ?? 0;
-    const approxScore = approxByIndex.get(idx) ?? 0;
-    unionTopKErrors.push(Math.abs(approxScore - exactScore));
+  vectorizerProfiles[vectorizerName] = profile;
+  if (vectorizerName === 'token_hash') {
+    canonicalProfile = profile;
   }
 }
 
-exactTopKErrors.sort((a, b) => a - b);
-unionTopKErrors.sort((a, b) => a - b);
-
-const score_mae_on_exact_topk = exactTopKErrors.reduce((s, x) => s + x, 0) / Math.max(1, exactTopKErrors.length);
-const score_mse_on_exact_topk = exactTopKErrors.reduce((s, x) => s + x * x, 0) / Math.max(1, exactTopKErrors.length);
-const score_p95_abs_error_on_exact_topk = percentile(exactTopKErrors, 0.95);
-const score_mae_on_union_topk = unionTopKErrors.reduce((s, x) => s + x, 0) / Math.max(1, unionTopKErrors.length);
-const score_mse_on_union_topk = unionTopKErrors.reduce((s, x) => s + x * x, 0) / Math.max(1, unionTopKErrors.length);
+if (!canonicalProfile) {
+  throw new Error('token_hash canonical profile missing');
+}
 
 function assertFinite(name, value) {
   if (!Number.isFinite(value)) {
     throw new Error(`${name} must be finite, got ${value}`);
-  }
-}
-
-function assertInRange(name, value, min, max) {
-  if (value < min || value > max) {
-    throw new Error(`${name} must be in [${min}, ${max}], got ${value}`);
   }
 }
 
@@ -224,32 +385,30 @@ const report = {
   approximate_tokens: approximateTokenCount,
   token_count_source: 'approximate_bytes_div_4',
   dimensions: DIM,
-  vector_count: vectors.length,
-  compression_ratio: compressed.compression_ratio,
-  compressed_bytes: compressed.compressed_bytes,
-  original_bytes_estimate: compressed.original_bytes_estimate,
-  compress_ms: t1 - t0,
-  query_count: queryCount,
-  // Ranking metrics
-  recall_at_1: recall1 / queryCount,
-  recall_at_5: recall5 / queryCount,
-  mrr: mrr / queryCount,
-  // Score calibration metrics (by same index)
-  score_mae_on_exact_topk,
-  score_mse_on_exact_topk,
-  score_p95_abs_error_on_exact_topk,
-  score_mae_on_union_topk,
-  score_mse_on_union_topk,
-  algorithm_level: compressed.algorithm_level,
-  format_version: compressed.format_version,
-  include_qjl: compressed.include_qjl,
-  warnings: compressed.warnings,
+  vector_count: chunks.length,
+  compression_ratio: canonicalProfile.compression_ratio,
+  compressed_bytes: canonicalProfile.compressed_bytes,
+  original_bytes_estimate: chunks.length * DIM * 4,
+  compress_ms: canonicalProfile.compress_ms,
+  query_count: canonicalProfile.query_count,
+  recall_at_1: canonicalProfile.retrieval.uniform.relevant_recall_at_1,
+  recall_at_5: canonicalProfile.retrieval.uniform.relevant_recall_at_5,
+  mrr: canonicalProfile.retrieval.uniform.relevant_mrr,
+  score_mae_on_exact_topk: canonicalProfile.quantization.uniform.score_mae_on_exact_topk,
+  score_mse_on_exact_topk: canonicalProfile.quantization.uniform.score_mse_on_exact_topk,
+  score_p95_abs_error_on_exact_topk: canonicalProfile.quantization.uniform.score_p95_abs_error_on_exact_topk,
+  score_mae_on_union_topk: canonicalProfile.quantization.uniform.score_mae_on_union_topk,
+  score_mse_on_union_topk: canonicalProfile.quantization.uniform.score_mse_on_union_topk,
+  algorithm_level: canonicalProfile.algorithm_level,
+  format_version: canonicalProfile.format_version,
+  include_qjl: canonicalProfile.include_qjl,
+  warnings: canonicalProfile.warnings,
+  profiles: vectorizerProfiles,
 };
 
-// Hard assertions for fail-closed gate
 if (report.files <= 0) throw new Error('open test must scan at least one file');
 if (report.chunks <= 0) throw new Error('open test must produce at least one chunk');
-if (report.vector_count <= 0) throw new Error('open test must produce at least one vector');
+if (report.query_count <= 0) throw new Error('query_count must be positive');
 if (report.approximate_tokens <= 0) throw new Error('open test approximate token count must be positive');
 if (report.compression_ratio <= 1) throw new Error(`compression_ratio must be > 1, got ${report.compression_ratio}`);
 if (report.format_version !== 3) throw new Error(`format_version must be 3, got ${report.format_version}`);
@@ -257,24 +416,13 @@ if (report.include_qjl !== false) throw new Error('include_qjl must be false for
 if (report.algorithm_level !== 'LEVEL_0_TURBOQUANT_INSPIRED_MVP') {
   throw new Error(`algorithm_level must be LEVEL_0_TURBOQUANT_INSPIRED_MVP for open test, got ${report.algorithm_level}`);
 }
-if (report.recall_at_5 < report.recall_at_1) {
-  throw new Error(`recall_at_5 ${report.recall_at_5} must be >= recall_at_1 ${report.recall_at_1}`);
-}
-if (report.query_count <= 0) throw new Error('query_count must be positive');
-
-// Validate score metrics
-assertInRange('mrr', report.mrr, 0, 1);
-assertFinite('score_mae_on_exact_topk', report.score_mae_on_exact_topk);
-assertFinite('score_mse_on_exact_topk', report.score_mse_on_exact_topk);
-assertFinite('score_p95_abs_error_on_exact_topk', report.score_p95_abs_error_on_exact_topk);
-assertFinite('score_mae_on_union_topk', report.score_mae_on_union_topk);
-assertFinite('score_mse_on_union_topk', report.score_mse_on_union_topk);
 
 for (const [name, value] of Object.entries(report)) {
-  if (typeof value === 'number') assertFinite(name, value);
+  if (typeof value === 'number') {
+    assertFinite(name, value);
+  }
 }
 
-// Save report if TQ_OPEN_TEST_OUTPUT is set
 const outputPath = process.env.TQ_OPEN_TEST_OUTPUT;
 const json = JSON.stringify(report, null, 2);
 

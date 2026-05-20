@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { ContextPackSearchResult, ContextPackManifest } from '../cost/types.js';
 import { searchVectors } from '../index.js';
-import { createTokenHashVectorizer } from '../context/vectorizer.js';
+import { createVectorizerFromSpec } from '../context/vectorizer.js';
 import { validateTopK } from '../cost/limits.js';
 
 const ExternalStoreEntrySchema = z.object({
@@ -70,7 +70,7 @@ export function turboquantContextPackSearch(
 
   validateTopK(input.top_k);
 
-  const vectorizer = createTokenHashVectorizer(input.manifest.dimensions);
+  const vectorizer = createVectorizerFromSpec(input.manifest.vectorizer);
   const queryVector = vectorizer.embed(input.query);
 
   const searchResult = searchVectors({
@@ -150,7 +150,7 @@ export function turboquantContextPackSearch(
   });
 
   const warnings: string[] = [
-    'Local deterministic vectorizer is not a substitute for semantic embeddings.',
+    'Local deterministic vectorizer is a reproducible lexical baseline, not a semantic embedding model.',
     'This tool does not reduce Anthropic API token billing directly.',
     'Use context_pack_build to create the index first.',
   ];

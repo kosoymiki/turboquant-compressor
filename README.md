@@ -46,13 +46,13 @@ The public benchmark artifacts in `bench/results/` show **5.5x+ compression** on
 | `bench/results/open-test-local-20260514-220247.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | — | Early open local test |
 | `bench/results/open-test-local-20260514-224444.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | 0.708 | 50-query evaluation |
 | `bench/results/open-test-local-20260514-233707.json` | 57 | 78 | 384 | **5.8844x** | 0.58 | 0.92 | 0.7047 | Larger corpus evaluation |
-| `bench/results/open-test-local-20260520-215639.json` | 102 | 149 | 384 | **5.8955x** | 0.04 | 0.10 | 0.0617 | Current truthful broader repo sweep after algorithm-level audit |
+| `bench/results/open-test-local-20260520-222048.json` | 103 | 151 | 384 | **5.8957x** | 0.02 | 0.10 | 0.0490 | Current truthful broader repo sweep with quantization/vectorizer profiles |
 
 ### Practical headline
 
 ```text
 Measured local corpus compression: 5.5x+
-Best public artifact:              5.8955x
+Best public artifact:              5.8957x
 Recall@5 range:                    0.10–0.92
 Format version:                    3
 Algorithm level:                   LEVEL_0_TURBOQUANT_INSPIRED_MVP
@@ -475,7 +475,7 @@ Adreno loader report when claiming Adreno
 
 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260514-220247.json
- https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260520-215639.json
+ https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260520-222048.json
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/forensics/mcp-conformance-transcript.json 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/scripts/verify-release-evidence.mjs
 
