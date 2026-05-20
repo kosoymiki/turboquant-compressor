@@ -14,14 +14,15 @@ getprop ro.product.model 2>/dev/null || true
 
 echo "[opencl-libraries]"
 FOUND=0
+PREFIX_DIR="${PREFIX:-$(CDPATH= cd -- "$(dirname -- "$(command -v python3)")/.." && pwd)}"
 for p in \
   /system/vendor/lib64/libOpenCL.so \
   /vendor/lib64/libOpenCL.so \
   /system/lib64/libOpenCL.so \
   /vendor/lib64/libOpenCL_adreno.so \
   /system/vendor/lib64/libOpenCL_adreno.so \
-  "${PREFIX:-/data/data/com.termux/files/usr}/lib/libOpenCL.so" \
-  "${PREFIX:-/data/data/com.termux/files/usr}/opt/vendor/lib/libOpenCL.so"
+  "${PREFIX_DIR}/lib/libOpenCL.so" \
+  "${PREFIX_DIR}/opt/vendor/lib/libOpenCL.so"
 do
   if [ -e "$p" ]; then
     echo "FOUND $p"

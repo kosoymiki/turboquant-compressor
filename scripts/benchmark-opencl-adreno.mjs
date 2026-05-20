@@ -19,6 +19,7 @@ mkdirSync(forensicsDir, { recursive: true });
 
 const allowUnavailable = process.argv.includes('--allow-unavailable');
 const outPath = join(forensicsDir, 'opencl-adreno-report.json');
+const termuxPrefix = process.env.PREFIX || dirname(dirname(process.execPath));
 
 // Memory info
 let memInfo = {};
@@ -70,7 +71,7 @@ if (!existsSync(cliBin)) {
 const openclLdPath = [
   '/system/vendor/lib64',
   '/vendor/lib64',
-  `${process.env.PREFIX ?? '/data/data/com.termux/files/usr'}/lib`,
+  `${termuxPrefix}/lib`,
   process.env.LD_LIBRARY_PATH || '',
 ].filter(Boolean).join(':');
 

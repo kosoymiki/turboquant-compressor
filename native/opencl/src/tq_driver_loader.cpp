@@ -28,12 +28,53 @@
 #include <cstring>
 #include <mutex>
 #include <cerrno>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 #ifdef __ANDROID__
 #include <android/dlext.h>
 #endif
 
 namespace tq {
+
+static std::string env_or_empty(const char* name) {
+    const char* value = getenv(name);
+    return value ? std::string(value) : std::string();
+}
+
+static std::string home_dir() {
+    auto home = env_or_empty("HOME");
+    return home.empty() ? std::string("/data/local/tmp") : home;
+}
+
+static std::string join_path(const std::string& base, const char* suffix) {
+    if (base.empty()) return std::string();
+    if (!base.empty() && base.back() == '/') return base + suffix;
+    return base + "/" + suffix;
+}
+
+static std::vector<std::string> driver_roots() {
+    std::vector<std::string> roots;
+    auto env_root = env_or_empty("TQ_DRIVER_ROOT");
+    auto tq_root = env_or_empty("TURBOQUANT_ROOT");
+    auto home = home_dir();
+    if (!env_root.empty()) roots.push_back(env_root);
+    if (!tq_root.empty()) roots.push_back(join_path(tq_root, "native/opencl/driver-pack"));
+    roots.push_back(join_path(home, "turboquant/drivers"));
+    roots.push_back(join_path(home, "drivers"));
+    return roots;
+}
+
+static std::vector<std::string> mesa_roots() {
+    std::vector<std::string> roots;
+    auto env_root = env_or_empty("TQ_MESA_ROOT");
+    auto home = home_dir();
+    if (!env_root.empty()) roots.push_back(env_root);
+    roots.push_back(join_path(home, "mesa-upstream"));
+    roots.push_back(join_path(home, "mesa-upstream-26.2-devel"));
+    return roots;
+}
 
 // --- KGSL ioctl defs (from msm_kgsl.h, forensic-validated) ---
 #define KGSL_IOC_TYPE 0x09
@@ -216,12 +257,17 @@ static void setup_vendor_hook_env(const char* driver_dir) {
 
 // --- #2: tmpdir for LLVM JIT shader cache ---
 static void ensure_cache_dir() {
-    static const char* cache_path = "/data/data/com.termux/files/home/turboquant/.cache/rusticl";
-    mkdir("/data/data/com.termux/files/home/turboquant/.cache", 0755);
-    mkdir(cache_path, 0755);
-    setenv("RUSTICL_CACHE_DIR", cache_path, 0);
-    setenv("MESA_SHADER_CACHE_DIR", cache_path, 0);
-    DRV_TRACE("cache dir: %s", cache_path);
+    auto cache_dir = env_or_empty("TURBOQUANT_RUSTICL_CACHE_DIR");
+    if (cache_dir.empty()) {
+        auto home = home_dir();
+        cache_dir = join_path(home, ".cache/turboquant-rusticl");
+    }
+    auto parent = cache_dir.substr(0, cache_dir.find_last_of('/'));
+    if (!parent.empty()) mkdir(parent.c_str(), 0755);
+    mkdir(cache_dir.c_str(), 0755);
+    setenv("RUSTICL_CACHE_DIR", cache_dir.c_str(), 0);
+    setenv("MESA_SHADER_CACHE_DIR", cache_dir.c_str(), 0);
+    DRV_TRACE("cache dir: %s", cache_dir.c_str());
 }
 
 // --- Load CL function pointers from library ---
@@ -318,44 +364,44 @@ DriverCaps probe_best_driver() {
     ensure_cache_dir();
 
     // T0-pre: Try manifest-based driver pack (two-layer architecture)
-    static const char* pack_dir = "/data/data/com.termux/files/home/turboquant/drivers";
     DriverPackManifest l1_manifest, l2_manifest;
-    if (scan_driver_pack(pack_dir, &l1_manifest, &l2_manifest)) {
-        if (!l1_manifest.library_path.empty()) {
-            void* lib = try_dlopen(l1_manifest.library_path.c_str());
-            if (lib) {
-                ClFuncs f = {};
-                if (load_cl_funcs(lib, &f) && query_device_caps(&f, &caps)) {
-                    caps.tier = DriverTier::RUSTICL_KGSL;
-                    caps.lib_path = l1_manifest.library_path;
-                    caps.has_fma = true;
-                    DRV_TRACE("driver pack layer1: %s v%s",
-                              l1_manifest.id.c_str(), l1_manifest.version.c_str());
+    for (const auto& pack_dir : driver_roots()) {
+        if (scan_driver_pack(pack_dir.c_str(), &l1_manifest, &l2_manifest)) {
+            if (!l1_manifest.library_path.empty()) {
+                void* lib = try_dlopen(l1_manifest.library_path.c_str());
+                if (lib) {
+                    ClFuncs f = {};
+                    if (load_cl_funcs(lib, &f) && query_device_caps(&f, &caps)) {
+                        caps.tier = DriverTier::RUSTICL_KGSL;
+                        caps.lib_path = l1_manifest.library_path;
+                        caps.has_fma = true;
+                        DRV_TRACE("driver pack layer1: %s v%s",
+                                  l1_manifest.id.c_str(), l1_manifest.version.c_str());
+                        dlclose(lib);
+                        goto done;
+                    }
                     dlclose(lib);
-                    goto done;
                 }
-                dlclose(lib);
             }
         }
     }
 
     // T0: Custom Rusticl/kgsl (adrenotools-style namespace load)
-    static const char* rusticl_paths[] = {
-        // Driver pack (two-layer archive, deployed)
-        "/data/data/com.termux/files/home/turboquant/drivers/layer1-compute/libRusticlOpenCL.so.1",
-        // Build tree
-        "/data/data/com.termux/files/home/mesa-upstream/build/src/gallium/targets/rusticl/libRusticlOpenCL.so.1",
-        "/data/data/com.termux/files/home/drivers/libRusticlOpenCL.so",
-        "/data/data/com.termux/files/home/turboquant/drivers/libRusticlOpenCL.so",
-        nullptr
-    };
-    for (int i = 0; rusticl_paths[i]; i++) {
-        void* lib = try_dlopen(rusticl_paths[i]);
+    std::vector<std::string> rusticl_paths;
+    for (const auto& root : driver_roots()) {
+        rusticl_paths.push_back(join_path(root, "layer1-compute/libRusticlOpenCL.so.1"));
+        rusticl_paths.push_back(join_path(root, "libRusticlOpenCL.so"));
+    }
+    for (const auto& mesa_root : mesa_roots()) {
+        rusticl_paths.push_back(join_path(mesa_root, "build/src/gallium/targets/rusticl/libRusticlOpenCL.so.1"));
+    }
+    for (const auto& path : rusticl_paths) {
+        void* lib = try_dlopen(path.c_str());
         if (!lib) continue;
         ClFuncs f = {};
         if (load_cl_funcs(lib, &f) && query_device_caps(&f, &caps)) {
             caps.tier = DriverTier::RUSTICL_KGSL;
-            caps.lib_path = rusticl_paths[i];
+            caps.lib_path = path;
             caps.has_fma = true; // Adreno native
             dlclose(lib);
             goto done;
@@ -409,20 +455,20 @@ DriverCaps probe_best_driver() {
 
     // T3: Turnip Vulkan compute (always works via kgsl)
     if (caps.has_kgsl) {
-        static const char* vk_paths[] = {
-            // Driver pack layer2
-            "/data/data/com.termux/files/home/turboquant/drivers/layer2-vulkan/libvulkan_freedreno.so",
-            // Build tree
-            "/data/data/com.termux/files/home/mesa-upstream/build/src/freedreno/vulkan/libvulkan_freedreno.so",
-            "/data/data/com.termux/files/home/drivers/libvulkan_freedreno.so",
-            "/data/data/com.termux/files/home/turnip/mesa-26.0.6/libvulkan_freedreno.so",
-            nullptr
-        };
-        for (int i = 0; vk_paths[i]; i++) {
+        std::vector<std::string> vk_paths;
+        for (const auto& root : driver_roots()) {
+            vk_paths.push_back(join_path(root, "layer2-vulkan/libvulkan_freedreno.so"));
+            vk_paths.push_back(join_path(root, "libvulkan_freedreno.so"));
+        }
+        for (const auto& mesa_root : mesa_roots()) {
+            vk_paths.push_back(join_path(mesa_root, "build/src/freedreno/vulkan/libvulkan_freedreno.so"));
+        }
+        vk_paths.push_back(join_path(home_dir(), "turnip/mesa-26.0.6/libvulkan_freedreno.so"));
+        for (const auto& path : vk_paths) {
             struct stat st;
-            if (stat(vk_paths[i], &st) == 0) {
+            if (stat(path.c_str(), &st) == 0) {
                 caps.tier = DriverTier::TURNIP_VK;
-                caps.lib_path = vk_paths[i];
+                caps.lib_path = path;
                 caps.device_name = "Turnip Adreno (VkCompute)";
                 caps.compute_units = 2;
                 caps.max_wg_size = 1024;

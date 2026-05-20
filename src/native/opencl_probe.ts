@@ -27,14 +27,19 @@ export interface OpenClProbeResult {
   probeTimeMs: number;
 }
 
+const termuxPrefix = process.env['PREFIX'] ?? (() => {
+  const nodeDir = process.execPath ? process.execPath.replace(/\/bin\/node$/, '') : '';
+  return nodeDir || '/usr';
+})();
+
 const LIBRARY_CANDIDATES = [
   '/system/vendor/lib64/libOpenCL.so',
   '/vendor/lib64/libOpenCL.so',
   '/system/lib64/libOpenCL.so',
   '/vendor/lib64/libOpenCL_adreno.so',
   '/system/vendor/lib64/libOpenCL_adreno.so',
-  `${process.env['PREFIX'] ?? '/data/data/com.termux/files/usr'}/lib/libOpenCL.so`,
-  `${process.env['PREFIX'] ?? '/data/data/com.termux/files/usr'}/opt/vendor/lib/libOpenCL.so`,
+  `${termuxPrefix}/lib/libOpenCL.so`,
+  `${termuxPrefix}/opt/vendor/lib/libOpenCL.so`,
 ];
 
 export interface OpenClProbeOptions {

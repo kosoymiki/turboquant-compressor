@@ -17,13 +17,14 @@ const buildDir = join(rootDir, 'native', 'opencl', 'build');
 const forensicsDir = join(rootDir, 'forensics', 'adreno');
 const cliBin = join(buildDir, 'tq_opencl_cli');
 const kernelDir = join(rootDir, 'native', 'opencl', 'kernels');
+const termuxPrefix = process.env.PREFIX || dirname(dirname(process.execPath));
 
 mkdirSync(forensicsDir, { recursive: true });
 
 const openclLdPath = [
   '/system/vendor/lib64',
   '/vendor/lib64',
-  `${process.env.PREFIX ?? '/data/data/com.termux/files/usr'}/lib`,
+  `${termuxPrefix}/lib`,
   process.env.LD_LIBRARY_PATH || '',
 ].filter(Boolean).join(':');
 
