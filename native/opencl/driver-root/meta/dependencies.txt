@@ -1,0 +1,26 @@
+FILE layer1-compute/libRusticlOpenCL.so.1
+NEEDED liblog.so
+NEEDED libsync.so
+NEEDED libz.so.1
+NEEDED libm.so
+NEEDED libzstd.so.1
+NEEDED libdrm.so
+NEEDED libdl.so
+NEEDED libLLVM.so
+NEEDED libclang-cpp.so
+NEEDED libc++_shared.so
+NEEDED libc.so
+
+FILE layer2-vulkan/libvulkan_freedreno.so
+NEEDED libhardware.so
+NEEDED liblog.so
+NEEDED libnativewindow.so
+NEEDED libsync.so
+NEEDED libm.so
+NEEDED libz.so.1
+NEEDED libzstd.so.1
+NEEDED libdrm.so
+NEEDED libc++_shared.so
+NEEDED libdl.so
+NEEDED libc.so
+

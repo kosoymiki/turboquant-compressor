@@ -183,7 +183,7 @@ If testing fails, please report:
 
 **Archive Info:**
 - Archive type: [source/portable]
-- Archive path: [/path/to/turboquant-compressor-4.1.0-*.tar.gz]
+- Archive path: [/path/to/turboquant-compressor-4.1.2-*.tar.gz]
 
 **Command Run:**
 ```bash

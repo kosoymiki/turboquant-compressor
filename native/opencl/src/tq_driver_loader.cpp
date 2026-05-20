@@ -353,13 +353,6 @@ DriverCaps probe_best_driver() {
         rusticl_paths.push_back(join_repo_path(root, "layer1-compute/libRusticlOpenCL.so.1"));
         rusticl_paths.push_back(join_repo_path(root, "libRusticlOpenCL.so"));
     }
-    for (const auto& mesa_root : mesa_roots()) {
-        for (const auto& build_dir : mesa_build_dirs(mesa_root)) {
-            rusticl_paths.push_back(join_repo_path(build_dir, "src/gallium/targets/rusticl/libRusticlOpenCL.so.1"));
-            rusticl_paths.push_back(join_repo_path(build_dir, "src/gallium/targets/rusticl/libRusticlOpenCL.so"));
-            rusticl_paths.push_back(join_repo_path(build_dir, "src/gallium/targets/rusticl/libRusticlOpenCL.so.1.0.0"));
-        }
-    }
     for (const auto& path : rusticl_paths) {
         void* lib = try_dlopen(path.c_str());
         if (!lib) continue;
@@ -425,11 +418,6 @@ DriverCaps probe_best_driver() {
         for (const auto& root : driver_roots()) {
             vk_paths.push_back(join_repo_path(root, "layer2-vulkan/libvulkan_freedreno.so"));
             vk_paths.push_back(join_repo_path(root, "libvulkan_freedreno.so"));
-        }
-        for (const auto& mesa_root : mesa_roots()) {
-            for (const auto& build_dir : mesa_build_dirs(mesa_root)) {
-                vk_paths.push_back(join_repo_path(build_dir, "src/freedreno/vulkan/libvulkan_freedreno.so"));
-            }
         }
         for (const auto& path : vk_paths) {
             struct stat st;

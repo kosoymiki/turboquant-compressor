@@ -1,17 +1,20 @@
 #!/bin/bash
-# TurboQuant Driver Pack Builder — Two-Layer Archive
-# Layer 1 (compute): libRusticlOpenCL.so.1 + freedreno/kgsl pipe loader
-# Layer 2 (backend): libvulkan_freedreno.so (Turnip) for VkCompute fallback
+# TurboQuant Driver Pack Builder — canonical binary release layout.
+# Layer 1 (compute): Rusticl/Freedreno/KGSL
+# Layer 2 (backend): Turnip/KGSL
 #
-# Output: tq-driver-pack-adreno730.tar.zst (flat two-layer archive)
-# Usage: ./pack_driver.sh [mesa_build_dir] [output_dir]
+# Output: tq-driver-pack-adreno-a7xx-a8xx.tar.zst in native/opencl/driver-pack/out plus unpacked canonical native/opencl/driver-root
+# Usage: ./pack_driver.sh [mesa_build_dir] [driver_root_dir]
+# The unpacked canonical artifact lives at tmp_turboquant/native/opencl/driver-root by default.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 set -euo pipefail
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 TQ_STACK_ROOT="$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)"
-TQ_REPO_ROOT="$(CDPATH= cd -- "${TQ_STACK_ROOT}/.." && pwd)"
+TQ_REPO_ROOT="$(CDPATH= cd -- "${TQ_STACK_ROOT}/../.." && pwd)"
+TQ_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
+TQ_CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
 detect_termux_prefix() {
   if [ -n "${PREFIX:-}" ] && [ -d "${PREFIX}/lib" ]; then
     printf '%s\n' "${PREFIX}"
@@ -30,12 +33,15 @@ TERMUX_PREFIX="${TQ_TERMUX_PREFIX:-$(detect_termux_prefix || true)}"
 TERMUX_LIB_DIR="${TERMUX_PREFIX}/lib"
 
 resolve_mesa_build() {
+  local sdk_level="${TQ_ANDROID_SDK_LEVEL:-34}"
   if [ -n "${TQ_MESA_BUILD_DIR:-}" ] && [ -f "${TQ_MESA_BUILD_DIR}/src/gallium/targets/rusticl/libRusticlOpenCL.so.1.0.0" ]; then
     printf '%s\n' "${TQ_MESA_BUILD_DIR}"
     return
   fi
   for candidate in \
     "${1:-}" \
+    "${TQ_CACHE_HOME}/turboquant/mesa-build-android${sdk_level}" \
+    "${TQ_CACHE_HOME}/turboquant/mesa-build" \
     "${TQ_STACK_ROOT}/mesa-build"; do
     if [ -n "${candidate}" ] && [ -f "${candidate}/src/gallium/targets/rusticl/libRusticlOpenCL.so.1.0.0" ]; then
       printf '%s\n' "${candidate}"
@@ -46,7 +52,8 @@ resolve_mesa_build() {
 }
 
 MESA_BUILD="${1:-$(resolve_mesa_build || true)}"
-OUT_DIR="${2:-${TQ_DRIVER_PACK_OUT:-${TQ_STACK_ROOT}/driver-pack/out}}"
+OUT_DIR="${2:-${TQ_DRIVER_ROOT_DIR:-${TQ_STACK_ROOT}/driver-root}}"
+ARCHIVE_DIR="${TQ_DRIVER_ARCHIVE_DIR:-${TQ_STACK_ROOT}/driver-pack/out}"
 MANIFEST="$(dirname "$0")/manifest.json"
 BUILD_META_JSON="${MESA_BUILD}/tq-build-metadata.json"
 
@@ -59,12 +66,13 @@ info() { echo "[tq-pack] $*"; }
 append_needed_entries() {
   local so_path="$1"
   local out_path="$2"
+  local rel_path="$3"
   if ! command -v readelf >/dev/null 2>&1; then
     echo "readelf unavailable" >> "$out_path"
     return 0
   fi
   {
-    echo "FILE $so_path"
+    echo "FILE $rel_path"
     readelf -d "$so_path" | awk '/NEEDED/ {gsub(/\[|\]/, "", $5); print "NEEDED " $5}'
     echo
   } >> "$out_path"
@@ -96,9 +104,11 @@ TURNIP_SO="$MESA_BUILD/src/freedreno/vulkan/libvulkan_freedreno.so"
 info "Mesa build: $MESA_BUILD"
 info "Rusticl: $(ls -lh "$RUSTICL_SO" | awk '{print $5}')"
 info "Turnip:  $(ls -lh "$TURNIP_SO" | awk '{print $5}')"
+info "Driver root dir: $OUT_DIR"
 
 # Create staging
 rm -rf "$STAGING"
+find "$OUT_DIR" -mindepth 1 -maxdepth 1 -name '.staging-*' -exec rm -rf {} + 2>/dev/null || true
 mkdir -p "$STAGING/layer1-compute" "$STAGING/layer2-vulkan" "$STAGING/meta" "$STAGING/kernels"
 
 # --- Layer 1: Compute (Rusticl OpenCL via KGSL) ---
@@ -147,26 +157,59 @@ build = {
   "compiler": "llvm/clang (Termux canonical toolchain)",
   "linker": "lld",
   "static_libcxx": False,
-  "strip": False
+  "strip": False,
+  "sdk_level": "${TQ_ANDROID_SDK_LEVEL:-34}",
+  "android_target_triple": "${TQ_ANDROID_TARGET_TRIPLE:-aarch64-linux-android}",
+  "android_target": "${TQ_ANDROID_TARGET_TRIPLE:-aarch64-linux-android}${TQ_ANDROID_SDK_LEVEL:-34}"
 }
 if os.path.isfile("$BUILD_META_JSON"):
     with open("$BUILD_META_JSON", "r") as bf:
         build = json.load(bf)
+build["install_prefix"] = "$OUT_DIR"
 m["build"] = build
+m["artifact_layout"] = {
+  "root_contract": "unpacked archive root is the canonical TQ_DRIVER_ROOT",
+  "entrypoints": {
+    "env": "env.sh",
+    "opencl_icd_dir": "layer1-compute",
+    "vulkan_icd_manifest": "layer2-vulkan/freedreno_icd.aarch64.json",
+    "kernel_dir": "kernels",
+    "metadata_dir": "meta"
+  },
+  "files": [
+    "env.sh",
+    "layer1-compute/libRusticlOpenCL.so.1",
+    "layer1-compute/libRusticlOpenCL.so",
+    "layer1-compute/libOpenCL.so.1",
+    "layer1-compute/rusticl.icd",
+    "layer2-vulkan/libvulkan_freedreno.so",
+    "layer2-vulkan/freedreno_icd.aarch64.json",
+    "meta/manifest.json",
+    "meta/dependencies.txt"
+  ]
+}
 m['sha256'] = {
     'libRusticlOpenCL.so.1': '$RUSTICL_SHA',
     'libvulkan_freedreno.so': '$TURNIP_SHA'
 }
 m['validated'] = True
 m['pack_date'] = '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
+m.setdefault("policy", {})
+m["policy"]["notes"] = [
+  "This manifest describes the assembled custom driver runtime.",
+  "Mesa 26.2+ already exposes freedreno-kmds=kgsl upstream; old freedreno-kgsl=true guidance is stale.",
+  "Binary release contract is TQ_DRIVER_ROOT-first with native/opencl/driver-root as the canonical assembled stack.",
+  "Per-device subgroup and workgroup tuning must be revalidated on real A7xx/A8xx hardware.",
+  "Treat A7xx as wave128-capable when the stack explicitly exposes it; treat A8xx as dual wave64."
+]
 with open("$STAGING/meta/manifest.json", 'w') as f:
     json.dump(m, f, indent=2)
 EOF
 
 DEPS_FILE="$STAGING/meta/dependencies.txt"
 : > "$DEPS_FILE"
-append_needed_entries "$STAGING/layer1-compute/libRusticlOpenCL.so.1" "$DEPS_FILE"
-append_needed_entries "$STAGING/layer2-vulkan/libvulkan_freedreno.so" "$DEPS_FILE"
+append_needed_entries "$STAGING/layer1-compute/libRusticlOpenCL.so.1" "$DEPS_FILE" "layer1-compute/libRusticlOpenCL.so.1"
+append_needed_entries "$STAGING/layer2-vulkan/libvulkan_freedreno.so" "$DEPS_FILE" "layer2-vulkan/libvulkan_freedreno.so"
 if ! validate_needed_entries "$DEPS_FILE"; then
   die "Unresolved DT_NEEDED entries detected; see $DEPS_FILE"
 fi
@@ -175,7 +218,7 @@ fi
 cat > "$STAGING/env.sh" << 'ENVEOF'
 #!/bin/bash
 # Source this to configure TurboQuant driver environment
-# Usage: source /path/to/tq-driver-pack/env.sh
+# Usage: source /path/to/driver-root/env.sh
 
 PACK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export TQ_DRIVER_ROOT="$PACK_DIR"
@@ -202,18 +245,23 @@ export FD_MESA_DEBUG=""
 # Ensure cache dir
 mkdir -p "$RUSTICL_CACHE_DIR" 2>/dev/null
 
-echo "[tq-drv] Driver pack active: $PACK_DIR"
+echo "[tq-drv] Driver root active: $PACK_DIR"
 echo "[tq-drv] Layer1: Rusticl/KGSL (OpenCL 3.0)"
 echo "[tq-drv] Layer2: Turnip (Vulkan 1.4.335)"
 ENVEOF
 chmod +x "$STAGING/env.sh"
 
-# --- Archive ---
 mkdir -p "$OUT_DIR"
-ARCHIVE="$OUT_DIR/${PACK_NAME}.tar.zst"
+mkdir -p "$ARCHIVE_DIR"
+ARCHIVE="$ARCHIVE_DIR/${PACK_NAME}.tar.zst"
 
 info "Creating archive: $ARCHIVE"
+rm -f "$ARCHIVE"
 tar -C "$STAGING" -cf - . | zstd -T2 -9 -o "$ARCHIVE"
+
+info "Refreshing unpacked canonical driver-root at: $OUT_DIR"
+find "$OUT_DIR" -mindepth 1 -maxdepth 1 ! -name "${PACK_NAME}.tar.zst" -exec rm -rf {} +
+tar --zstd -xf "$ARCHIVE" -C "$OUT_DIR"
 
 # Cleanup staging
 rm -rf "$STAGING"
@@ -222,8 +270,6 @@ ARCHIVE_SIZE=$(ls -lh "$ARCHIVE" | awk '{print $5}')
 info "Done: $ARCHIVE ($ARCHIVE_SIZE)"
 info "SHA256: $(sha256sum "$ARCHIVE" | cut -d' ' -f1)"
 info ""
-info "Deploy:"
-info "  mkdir -p ./turboquant-driver-pack"
-info "  tar --zstd -xf $ARCHIVE -C ./turboquant-driver-pack"
-info "  source ./turboquant-driver-pack/env.sh"
-info "  # Then run TurboQuant — driver auto-detected via tq_driver_loader"
+info "Canonical root:"
+info "  source \"$OUT_DIR/env.sh\""
+info "  # TurboQuant now prefers native/opencl/driver-root as primary contract"

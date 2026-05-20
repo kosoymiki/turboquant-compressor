@@ -2,18 +2,18 @@
 
 ## Goal
 
-This document defines the canonical evidence chain for release preparation of the repo-local custom stack.
+This document defines the canonical evidence chain for release preparation of the custom `native/opencl/driver-root` stack.
 
 ## Chain
 
-### 1. Runtime-Pack Manifest
+### 1. Driver-Root Manifest
 
 Files:
-- `native/opencl/runtime-pack/meta/manifest.json`
-- `native/opencl/runtime-pack/meta/dependencies.txt`
+- `$TQ_DRIVER_ROOT/meta/manifest.json`
+- `$TQ_DRIVER_ROOT/meta/dependencies.txt`
 
 Purpose:
-- describe the assembled runtime-pack
+- describe the assembled driver root
 - define dependency closure and packed stack composition
 
 ### 2. Safe Probe
@@ -24,7 +24,7 @@ Files:
 - `forensics/adreno/loader-report.json`
 
 Purpose:
-- prove that the repo-local stack is discoverable and classified correctly
+- prove that the assembled custom stack is discoverable and classified correctly
 - prove the selected backend and loader path
 
 ### 3. Self-Tests
@@ -76,10 +76,9 @@ Forbidden claim shortcuts:
 ## Export Readiness Rule
 
 A build is ready for export only when:
-1. runtime-pack manifest exists
+1. driver-root manifest exists
 2. dependency list exists
 3. safe probe succeeds
 4. self-tests are real and pass
 5. safe single-run benchmark exists
 6. mirror parity is proven by `SYNC_MANIFEST`
-

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Safe one-shot runner for TurboQuant runtime-pack tests.
+# Safe one-shot runner for a built TurboQuant driver root.
 # Purpose:
 # - keep tests short-lived
 # - isolate environment from ambient shell state
@@ -13,17 +13,49 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-CLI="$ROOT_DIR/native/opencl/build/tq_opencl_cli"
-RUNTIME_PACK="${TQ_RUNTIME_PACK_DIR:-$ROOT_DIR/native/opencl/runtime-pack}"
-ENV_SH="$RUNTIME_PACK/env.sh"
+resolve_cli() {
+  if [ -n "${TQ_OPENCL_CLI:-}" ] && [ -x "${TQ_OPENCL_CLI}" ]; then
+    printf '%s\n' "${TQ_OPENCL_CLI}"
+    return
+  fi
+  local cache_home="${XDG_CACHE_HOME:-$HOME/.cache}"
+  local cache_cli="${cache_home}/turboquant/native-opencl-build/tq_opencl_cli"
+  if [ -x "${cache_cli}" ]; then
+    printf '%s\n' "${cache_cli}"
+    return
+  fi
+  local repo_cli="${ROOT_DIR}/native/opencl/build/tq_opencl_cli"
+  if [ "${TQ_ALLOW_REPO_LOCAL_RUNTIME_PACK:-0}" = "1" ] && [ -x "${repo_cli}" ]; then
+    printf '%s\n' "${repo_cli}"
+    return
+  fi
+  return 1
+}
+CLI="$(resolve_cli || true)"
 
-if [ ! -x "$CLI" ]; then
-  echo "[safe-runtime-pack-run] missing CLI: $CLI" >&2
+resolve_driver_root() {
+  if [ -n "${TQ_DRIVER_ROOT:-}" ] && [ -f "${TQ_DRIVER_ROOT}/env.sh" ]; then
+    printf '%s\n' "${TQ_DRIVER_ROOT}"
+    return
+  fi
+  local repo_driver="${ROOT_DIR}/native/opencl/driver-root"
+  if [ -f "${repo_driver}/env.sh" ]; then
+    printf '%s\n' "${repo_driver}"
+    return
+  fi
+  return 1
+}
+
+DRIVER_ROOT="$(resolve_driver_root || true)"
+ENV_SH="${DRIVER_ROOT:+$DRIVER_ROOT/env.sh}"
+
+if [ -z "${CLI}" ] || [ ! -x "$CLI" ]; then
+  echo "[safe-runtime-pack-run] missing CLI; set TQ_OPENCL_CLI or build native sidecar" >&2
   exit 1
 fi
 
-if [ ! -f "$ENV_SH" ]; then
-  echo "[safe-runtime-pack-run] missing runtime env: $ENV_SH" >&2
+if [ -z "${DRIVER_ROOT}" ] || [ ! -f "$ENV_SH" ]; then
+  echo "[safe-runtime-pack-run] missing driver stack env.sh; expected ${ROOT_DIR}/native/opencl/driver-root or set TQ_DRIVER_ROOT" >&2
   exit 1
 fi
 
@@ -66,7 +98,7 @@ if command -v timeout >/dev/null 2>&1; then
     "${ENV_RUNNER[@]}" timeout 45s bash -lc "$INNER_CMD" 2>"$TMP_ERR"
     rc=$?
     set -e
-    grep -v -E 'failed to open /dev/dri/renderD128: Permission denied|Unsupported SPIR-V capability: SpvCapabilityGenericPointer|^[[:space:]]*[0-9]+ bytes into the SPIR-V binary$|^SPIR-V WARNING:$|^[[:space:]]*In file \.\./src/compiler/spirv/spirv_to_nir\.c:5557$' "$TMP_ERR" >&2 || true
+    grep -v -E 'failed to open /dev/dri/renderD128: Permission denied|Unsupported SPIR-V capability: SpvCapabilityGenericPointer|^[[:space:]]*[0-9]+ bytes into the SPIR-V binary$|^SPIR-V WARNING:$|^[[:space:]]*In file .*spirv_to_nir\.c:5557$' "$TMP_ERR" >&2 || true
     rm -f "$TMP_ERR"
     exit "$rc"
   else
@@ -79,7 +111,7 @@ else
     "${ENV_RUNNER[@]}" bash -lc "$INNER_CMD" 2>"$TMP_ERR"
     rc=$?
     set -e
-    grep -v -E 'failed to open /dev/dri/renderD128: Permission denied|Unsupported SPIR-V capability: SpvCapabilityGenericPointer|^[[:space:]]*[0-9]+ bytes into the SPIR-V binary$|^SPIR-V WARNING:$|^[[:space:]]*In file \.\./src/compiler/spirv/spirv_to_nir\.c:5557$' "$TMP_ERR" >&2 || true
+    grep -v -E 'failed to open /dev/dri/renderD128: Permission denied|Unsupported SPIR-V capability: SpvCapabilityGenericPointer|^[[:space:]]*[0-9]+ bytes into the SPIR-V binary$|^SPIR-V WARNING:$|^[[:space:]]*In file .*spirv_to_nir\.c:5557$' "$TMP_ERR" >&2 || true
     rm -f "$TMP_ERR"
     exit "$rc"
   else

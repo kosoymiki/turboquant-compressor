@@ -17,8 +17,6 @@ Only these categories belong in the export set:
 These zones are explicitly excluded from export truth:
 - `native/opencl/build/`
 - `native/opencl/build-tq-zero/`
-- `native/opencl/runtime-pack/`
-- `native/opencl/runtime-pack-fresh/`
 - `native/opencl/driver-pack/out/`
 - `native/opencl/driver-pack/out-fresh/`
 - `native/opencl/cl_kernel_test.c`
@@ -26,7 +24,6 @@ These zones are explicitly excluded from export truth:
 - `native/opencl/kernels/tq_fused_attention_v3_fp16.cl`
 - `native/opencl/kernels/tq_fused_attention_v4_fp16.cl`
 - `native/opencl/kernels/tq_fused_attention_v5_fp16.cl`
-- `native/opencl/driver-pack/patches/`
 - `native/adreno/`
 - `native/adreno_cmd/`
 - `driver/`
@@ -39,7 +36,7 @@ These zones are explicitly excluded from export truth:
 The current system is no longer blocked by runtime bring-up.
 The main release risk was truth drift between:
 - executable code
-- runtime-pack state
+- native/opencl/driver-root state
 - forensic evidence
 - mirror copy
 

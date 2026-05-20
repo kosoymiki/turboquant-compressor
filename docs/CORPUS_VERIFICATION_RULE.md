@@ -45,6 +45,19 @@ Primary external sources include:
    - unresolved
 5. Only then use it in code, docs, or release gating.
 
+## Heavy Build Rule
+
+For heavy compilations and recovery builds:
+
+1. run the build with `ninja -k 0` or equivalent keep-going mode when partial failure evidence matters
+2. launch it through a durable detached wrapper with explicit `pid` and `log` state so the build stays alive without an interactive parent
+3. do not busy-poll or wait interactively if the build is long-running
+4. collect the full failure surface first
+5. resolve the resulting log through corpus retrieval and primary web corroboration
+6. only then decide which failures are real blockers and which are collateral
+
+This rule exists to preserve cache, avoid wasting interactive budget, and maximize forensic value from each heavy build.
+
 ## Current Verified Examples
 
 - GitHub release-facing repo guidance must come from GitHub Docs, not repo folklore.

@@ -59,11 +59,6 @@ static bool try_load_opencl() {
         paths.emplace_back(tq::join_repo_path(root, "layer1-compute/libRusticlOpenCL.so"));
         paths.emplace_back(tq::join_repo_path(root, "libRusticlOpenCL.so.1"));
     }
-    for (const auto& mesa_root : tq::mesa_roots()) {
-        for (const auto& build_dir : tq::mesa_build_dirs(mesa_root)) {
-            paths.emplace_back(tq::join_repo_path(build_dir, "src/gallium/targets/rusticl/libRusticlOpenCL.so.1.0.0"));
-        }
-    }
     const char* vendor_paths[] = {
         "/system/vendor/lib64/libOpenCL.so",
         "/vendor/lib64/libOpenCL.so",
@@ -133,10 +128,13 @@ static bool has_rusticl_icd_contract() {
 }
 
 static bool is_custom_driver_path(const std::string& path) {
-    return path.find("libRusticlOpenCL.so") != std::string::npos ||
-           path.find("/native/opencl/driver-pack/") != std::string::npos ||
-           path.find("/build-tq-zero/") != std::string::npos ||
-           path.find("/build-turboquant-android-aarch64/") != std::string::npos;
+    if (path.find("libRusticlOpenCL.so") != std::string::npos) return true;
+    const char* driver_root = std::getenv("TQ_DRIVER_ROOT");
+    if (driver_root && *driver_root) {
+        const std::string root(driver_root);
+        if (path.rfind(root, 0) == 0) return true;
+    }
+    return false;
 }
 
 ProbeResult probe_opencl() {

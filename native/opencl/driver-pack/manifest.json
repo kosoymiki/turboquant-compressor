@@ -5,6 +5,27 @@
   "target_gpu": "Adreno a7xx-a8xx family",
   "target_chip_id": "family:a7xx-a8xx",
   "build_source": "mesa-upstream 26.2.0-devel + TurboQuant custom stack source state",
+  "artifact_layout": {
+    "root_contract": "unpacked archive root is the canonical TQ_DRIVER_ROOT",
+    "entrypoints": {
+      "env": "env.sh",
+      "opencl_icd_dir": "layer1-compute",
+      "vulkan_icd_manifest": "layer2-vulkan/freedreno_icd.aarch64.json",
+      "kernel_dir": "kernels",
+      "metadata_dir": "meta"
+    },
+    "files": [
+      "env.sh",
+      "layer1-compute/libRusticlOpenCL.so.1",
+      "layer1-compute/libRusticlOpenCL.so",
+      "layer1-compute/libOpenCL.so.1",
+      "layer1-compute/rusticl.icd",
+      "layer2-vulkan/libvulkan_freedreno.so",
+      "layer2-vulkan/freedreno_icd.aarch64.json",
+      "meta/manifest.json",
+      "meta/dependencies.txt"
+    ]
+  },
   "layers": {
     "compute": {
       "tier": "RUSTICL_KGSL",
@@ -51,11 +72,12 @@
     "production_route": "custom_driver_stack_only",
     "vendor_opencl_primary": false,
     "generic_opencl_allowed": false,
-    "notes": [
-      "This manifest is a recovery target, not a production proof by itself.",
+      "notes": [
+      "This manifest describes the assembled custom driver runtime.",
       "Mesa 26.2+ already exposes freedreno-kmds=kgsl upstream; old freedreno-kgsl=true guidance is stale.",
-        "Per-device subgroup and workgroup tuning must be revalidated on real A7xx/A8xx hardware.",
-        "Treat A7xx as wave128-capable when the stack explicitly exposes it; treat A8xx as dual wave64."
+      "Binary release contract is TQ_DRIVER_ROOT-first with native/opencl/driver-root as the canonical assembled stack.",
+      "Per-device subgroup and workgroup tuning must be revalidated on real A7xx/A8xx hardware.",
+      "Treat A7xx as wave128-capable when the stack explicitly exposes it; treat A8xx as dual wave64."
       ]
   }
 }

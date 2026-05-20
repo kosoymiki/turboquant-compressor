@@ -39,8 +39,6 @@ Rules:
 These paths are generated and should not be used as source truth:
 - `native/opencl/build/`
 - `native/opencl/build-tq-zero/`
-- `native/opencl/runtime-pack/`
-- `native/opencl/runtime-pack-fresh/`
 - `native/opencl/driver-pack/out/`
 - `native/opencl/driver-pack/out-fresh/`
 - `driver/`
@@ -64,7 +62,7 @@ Rules:
 
 Before export/build release:
 1. `git status` should clearly separate source changes from generated churn.
-2. runtime-pack and driver-pack outputs should be regenerated intentionally, not accumulated passively.
+2. driver-root and driver-pack outputs should be regenerated intentionally, not accumulated passively.
 3. new evidence files should correspond to actual replay, probe, or release assertions.
 4. mirror sync must be proven with `SYNC_MANIFEST`.
 
@@ -74,4 +72,3 @@ When reviewing diffs:
 - source changes are evaluated for implementation correctness
 - evidence changes are evaluated for truthfulness
 - generated output changes are ignored unless the task explicitly targets generated outputs
-

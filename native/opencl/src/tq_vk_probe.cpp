@@ -130,11 +130,6 @@ VkProbeResult probe_vulkan(const char* driver_path) {
             fallbacks.push_back(join_repo_path(root, "layer2-vulkan/libvulkan_freedreno.so"));
             fallbacks.push_back(join_repo_path(root, "libvulkan_freedreno.so"));
         }
-        for (const auto& mesa_root : tq::mesa_roots()) {
-            for (const auto& build_dir : tq::mesa_build_dirs(mesa_root)) {
-                fallbacks.push_back(join_repo_path(build_dir, "src/freedreno/vulkan/libvulkan_freedreno.so"));
-            }
-        }
         for (const auto& fallback : fallbacks) {
             vk_lib = dlopen(fallback.c_str(), RTLD_LOCAL | RTLD_NOW);
             if (vk_lib) break;

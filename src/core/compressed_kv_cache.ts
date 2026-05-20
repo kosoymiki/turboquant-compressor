@@ -1,13 +1,13 @@
 /**
- * Compressed KV Cache v4.1.0 — full donor port (llama-cpp-turboquant).
+ * Compressed KV Cache v4.1.2 — TurboQuant implementation.
  *
- * Donor optimizations ported:
+ * Current implementation characteristics:
  *   1. Mixed KV types (different bits for K and V)
- *   2. Block size 128 (donor default, better cache locality)
- *   3. Precomputed scaled centroids per block (eliminates per-element multiply)
- *   4. Sparse V threshold (skip value dequant for low-contribution tokens)
- *   5. q8 query quantization path (reduced bandwidth in scoring)
- *   6. Tiled token processing (process in blocks of TILE_SIZE)
+ *   2. Block size 128 for cache-local scoring
+ *   3. Precomputed scaled centroids per block
+ *   4. Sparse V thresholding for low-contribution tokens
+ *   5. q8 query quantization path
+ *   6. Tiled token processing (TILE_SIZE)
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
@@ -16,8 +16,8 @@ import { RotationEngine, FWHT_SIGN } from './rotation.js';
 import { TurboQuantBetaCodebook, TurboQuantCodebookQuantizer } from './codebook.js';
 import { quantizeValues, dequantizeValues, concatValueQuantized, ValueQuantized } from './value_quant.js';
 
-// === Donor constants ===
-const BLOCK_SIZE = 128;          // Donor default (was 32)
+// === Runtime constants ===
+const BLOCK_SIZE = 128;          // Current tuned default (was 32)
 const TILE_SIZE = 64;            // Process tokens in tiles
 const SPARSE_V_DEFAULT = 0.001;  // Skip V if contrib < this
 const ATTENTION_SINK_TOKENS = 4; // RotateKV: protect first N tokens from sparse skip
@@ -56,7 +56,7 @@ function concatKeyQuantized(a: KeyQuantized, b: KeyQuantized): KeyQuantized {
   return { indices, norms, numTokens, headDim: a.headDim, bits: a.bits };
 }
 
-// === Donor opt 5: q8 query quantization ===
+// q8 query quantization path
 interface Q8Vector {
   quantized: Int8Array;
   scale: number;
@@ -81,7 +81,7 @@ function quantizeQ8(vec: Float32Array): Q8Vector {
   return { quantized, scale };
 }
 
-// === Donor opt 3: Precomputed scaled centroids ===
+// Precomputed scaled centroids
 function precomputeScaledCentroids(
   centroids: Float32Array,
   queryQ8: Q8Vector

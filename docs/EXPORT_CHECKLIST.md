@@ -30,6 +30,7 @@ Prepare a clean release/export slice without confusing generated local execution
 - `native/opencl/driver-pack/build_mesa.sh`
 - `native/opencl/driver-pack/pack_driver.sh`
 - `native/opencl/driver-pack/manifest.json`
+- `scripts/build-opencl-native.sh`
 - `scripts/safe-runtime-pack-run.sh`
 - `scripts/benchmark-opencl-adreno.mjs`
 - `scripts/verify-release.mjs`
@@ -40,14 +41,25 @@ Prepare a clean release/export slice without confusing generated local execution
 - `artifacts/sync_manifest_release_ready_2026-05-20.json`
 - `all_match = true`
 
+## Required Binary Release Layout
+
+The canonical assembled stack is an unpacked `TQ_DRIVER_ROOT` containing:
+
+- `env.sh`
+- `layer1-compute/libRusticlOpenCL.so.1`
+- `layer1-compute/rusticl.icd`
+- `layer2-vulkan/libvulkan_freedreno.so`
+- `layer2-vulkan/freedreno_icd.aarch64.json`
+- `kernels/*`
+- `meta/manifest.json`
+- `meta/dependencies.txt`
+
 ## Not Source-Of-Truth
 
 These may exist locally and are valid for local execution, but should not be used as authoring truth:
 
 - `native/opencl/build/`
 - `native/opencl/build-tq-zero/`
-- `native/opencl/runtime-pack/`
-- `native/opencl/runtime-pack-fresh/`
 - `native/opencl/driver-pack/out/`
 - `native/opencl/driver-pack/out-fresh/`
 - `driver/`

@@ -96,34 +96,17 @@ std::string detect_repo_root() {
     return roots.empty() ? std::string() : roots.front();
 }
 
-std::vector<std::string> runtime_pack_roots() {
+std::vector<std::string> canonical_driver_roots() {
     std::vector<std::string> roots;
     append_if_missing(roots, env_or_empty("TQ_DRIVER_ROOT"));
     for (const auto& repo_root : repo_root_candidates()) {
-        append_if_missing(roots, join_repo_path(repo_root, "native/opencl/runtime-pack"));
-        append_if_missing(roots, join_repo_path(repo_root, "native/opencl/driver-pack"));
-        append_if_missing(roots, join_repo_path(repo_root, "native/opencl"));
+        append_if_missing(roots, join_repo_path(repo_root, "native/opencl/driver-root"));
     }
     return roots;
 }
 
-std::vector<std::string> mesa_roots() {
-    std::vector<std::string> roots;
-    append_if_missing(roots, env_or_empty("TQ_MESA_ROOT"));
-    for (const auto& repo_root : repo_root_candidates()) {
-        append_if_missing(roots, join_repo_path(repo_root, "native/opencl/mesa-source"));
-        append_if_missing(roots, join_repo_path(repo_root, "native/opencl"));
-    }
-    return roots;
-}
-
-std::vector<std::string> mesa_build_dirs(const std::string& mesa_root) {
-    std::vector<std::string> builds;
-    if (mesa_root.empty()) return builds;
-    builds.push_back(join_repo_path(mesa_root, "build-tq-zero"));
-    builds.push_back(join_repo_path(mesa_root, "build-turboquant-android-aarch64"));
-    builds.push_back(join_repo_path(mesa_root, "build"));
-    return builds;
+std::vector<std::string> runtime_pack_roots() {
+    return canonical_driver_roots();
 }
 
 std::string resolve_kernel_dir(const std::string& requested_dir) {
@@ -131,6 +114,11 @@ std::string resolve_kernel_dir(const std::string& requested_dir) {
 
     std::string env_dir = env_or_empty("TQ_OPENCL_KERNEL_DIR");
     if (dir_exists(env_dir)) return env_dir;
+
+    for (const auto& driver_root : canonical_driver_roots()) {
+        std::string candidate = join_repo_path(driver_root, "kernels");
+        if (dir_exists(candidate)) return candidate;
+    }
 
     for (const auto& repo_root : repo_root_candidates()) {
         std::string candidate = join_repo_path(repo_root, "native/opencl/kernels");

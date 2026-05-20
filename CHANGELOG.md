@@ -4,6 +4,15 @@ All notable changes to this project are documented in this file.
 
 The format follows Keep a Changelog and the project uses Semantic Versioning.
 
+## [4.1.2] - 2026-05-21
+
+### Changed
+- Removed vendored `native/opencl/mesa-source` overlay from the repo release surface.
+- Removed legacy `native/opencl/driver-pack/patches/` from the repo release surface.
+- Made `native/opencl/driver-root/` the only primary runtime contract in live path resolution.
+- Simplified Mesa build source resolution to explicit upstream base input instead of repo-local source overlays.
+- Project release identity bumped to `v4.1.2`.
+
 ## [4.1.0] - 2026-05-20
 
 ### Added
@@ -38,8 +47,7 @@ The format follows Keep a Changelog and the project uses Semantic Versioning.
   - `tq_fused_attention_v3_fp16.cl`
   - `tq_fused_attention_v4_fp16.cl`
   - `tq_fused_attention_v5_fp16.cl`
-- Legacy patch residue from clean export truth:
-  - `native/opencl/driver-pack/patches/`
+- Historical patch-centric driver residue removed from tracked release truth.
 
 ## [4.0.1] - 2026-05-20
 

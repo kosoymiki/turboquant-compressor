@@ -3,7 +3,7 @@
 ## Goal
 
 This document defines the canonical source-of-truth boundaries for the standalone TurboQuant repo.
-It exists to prevent drift between executable code, runtime-pack state, forensic evidence,
+It exists to prevent drift between executable code, assembled driver-root state, forensic evidence,
 and the corpus mirror.
 
 ## Canonical Layers
@@ -39,25 +39,26 @@ Canonical paths:
 
 Rules:
 - This is the only authoritative source for Rusticl/Freedreno/KGSL/Turnip runtime behavior in this repo.
-- `driver-pack/patches/` is historical recovery residue, not a primary implementation surface.
+- Historical patch-centric recovery residue has been removed from tracked release truth.
 - Any runtime claim must be explainable from these paths first.
 
-### 3. Runtime-Pack Truth
+### 3. Driver-Root Truth
 
 Purpose: assembled, executable stack for safe on-device replay.
 
 Canonical paths:
-- `native/opencl/runtime-pack/env.sh`
-- `native/opencl/runtime-pack/layer1-compute/`
-- `native/opencl/runtime-pack/layer2-vulkan/`
-- `native/opencl/runtime-pack/kernels/`
-- `native/opencl/runtime-pack/meta/manifest.json`
-- `native/opencl/runtime-pack/meta/dependencies.txt`
+- `$TQ_DRIVER_ROOT/env.sh`
+- `$TQ_DRIVER_ROOT/layer1-compute/`
+- `$TQ_DRIVER_ROOT/layer2-vulkan/`
+- `$TQ_DRIVER_ROOT/kernels/`
+- `$TQ_DRIVER_ROOT/meta/manifest.json`
+- `$TQ_DRIVER_ROOT/meta/dependencies.txt`
 
 Rules:
 - This layer is generated from the Custom GPU Runtime Stack.
 - It is not the authoring surface.
 - It is the execution surface used by safe replay and export validation.
+- Repo-local `native/opencl/driver-root/` is the primary assembled runtime contract.
 
 ### 4. Forensic Evidence
 
@@ -113,7 +114,6 @@ Generated and non-authoring zones:
 - `native/opencl/build-tq-zero/`
 - `native/opencl/driver-pack/out/`
 - `native/opencl/driver-pack/out-fresh/`
-- `native/opencl/runtime-pack-fresh/`
 - `driver/`
 
 Rules:
@@ -124,6 +124,6 @@ Rules:
 
 A release is considered structurally valid only when:
 - source truth is modified only in canonical authoring layers
-- runtime-pack is regenerated from canonical stack sources
+- driver-root is regenerated from canonical stack sources
 - forensic evidence is refreshed intentionally
 - mirror parity is proven by `SYNC_MANIFEST`

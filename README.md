@@ -1,5 +1,5 @@
 
-# TurboQuant Compressor v4.1.0
+# TurboQuant Compressor v4.1.2
 
 **Termux-first MCP server for compressed local vector search, context-pack retrieval, KV/cache analysis, and Adreno/OpenCL readiness forensics.**
 
@@ -11,10 +11,12 @@ The current public benchmark evidence supports **5.5x+ local corpus compression*
 
 ## Status
 
-**Current release:** `v4.1.0`  
+**Current release:** `v4.1.2`  
 **Primary target:** Termux + local MCP hosts  
 **Transport:** MCP stdio  
 **License:** GPL-3.0-or-later
+
+**Canonical custom driver runtime:** `native/opencl/driver-root/`
 
 This repository currently ships:
 
@@ -439,7 +441,7 @@ Adreno loader report when claiming Adreno
 
 ## Version History
 
-### v4.1.0
+### v4.1.2
 
 * Custom Adreno `Rusticl/Freedreno/KGSL/Turnip` stack moved into a canonical release slice
 * Real OpenCL self-tests for `mse_score`, `qjl_score`, `value_dequant`, and `fused_attention`

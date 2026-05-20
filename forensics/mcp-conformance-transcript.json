@@ -78,7 +78,7 @@
     {
       "test": "tools/call:turboquant_context_pack_search",
       "status": "PASS",
-      "detail": "two-step build→search ok, 487b"
+      "detail": "two-step build→search ok, 510b"
     },
     {
       "test": "invalid_method",

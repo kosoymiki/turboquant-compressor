@@ -1,7 +1,7 @@
 /**
- * TurboQuant Fused Attention Kernel v5 — donor-optimized for Adreno 730.
+ * TurboQuant Fused Attention Kernel v5 — tuned for Adreno 730.
  *
- * Over v4 (donor-backed improvements):
+ * Over v4 (current stack improvements):
  *   1. async_work_group_copy for query prefetch (OpenCL in Action ch.5)
  *   2. fma() on all fp16 multiply-add paths (ProjectPhysX/OpenCL-Benchmark)
  *   3. Bit-masking instead of % for bank-conflict-free reduction (OpenCL in Action p.250)
