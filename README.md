@@ -5,7 +5,7 @@
 
 TurboQuant Compressor is a local **Model Context Protocol (MCP)** server designed for Claude Code / stdio-style agent hosts on Android Termux and Linux. It provides compressed vector storage/search, context-pack construction, cache planning, prompt-cache linting, KV analysis, backend probing, and OpenCL/Adreno diagnostics.
 
-The current public benchmark evidence supports **5.5x+ local corpus compression** on the included open-test corpus, with retrieval quality and score-error metrics recorded in `bench/results/`.
+The current public benchmark evidence supports **5.5x+ local corpus compression** on the committed open-test corpus, with retrieval quality recorded in `bench/results/`.
 
 ---
 
@@ -26,6 +26,8 @@ This repository currently ships:
 - KV/cache analysis utilities
 - Termux/OpenCL/Adreno probe and release-evidence gates
 - Release verification scripts for package, MCP, schema, scientific claims, Termux readiness, OpenCL claims, archives, and artifact parity
+
+Verification depends on installed npm dependencies. A fresh clone must run `npm install` before `npm test` or `npm run verify:release`.
 
 ---
 
@@ -50,14 +52,14 @@ Format version:                    3
 Algorithm level:                   LEVEL_0_TURBOQUANT_INSPIRED_MVP -> LEVEL_1_TURBOQUANT
 ````
 
-The benchmark artifacts intentionally include warnings when a feature is not part of the public LEVEL_0 path. In particular, current public local-corpus artifacts are generated with:
+The benchmark artifacts intentionally include warnings when a feature is not part of the public LEVEL_0 path. In particular, current committed public local-corpus artifacts are generated with:
 
 ```text
 include_qjl: false
 QJL residual sketch/correction is not implemented in LEVEL_0
 ```
 
-This keeps the README honest: **5.5x+ compression is measured**, while QJL correction remains gated until it is stored in the public format and applied in search.
+This keeps the README honest: **5.5x+ compression is measured**, while higher-quality QJL-assisted retrieval remains gated until it is committed as public benchmark evidence.
 
 ---
 
@@ -303,11 +305,11 @@ Expected output location:
 bench/results/open-test-local-YYYYMMDD-HHMMSS.json
 ```
 
-The current public local-corpus evidence shows:
+The current committed public local-corpus evidence shows:
 
 ```text
-compression_ratio: 5.8759x–5.8844x
-recall_at_5:       0.90–0.92
+compression_ratio: 5.8759x–5.8943x
+recall_at_5:       0.10–0.92
 dimensions:        384
 format_version:    3
 ```

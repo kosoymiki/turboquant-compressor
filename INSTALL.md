@@ -1,393 +1,144 @@
 # TurboQuant v4.0.1 — Installation Guide
 
-## Quick Start
+## Scope
 
-```bash
-# Clone/extract
-cd turboquant-compressor
+This package is a local MCP server for:
 
-# Install dependencies
-npm install
+- compressed vector search
+- context-pack build/search
+- KV/cache analysis
+- Termux/OpenCL/Adreno diagnostics
 
-# Build
-npm run build
+It is **not** a general-purpose installer for Claude hooks or external Python wrappers.
 
-# Verify
-npm run verify:release
-npm run verify:adreno-opencl
-```
-
-## System Requirements
+## Verified prerequisites
 
 - Node.js 22+
 - npm 10+
-- Adreno 7xx/8xx GPU (730, 740, 750, 8cx Gen 3/4, etc.)
-- Android 24+ (Termux recommended)
-- 2GB RAM minimum
+- Termux or Linux shell
+- optional: Adreno 7xx/8xx device for loader/OpenCL diagnostics
 
-## Supported Devices
+## Install
 
-- **Adreno 730** (SM8450): Snapdragon 8 Gen 1
-- **Adreno 740** (SM8475): Snapdragon 8 Gen 2
-- **Adreno 750** (SM8550): Snapdragon 8 Gen 3
-- **Adreno 8cx Gen 3**: Snapdragon X Elite/Plus
-- **Adreno 8cx Gen 4**: Snapdragon X Elite/Plus Gen 2
-- All Adreno 7xx/8xx: Automatic device detection
-
-## Full Installation
-
-### 1. Extract Archive
 ```bash
-tar -xzf turboquant-v4.0.0.tar.gz
+git clone https://github.com/kosoymiki/turboquant-compressor.git
 cd turboquant-compressor
-```
 
-### 2. Install Dependencies
-```bash
 npm install
-```
-
-### 3. Build from Source
-```bash
 npm run build
 ```
 
-### 4. Verify Installation
+## Core verification
+
 ```bash
-# Smoke tests
 npm run smoke:api
 npm run smoke:mcp
 npm run smoke:numeric
 npm run smoke:stdio
-
-# Release verification
 npm run verify:release
+```
 
-# GPU device detection
+## Termux / Adreno verification
+
+```bash
+npm run verify:adreno-loader
 npm run verify:adreno-opencl
-npm run probe:opencl
-
-# GPU forensics
-python3 forensics_final.py
-python3 tests_final.py
+npm run verify:opencl-claims
+npm run verify:termux
 ```
 
-### 5. GPU Driver Setup
+If a device-specific OpenCL route is not proven, the product must be treated as:
 
-Custom driver stack located in `driver/`:
-- `driver/nir/` — NIR compiler (232 .o files)
-- `driver/ir3/` — IR3 backend (65 .o files)
-- `driver/freedreno/` — Gallium driver (102 .o files)
+- diagnostics-ready
+- not performance-claim-ready
 
-Automatically integrated during build. Device detection handles all Adreno 7xx+.
+## Benchmarks
 
-## Usage
+Run and save the local open-test benchmark:
 
-### CLI Compression
 ```bash
-node dist/tools/compress.js --input vectors.json --output compressed.bin
+npm run open:test:local:save
 ```
 
-### Vector Search
-```bash
-node dist/tools/search.js --database compressed.bin --query query.json --top-k 10
+Artifacts are written to:
+
+```text
+bench/results/open-test-local-YYYYMMDD-HHMMSS.json
 ```
 
-### MCP Server
+Current committed public artifacts support:
+
+- `5.5x+` measured local corpus compression
+- best committed compression artifact: `5.8943x`
+- committed recall@5 range: `0.10–0.92`
+
+Do not claim stronger retrieval quality or throughput without committed artifacts.
+
+## GPU / driver evidence
+
+Relevant forensic artifacts live under:
+
+```text
+forensics/
+forensics/adreno/
+```
+
+Important examples:
+
+- `forensics/opencl-adreno-report.json`
+- `forensics/adreno/loader-report.json`
+- `forensics/RELEASE_EVIDENCE_MANIFEST.json`
+
+These support readiness and claim-gating. They do **not** by themselves prove universal production acceleration.
+
+## MCP usage
+
+Build and run:
+
 ```bash
+npm run build
 node dist/server.js
 ```
 
-### Python Integration
-```python
-import subprocess
-result = subprocess.run(['node', 'dist/tools/compress.js', '--input', 'data.json'], 
-                       capture_output=True, text=True)
-```
+Example generic stdio MCP config:
 
-## Testing
-
-### Stress Test
-```bash
-npm run bench:opencl
-```
-
-### GPU Forensics
-```bash
-python3 forensics_final.py
-```
-
-### Full Test Suite
-```bash
-npm test -- --runInBand
-```
-
-## Performance Benchmarks
-
-### KV Cache Compression (Adreno 7xx+)
-- **Compression Ratio**: 5.33x
-- **Latency**: 18 ms
-- **Throughput**: 550 tokens/sec
-- **Improvement**: +450% vs baseline
-
-### Stress Test Results
-```
-dim_256:  5.5M kvs/sec
-dim_512:  8.2M kvs/sec
-dim_1024: 8.5M kvs/sec
-dim_2048: 8.7M kvs/sec
+```json
+{
+  "mcpServers": {
+    "turboquant-compressor": {
+      "command": "node",
+      "args": ["/absolute/path/to/turboquant-compressor/dist/server.js"]
+    }
+  }
+}
 ```
 
 ## Troubleshooting
 
-### Build Fails
+### Missing dependencies
+
+If `verify:release` or `npm test` fail with missing packages such as `zod` or `jest`, reinstall deps:
+
 ```bash
-# Clean and rebuild
-rm -rf dist node_modules
+rm -rf node_modules
 npm install
-npm run build
 ```
 
-### GPU Not Detected
+### OpenCL not available
+
+Run:
+
 ```bash
-npm run verify:adreno-opencl
-npm run probe:opencl
 npm run verify:adreno-loader
-```
-
-### Performance Issues
-```bash
-# Check device profile
-npm run verify:adreno-loader
-npm run verify:termux-ready
-npm run verify:mesa-patch-intelligence
-```
-
-## Advanced Configuration
-
-### Custom Workgroup Size
-Edit `src/native/adreno_quirks.ts`:
-```typescript
-policies.fused_attention_neon_threshold_tokens = 32;  // GPU-preferred
-```
-
-### Enable fp16
-```typescript
-enable_fp16_values: true
-enable_subgroup_path: true
-```
-
-### Async Overlap
-```typescript
-async_overlap: true
-persistent_kv_cache: true
-```
-
-## Integration with Claude Code
-
-### Shell Status Hook
-```bash
-~/.claude/hooks/statusline.sh
-```
-
-### MCP Tools
-```python
-from bd_mcp_final import BDMCPServer
-server = BDMCPServer()
-status = server.shell_status_monitor()
-```
-
-## Support
-
-- **Issues**: Check `npm run verify:*` commands
-- **GPU Forensics**: Run `python3 forensics_final.py`
-- **Performance**: See benchmarks section
-- **Device Support**: Automatic detection for all Adreno 7xx+
-
-## Version
-
-**TurboQuant v4.0.1** — Production Release
-- Custom Rusticl/Turnip GPU driver stack
-- Full Adreno 7xx+ support
-- 25 OpenCL donor optimizations
-- 5.33x KV cache compression
-- 450% throughput improvement
-
----
-
-**Production ready for all Adreno 7xx+ devices.**
-
-## Full Installation
-
-### 1. Extract Archive
-```bash
-tar -xzf turboquant-v4.0.0.tar.gz
-cd turboquant-compressor
-```
-
-### 2. Install Dependencies
-```bash
-npm install
-```
-
-### 3. Build from Source
-```bash
-npm run build
-```
-
-### 4. Verify Installation
-```bash
-# Smoke tests
-npm run smoke:api
-npm run smoke:mcp
-npm run smoke:numeric
-npm run smoke:stdio
-
-# Release verification
-npm run verify:release
-
-# GPU forensics
-python3 forensics_final.py
-python3 tests_final.py
-```
-
-### 5. GPU Driver Setup
-
-Custom driver stack located in `driver/`:
-- `driver/nir/` — NIR compiler (232 .o files)
-- `driver/ir3/` — IR3 backend (65 .o files)
-- `driver/freedreno/` — Gallium driver (102 .o files)
-
-Automatically integrated during build.
-
-## Usage
-
-### CLI Compression
-```bash
-node dist/tools/compress.js --input vectors.json --output compressed.bin
-```
-
-### Vector Search
-```bash
-node dist/tools/search.js --database compressed.bin --query query.json --top-k 10
-```
-
-### MCP Server
-```bash
-node dist/server.js
-```
-
-### Python Integration
-```python
-import subprocess
-result = subprocess.run(['node', 'dist/tools/compress.js', '--input', 'data.json'], 
-                       capture_output=True, text=True)
-```
-
-## Testing
-
-### Stress Test
-```bash
-npm run bench:opencl
-```
-
-### GPU Forensics
-```bash
-python3 forensics_final.py
-```
-
-### Full Test Suite
-```bash
-npm test -- --runInBand
-```
-
-## Performance Benchmarks
-
-### KV Cache Compression (Adreno 730)
-- **Compression Ratio**: 5.33x
-- **Latency**: 18 ms
-- **Throughput**: 550 tokens/sec
-- **Improvement**: +450% vs baseline
-
-### Stress Test Results
-```
-dim_256:  5.5M kvs/sec
-dim_512:  8.2M kvs/sec
-dim_1024: 8.5M kvs/sec
-dim_2048: 8.7M kvs/sec
-```
-
-## Troubleshooting
-
-### Build Fails
-```bash
-# Clean and rebuild
-rm -rf dist node_modules
-npm install
-npm run build
-```
-
-### GPU Not Detected
-```bash
 npm run verify:adreno-opencl
 npm run probe:opencl
 ```
 
-### Performance Issues
-```bash
-# Check device profile
-npm run verify:adreno-loader
-npm run verify:termux-ready
-```
+Android linker namespace isolation may block vendor `libOpenCL.so`; this product includes diagnostics for that case and must not overclaim production OpenCL when the route is not proven.
 
-## Advanced Configuration
+## Hard documentation rules
 
-### Custom Workgroup Size
-Edit `src/native/adreno_quirks.ts`:
-```typescript
-policies.fused_attention_neon_threshold_tokens = 32;  // GPU-preferred
-```
-
-### Enable fp16
-```typescript
-enable_fp16_values: true
-enable_subgroup_path: true
-```
-
-### Async Overlap
-```typescript
-async_overlap: true
-persistent_kv_cache: true
-```
-
-## Integration with Claude Code
-
-### Shell Status Hook
-```bash
-~/.claude/hooks/statusline.sh
-```
-
-### MCP Tools
-```python
-from bd_mcp_final import BDMCPServer
-server = BDMCPServer()
-status = server.shell_status_monitor()
-```
-
-## Support
-
-- **Issues**: Check `npm run verify:*` commands
-- **GPU Forensics**: Run `python3 forensics_final.py`
-- **Performance**: See benchmarks section
-
-## Version
-
-**TurboQuant v4.0.1** — Production Release
-- Custom Rusticl/Turnip GPU driver stack
-- 25 OpenCL donor optimizations
-- 5.33x KV cache compression
-- 450% throughput improvement
-
----
-
-**Ready for production deployment.**
+- Do not reference non-existent helpers like `forensics_final.py`, `tests_final.py`, or `bd_mcp_final.py`.
+- Do not reference `~/.claude/hooks` as part of the supported install path.
+- Do not publish unsupported throughput claims.
+- Keep README / INSTALL / package metadata aligned with committed benchmark and forensic artifacts.
