@@ -162,18 +162,6 @@ include_qjl: false
 
 This means the current public proof is strongest for the shipped LEVEL_0 compression/search path. Experimental QJL/Lloyd-Max/OpenCL components should be treated as separately gated until their evidence artifacts are present and wired into the public search path.
 
-## Optimization Order
-
-The repository adopts the following permanent optimization order:
-
-1. Profile `scripts/open-test-local.mjs` and [search.ts](/data/data/com.termux/files/home/tmp_turboquant/src/tools/search.ts) for score distortion and ranking loss.
-2. Introduce a stronger reproducible baseline vectorizer alongside the current deterministic token-hash path.
-3. Either complete the experimental QJL path into a real estimator/search-correction path or keep it explicitly research-only.
-4. Compare the uniform quantization path against the Lloyd-Max path on the same open corpus with identical gates and metrics.
-5. Only after the retrieval path is re-proven should engineering effort move to native/OpenCL optimization.
-
-This ordering is mandatory for performance work. The project must not prioritize native acceleration over a weak or unproven retrieval path.
-
 ---
 
 ## GPU / OpenCL / Adreno Status
