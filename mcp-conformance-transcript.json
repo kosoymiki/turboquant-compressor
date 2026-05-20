@@ -53,17 +53,17 @@
     {
       "test": "tools/call:turboquant_backend_probe",
       "status": "PASS",
-      "detail": "ok, 283b"
+      "detail": "ok, 1095b"
     },
     {
       "test": "tools/call:turboquant_opencl_probe",
       "status": "PASS",
-      "detail": "ok, 865b"
+      "detail": "ok, 1641b"
     },
     {
       "test": "tools/call:turboquant_adreno_loader_probe",
       "status": "PASS",
-      "detail": "ok, 696b"
+      "detail": "ok, 827b"
     },
     {
       "test": "tools/call:turboquant_vector_search",
