@@ -1,0 +1,153 @@
+{
+  "timestamp": "2026-05-19T21:46:04.832Z",
+  "state": "ADRENO_VENDOR_OPENCL_UNAVAILABLE",
+  "all_pass": false,
+  "claim_safe": false,
+  "source": "verify-adreno-opencl",
+  "available": false,
+  "adrenoDetected": false,
+  "recommendedBackend": "typescript_cpu",
+  "probeTimeMs": 1,
+  "libraryCandidates": [
+    {
+      "path": "/system/vendor/lib64/libOpenCL.so",
+      "exists": true
+    },
+    {
+      "path": "/vendor/lib64/libOpenCL.so",
+      "exists": true
+    },
+    {
+      "path": "/system/lib64/libOpenCL.so",
+      "exists": false
+    },
+    {
+      "path": "/vendor/lib64/libOpenCL_adreno.so",
+      "exists": false
+    },
+    {
+      "path": "/system/vendor/lib64/libOpenCL_adreno.so",
+      "exists": false
+    },
+    {
+      "path": "/data/data/com.termux/files/usr/lib/libOpenCL.so",
+      "exists": true
+    },
+    {
+      "path": "/data/data/com.termux/files/usr/opt/vendor/lib/libOpenCL.so",
+      "exists": false
+    }
+  ],
+  "warnings": [
+    "Library exists but loadability not proven; use deep=true to test",
+    "Production route blocked: missing_custom_driver_stack_runtime_evidence, vendor_opencl_or_cpu_fallback_not_allowed_for_production"
+  ],
+  "opencl_probe": {
+    "available": false,
+    "libraryExists": true,
+    "loadable": null,
+    "loaderState": "LIBRARY_EXISTS_NOT_PROVEN_LOADABLE",
+    "platformCount": -1,
+    "deviceCount": -1,
+    "deviceNames": [],
+    "vendorNames": [],
+    "versionStrings": [],
+    "hasFp16": false,
+    "hasSubgroups": false,
+    "adrenoDetected": false,
+    "libraryCandidates": [
+      {
+        "path": "/system/vendor/lib64/libOpenCL.so",
+        "exists": true
+      },
+      {
+        "path": "/vendor/lib64/libOpenCL.so",
+        "exists": true
+      },
+      {
+        "path": "/system/lib64/libOpenCL.so",
+        "exists": false
+      },
+      {
+        "path": "/vendor/lib64/libOpenCL_adreno.so",
+        "exists": false
+      },
+      {
+        "path": "/system/vendor/lib64/libOpenCL_adreno.so",
+        "exists": false
+      },
+      {
+        "path": "/data/data/com.termux/files/usr/lib/libOpenCL.so",
+        "exists": true
+      },
+      {
+        "path": "/data/data/com.termux/files/usr/opt/vendor/lib/libOpenCL.so",
+        "exists": false
+      }
+    ],
+    "recommendedBackend": "typescript_cpu",
+    "production": {
+      "productionPolicy": "custom_driver_stack_only",
+      "productionReady": false,
+      "productionRoute": "diagnostic_only",
+      "allowedProductionRoutes": [
+        "mesa_rusticl_kgsl",
+        "turnip_vulkan_kgsl"
+      ],
+      "forbiddenProductionBackends": [
+        "typescript_cpu",
+        "python_cpu",
+        "python_gpu",
+        "triton_gpu",
+        "opencl_generic",
+        "opencl_adreno",
+        "vendor_opencl_qualcomm",
+        "cpu_neon"
+      ],
+      "evidenceSources": [
+        "third_party/mesa-adreno/manifest.lock.json",
+        "third_party/mesa-adreno/proof-matrix.json",
+        "forensics/mesa/rusticl-ready.json",
+        "forensics/mesa/turnip-ready.json"
+      ],
+      "blockers": [
+        "missing_custom_driver_stack_runtime_evidence",
+        "vendor_opencl_or_cpu_fallback_not_allowed_for_production"
+      ]
+    },
+    "warnings": [
+      "Library exists but loadability not proven; use deep=true to test",
+      "Production route blocked: missing_custom_driver_stack_runtime_evidence, vendor_opencl_or_cpu_fallback_not_allowed_for_production"
+    ],
+    "probeTimeMs": 1
+  },
+  "production": {
+    "productionPolicy": "custom_driver_stack_only",
+    "productionReady": false,
+    "productionRoute": "diagnostic_only",
+    "allowedProductionRoutes": [
+      "mesa_rusticl_kgsl",
+      "turnip_vulkan_kgsl"
+    ],
+    "forbiddenProductionBackends": [
+      "typescript_cpu",
+      "python_cpu",
+      "python_gpu",
+      "triton_gpu",
+      "opencl_generic",
+      "opencl_adreno",
+      "vendor_opencl_qualcomm",
+      "cpu_neon"
+    ],
+    "evidenceSources": [
+      "third_party/mesa-adreno/manifest.lock.json",
+      "third_party/mesa-adreno/proof-matrix.json",
+      "forensics/mesa/rusticl-ready.json",
+      "forensics/mesa/turnip-ready.json"
+    ],
+    "blockers": [
+      "missing_custom_driver_stack_runtime_evidence",
+      "vendor_opencl_or_cpu_fallback_not_allowed_for_production"
+    ]
+  }
+}

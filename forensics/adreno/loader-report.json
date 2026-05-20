@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-05-19T21:45:57.001Z",
+  "state": "READY",
+  "libraryExists": true,
+  "loadable": true,
+  "available": true,
+  "adrenoDetected": true,
+  "recommendedBackend": "opencl_adreno",
+  "warnings": [
+    "Production route blocked: missing_custom_driver_stack_runtime_evidence, vendor_opencl_or_cpu_fallback_not_allowed_for_production"
+  ],
+  "probeTimeMs": 139,
+  "production": {
+    "productionPolicy": "custom_driver_stack_only",
+    "productionReady": false,
+    "productionRoute": "diagnostic_only",
+    "allowedProductionRoutes": [
+      "mesa_rusticl_kgsl",
+      "turnip_vulkan_kgsl"
+    ],
+    "forbiddenProductionBackends": [
+      "typescript_cpu",
+      "python_cpu",
+      "python_gpu",
+      "triton_gpu",
+      "opencl_generic",
+      "opencl_adreno",
+      "vendor_opencl_qualcomm",
+      "cpu_neon"
+    ],
+    "evidenceSources": [
+      "third_party/mesa-adreno/manifest.lock.json",
+      "third_party/mesa-adreno/proof-matrix.json",
+      "forensics/mesa/rusticl-ready.json",
+      "forensics/mesa/turnip-ready.json"
+    ],
+    "blockers": [
+      "missing_custom_driver_stack_runtime_evidence",
+      "vendor_opencl_or_cpu_fallback_not_allowed_for_production"
+    ]
+  }
+}

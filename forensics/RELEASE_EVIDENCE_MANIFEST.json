@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-05-19T21:48:11.255Z",
+  "required": [
+    {
+      "path": "forensics/opencl-adreno-report.json",
+      "status": "present",
+      "state": "ADRENO_VENDOR_OPENCL_UNAVAILABLE"
+    },
+    {
+      "path": "forensics/adreno/loader-report.json",
+      "status": "present",
+      "state": "READY"
+    }
+  ],
+  "optional": [
+    {
+      "path": "forensics/adreno/opencl-performance-report.json",
+      "status": "missing"
+    },
+    {
+      "path": "forensics/adreno/opencl-sustained-report.json",
+      "status": "missing"
+    }
+  ],
+  "complete": true
+}
