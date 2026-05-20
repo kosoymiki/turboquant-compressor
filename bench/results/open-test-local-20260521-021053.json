@@ -1,0 +1,156 @@
+{
+  "test_name": "turboquant_open_test_local",
+  "files": 103,
+  "chunks": 151,
+  "approximate_tokens": 92452,
+  "token_count_source": "approximate_bytes_div_4",
+  "dimensions": 384,
+  "vector_count": 151,
+  "compression_ratio": 5.895678698525674,
+  "compressed_bytes": 39340,
+  "original_bytes_estimate": 231936,
+  "compress_ms": 87.94166700000005,
+  "query_count": 50,
+  "recall_at_1": 0.02,
+  "recall_at_5": 0.12,
+  "mrr": 0.054000000000000006,
+  "score_mae_on_exact_topk": 0.06610206069048662,
+  "score_mse_on_exact_topk": 0.007836079406849493,
+  "score_p95_abs_error_on_exact_topk": 0.18672504101678028,
+  "score_mae_on_union_topk": 0.21990839095321135,
+  "score_mse_on_union_topk": 0.06113787679191766,
+  "algorithm_level": "LEVEL_0_TURBOQUANT_INSPIRED_MVP",
+  "format_version": 3,
+  "include_qjl": false,
+  "warnings": [
+    "LEVEL_0_TURBOQUANT_INSPIRED_MVP: Proof-of-concept public path with fixed uniform quantization and no QJL correction.",
+    "Uniform quantizer has fixed step size - may not be optimal for all distributions",
+    "QJL residual sketch/correction is not implemented in the public search path.",
+    "Lloyd-Max comparison is a sidecar benchmark path; public search.ts remains the uniform quantizer route.",
+    "Experimental QJL is kept research-only until an estimator/search path is reproducible on this corpus."
+  ],
+  "profiles": {
+    "token_hash": {
+      "vectorizer_id": "token_hash_fnv1a",
+      "vectorizer_kind": "token_hash",
+      "compression_ratio": 5.895678698525674,
+      "compressed_bytes": 39340,
+      "compress_ms": 87.94166700000005,
+      "query_count": 50,
+      "quantization": {
+        "uniform": {
+          "query_count": 50,
+          "ranking_agreement_at_1": 0,
+          "ranking_overlap_at_5": 0.032,
+          "ranking_loss_at_5": 0.968,
+          "score_mae_on_exact_topk": 0.06610206069048662,
+          "score_mse_on_exact_topk": 0.007836079406849493,
+          "score_p95_abs_error_on_exact_topk": 0.18672504101678028,
+          "score_mae_on_union_topk": 0.21990839095321135,
+          "score_mse_on_union_topk": 0.06113787679191766
+        },
+        "lloyd_max_beta": {
+          "query_count": 50,
+          "ranking_agreement_at_1": 0.84,
+          "ranking_overlap_at_5": 0.8399999999999997,
+          "ranking_loss_at_5": 0.16000000000000025,
+          "score_mae_on_exact_topk": 0.013229510976683628,
+          "score_mse_on_exact_topk": 0.0003365591017404035,
+          "score_p95_abs_error_on_exact_topk": 0.03983946320383555,
+          "score_mae_on_union_topk": 0.04220006631624083,
+          "score_mse_on_union_topk": 0.007345949010304049
+        }
+      },
+      "retrieval": {
+        "uniform": {
+          "query_count": 50,
+          "relevant_recall_at_1": 0.02,
+          "relevant_recall_at_5": 0.12,
+          "relevant_mrr": 0.054000000000000006
+        },
+        "lloyd_max_beta": {
+          "query_count": 50,
+          "relevant_recall_at_1": 0.18,
+          "relevant_recall_at_5": 0.34,
+          "relevant_mrr": 0.234
+        }
+      },
+      "comparison": {
+        "quantization_ranking_loss_delta": -0.8079999999999997,
+        "retrieval_recall_at_5_delta": 0.22000000000000003,
+        "score_mae_exact_topk_delta": -0.05287254971380299
+      },
+      "algorithm_level": "LEVEL_0_TURBOQUANT_INSPIRED_MVP",
+      "format_version": 3,
+      "include_qjl": false,
+      "warnings": [
+        "LEVEL_0_TURBOQUANT_INSPIRED_MVP: Proof-of-concept public path with fixed uniform quantization and no QJL correction.",
+        "Uniform quantizer has fixed step size - may not be optimal for all distributions",
+        "QJL residual sketch/correction is not implemented in the public search path.",
+        "Lloyd-Max comparison is a sidecar benchmark path; public search.ts remains the uniform quantizer route.",
+        "Experimental QJL is kept research-only until an estimator/search path is reproducible on this corpus."
+      ]
+    },
+    "hashed_tfidf": {
+      "vectorizer_id": "hashed_tfidf_fnv1a_v1",
+      "vectorizer_kind": "hashed_tfidf",
+      "compression_ratio": 5.895678698525674,
+      "compressed_bytes": 39340,
+      "compress_ms": 35.14849000000004,
+      "query_count": 50,
+      "quantization": {
+        "uniform": {
+          "query_count": 50,
+          "ranking_agreement_at_1": 0,
+          "ranking_overlap_at_5": 0.052000000000000005,
+          "ranking_loss_at_5": 0.948,
+          "score_mae_on_exact_topk": 0.06388177079206403,
+          "score_mse_on_exact_topk": 0.026792928058430282,
+          "score_p95_abs_error_on_exact_topk": 0.15926007640655798,
+          "score_mae_on_union_topk": 0.19174234441795523,
+          "score_mse_on_union_topk": 0.053335613618735796
+        },
+        "lloyd_max_beta": {
+          "query_count": 50,
+          "ranking_agreement_at_1": 0.64,
+          "ranking_overlap_at_5": 0.7440000000000002,
+          "ranking_loss_at_5": 0.2559999999999998,
+          "score_mae_on_exact_topk": 0.017844118387620192,
+          "score_mse_on_exact_topk": 0.0004960302502665063,
+          "score_p95_abs_error_on_exact_topk": 0.0460585942183353,
+          "score_mae_on_union_topk": 0.05891108026615701,
+          "score_mse_on_union_topk": 0.009260329585886908
+        }
+      },
+      "retrieval": {
+        "uniform": {
+          "query_count": 50,
+          "relevant_recall_at_1": 0.02,
+          "relevant_recall_at_5": 0.08,
+          "relevant_mrr": 0.04166666666666666
+        },
+        "lloyd_max_beta": {
+          "query_count": 50,
+          "relevant_recall_at_1": 0.34,
+          "relevant_recall_at_5": 0.66,
+          "relevant_mrr": 0.4589999999999999
+        }
+      },
+      "comparison": {
+        "quantization_ranking_loss_delta": -0.6920000000000002,
+        "retrieval_recall_at_5_delta": 0.5800000000000001,
+        "score_mae_exact_topk_delta": -0.04603765240444384
+      },
+      "algorithm_level": "LEVEL_0_TURBOQUANT_INSPIRED_MVP",
+      "format_version": 3,
+      "include_qjl": false,
+      "warnings": [
+        "LEVEL_0_TURBOQUANT_INSPIRED_MVP: Proof-of-concept public path with fixed uniform quantization and no QJL correction.",
+        "Uniform quantizer has fixed step size - may not be optimal for all distributions",
+        "QJL residual sketch/correction is not implemented in the public search path.",
+        "Lloyd-Max comparison is a sidecar benchmark path; public search.ts remains the uniform quantizer route.",
+        "Experimental QJL is kept research-only until an estimator/search path is reproducible on this corpus."
+      ]
+    }
+  }
+}
