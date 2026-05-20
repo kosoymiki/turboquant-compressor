@@ -39,7 +39,7 @@ adb logcat -d -t 1000 > "$OUT/adb_logcat.txt" 2>&1 || true
 # --- Project ---
 npm run build > "$OUT/build.txt" 2>&1 || true
 npm test -- --runInBand > "$OUT/test.txt" 2>&1 || true
-node smoke-stdio.mjs > "$OUT/smoke_stdio.txt" 2>&1 || true
+node scripts/smoke-stdio.mjs > "$OUT/smoke_stdio.txt" 2>&1 || true
 node scripts/mcp-transcript.mjs > "$OUT/mcp_transcript.txt" 2>&1 || true
 node scripts/verify-scientific-claims.mjs > "$OUT/verify_scientific.txt" 2>&1 || true
 node scripts/verify-format-contract.mjs > "$OUT/verify_format.txt" 2>&1 || true

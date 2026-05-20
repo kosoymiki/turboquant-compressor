@@ -3,15 +3,15 @@
 
 set -e
 
-HOME_DIR="${HOME:-$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)}"
-TQ_ROOT="${TURBOQUANT_ROOT:-$HOME_DIR/turboquant-compressor}"
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+REPO_ROOT="${TURBOQUANT_ROOT:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}"
 
 pkg update -y
 pkg install -y nodejs-lts
 
-npm install --prefix "$TQ_ROOT"
+npm install --prefix "$REPO_ROOT"
 
-cd "$TQ_ROOT"
+cd "$REPO_ROOT"
 npm run build
 
 echo "Build complete. Run 'node dist/server.js' to start the MCP server."

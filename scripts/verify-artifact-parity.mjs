@@ -63,7 +63,7 @@ try {
   function isGeneratedEvidence(rel) {
     return (
       rel.startsWith('forensics/') ||
-      rel === 'mcp-conformance-transcript.json' ||
+      rel === 'forensics/mcp-conformance-transcript.json' ||
       /transcript.*\.(json|jsonl)$/.test(rel)
     );
   }

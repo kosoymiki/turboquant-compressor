@@ -128,9 +128,13 @@ TurboQuant Compressor
 │   ├── verify-mcp-conformance.mjs
 │   ├── verify-termux-ready.mjs
 │   ├── benchmark-opencl-adreno.mjs
+│   ├── smoke-stdio.mjs
 │   └── mcp-transcript.mjs
 ├── bench/results/
 │   └── open-test-local-*.json    # public local compression/search evidence
+├── forensics/
+│   ├── mcp-conformance-transcript.json
+│   └── device/release evidence
 ├── docs/
 │   └── Termux/OpenCL/release documentation
 └── package.json
@@ -471,7 +475,7 @@ Adreno loader report when claiming Adreno
 
 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260514-220247.json
- https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/mcp-conformance-transcript.json 
+ https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/forensics/mcp-conformance-transcript.json 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/scripts/verify-release-evidence.mjs
 
 

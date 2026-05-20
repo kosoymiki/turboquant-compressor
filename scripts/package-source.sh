@@ -20,7 +20,6 @@ tar \
   --exclude="${NAME}/**/.claude/settings.local.json" \
   --exclude="${NAME}/**/.claude/*.local.json" \
   --exclude="${NAME}/forensics" \
-  --exclude="${NAME}/mcp-conformance-transcript.json" \
   --exclude="${NAME}/*transcript*.jsonl" \
   --exclude="${NAME}/*transcript*.json" \
   --exclude="${NAME}/**/*transcript*.jsonl" \

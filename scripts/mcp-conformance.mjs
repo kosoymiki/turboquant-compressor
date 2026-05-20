@@ -334,9 +334,9 @@ async function runConformance() {
   console.log(`\nTotal: ${passed} passed, ${failed} failed`);
 
   // Write transcript
-  const transcriptPath = join(rootDir, 'mcp-conformance-transcript.json');
+  const transcriptPath = join(rootDir, 'forensics', 'mcp-conformance-transcript.json');
   writeFileSync(transcriptPath, JSON.stringify({ results, transcript: [] }, null, 2));
-  console.log(`Transcript written to mcp-conformance-transcript.json`);
+  console.log('Transcript written to forensics/mcp-conformance-transcript.json');
 
   if (failed > 0) process.exit(1);
 }

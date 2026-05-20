@@ -11,7 +11,7 @@
     "smoke:api": "node scripts/smoke-public-api.mjs",
     "smoke:mcp": "node scripts/smoke-mcp.mjs",
     "smoke:numeric": "node scripts/smoke-numeric.mjs",
-    "smoke:stdio": "node smoke-stdio.mjs",
+    "smoke:stdio": "node scripts/smoke-stdio.mjs",
     "verify:release": "node scripts/verify-release.mjs",
     "verify:termux": "node scripts/verify-termux-ready.mjs",
     "verify:adreno-opencl": "node scripts/verify-adreno-opencl.mjs",
