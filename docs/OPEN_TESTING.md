@@ -11,6 +11,17 @@ npm run open:test:cost
 
 For public test reports, use `open:test:local:save` to persist results in `bench/results/`.
 
+## Optimization Gate
+
+Before native/OpenCL optimization work, the repo must first:
+
+1. profile `open:test:local` and `search.ts` for distortion and ranking loss
+2. add a stronger reproducible baseline vectorizer
+3. resolve whether QJL is real runtime path or research-only path
+4. compare uniform vs Lloyd-Max under identical gates on the same corpus
+
+Only after these four steps may native/OpenCL optimization become the primary optimization target.
+
 ## Cost-Aware Brain Testing
 
 ```bash

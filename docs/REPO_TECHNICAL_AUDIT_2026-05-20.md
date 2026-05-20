@@ -51,3 +51,13 @@ It separates live product/runtime code from generated residue, historical eviden
   - a primary external source such as official docs or the original paper
 - If corpus and live repo disagree, live repo plus primary source wins.
 - If corpus and evidence both disagree or are stale, downgrade the claim and mark it unresolved until re-proven.
+
+## Mandatory Optimization Order
+
+- First profile `open-test-local` and `src/tools/search.ts` for score distortion and ranking loss.
+- Then add a stronger reproducible baseline vectorizer next to token-hash.
+- Then either complete QJL into a real estimator/search path or keep it explicitly research-only.
+- Then compare uniform quantization against Lloyd-Max on the same open corpus with identical gates.
+- Only after that move to native/OpenCL optimization.
+
+This ordering is permanent repo policy. Do not optimize native execution ahead of retrieval-quality proof.
