@@ -35,7 +35,13 @@ export function compressVectors(
   const codebook = new UniformSymmetricCodebook(bitsPerValue);
 
   const warnings: string[] = [];
-  warnings.push('LEVEL_1_TURBOQUANT: Production implementation with QJL sign-bit residual correction');
+  if (includeQJL) {
+    warnings.push('LEVEL_1_EXPERIMENTAL_QJL: Experimental residual sketch path; not paper-faithful and not wired into public search correction.');
+  } else {
+    warnings.push('LEVEL_0_TURBOQUANT_INSPIRED_MVP: Proof-of-concept public path with fixed uniform quantization and no QJL correction.');
+    warnings.push('Uniform quantizer has fixed step size - may not be optimal for all distributions');
+    warnings.push('QJL residual sketch/correction is not implemented in the public search path.');
+  }
 
   const encodedVectors: Uint8Array[] = [];
   const norms = new Float32Array(vectors.length);
@@ -97,7 +103,14 @@ export function compressVectors(
     qjlSketchesB64 = encodeBase64(combined);
   }
 
-  const binary = encodeCompressedDatabase(encodedVectors, dimensions!, bitsPerValue, seed, norms);
+  const binary = encodeCompressedDatabase(
+    encodedVectors,
+    dimensions!,
+    bitsPerValue,
+    seed,
+    norms,
+    includeQJL && qjlSketches.length > 0 ? Buffer.from(qjlSketchesB64!, 'base64') : undefined
+  );
   const compressedData = encodeBase64(binary);
 
   const originalSize = vectors.length * dimensions! * 4;
@@ -111,7 +124,7 @@ export function compressVectors(
     bits_per_value: bitsPerValue,
     include_qjl: includeQJL,
     qjl_sketches_b64: qjlSketchesB64,
-    algorithm_level: includeQJL ? 'LEVEL_1_TURBOQUANT_QJL' : 'LEVEL_1_TURBOQUANT',
+    algorithm_level: includeQJL ? 'LEVEL_1_EXPERIMENTAL_QJL' : 'LEVEL_0_TURBOQUANT_INSPIRED_MVP',
     original_bytes_estimate: originalSize,
     compressed_bytes: compressedSize,
     compression_ratio: compressionRatio,

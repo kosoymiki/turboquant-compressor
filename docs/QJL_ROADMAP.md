@@ -6,10 +6,10 @@ TurboQuant uses QJL on the residual after MSE quantization to build an unbiased 
 
 Current behavior:
 
-- `includeQJL` is accepted for forward compatibility.
-- No residual sketch is stored.
-- `include_qjl` in output must remain false until actual sketch exists.
-- Search does not apply QJL correction.
+- `includeQJL` enables an experimental residual sketch serialization path.
+- The public benchmark path keeps `include_qjl = false`.
+- Search does not apply QJL correction, even when an experimental residual payload exists.
+- No unbiased-estimator or paper-faithfulness claim is allowed for the current implementation.
 
 Implementation requirements for LEVEL_1:
 

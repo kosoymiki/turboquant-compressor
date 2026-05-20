@@ -6,7 +6,7 @@ This document describes the scientific limitations of TurboQuant Compressor and 
 
 ## Algorithm Level
 
-The current implementation is labeled as `LEVEL_0_TURBOQUANT_INSPIRED_MVP`, indicating:
+The public benchmarked implementation is labeled as `LEVEL_0_TURBOQUANT_INSPIRED_MVP`, indicating:
 
 - **Inspired by** TurboQuant paper concepts
 - **Not a faithful implementation** of the paper
@@ -52,9 +52,9 @@ The current implementation is labeled as `LEVEL_0_TURBOQUANT_INSPIRED_MVP`, indi
 - 1-bit quantization with unbiased estimator
 
 **Our Implementation:**
-- QJL not implemented
-- No residual stage
-- No unbiased estimator
+- Public search path does not implement QJL correction
+- Experimental residual sketch serialization exists behind `includeQJL`
+- No unbiased estimator guarantee
 
 **Impact:**
 - Cannot achieve paper's compression ratios
@@ -94,7 +94,7 @@ Unlike the paper's Lloyd-Max approach:
 
 ### 3. No Residual Quantization
 
-Without QJL:
+Without a search-time QJL estimator:
 
 - Cannot achieve sub-bit precision
 - No unbiased inner-product estimation

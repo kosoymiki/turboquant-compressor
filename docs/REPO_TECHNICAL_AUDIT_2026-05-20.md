@@ -41,3 +41,13 @@ It separates live product/runtime code from generated residue, historical eviden
 
 - forensic/history artifacts may still contain absolute historical paths as evidence payload
 - vendor/system library paths remain in runtime probes as explicit diagnostic fallbacks, not repo hardcodes
+
+## Corpus Verification Rule
+
+- No corpus-derived claim is release-truth by itself.
+- Before relying on a corpus claim, confirm it with at least one of:
+  - current repo source/runtime behavior
+  - committed benchmark or forensic artifact
+  - a primary external source such as official docs or the original paper
+- If corpus and live repo disagree, live repo plus primary source wins.
+- If corpus and evidence both disagree or are stale, downgrade the claim and mark it unresolved until re-proven.

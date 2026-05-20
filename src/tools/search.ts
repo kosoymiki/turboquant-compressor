@@ -135,18 +135,23 @@ function runSearch(input: SearchVectorsInput): SearchResult {
   top.sort((a, b) => b.score - a.score);
 
   const warnings: string[] = [];
+  const hasQjlPayload = (db.qjlLength ?? 0) > 0;
+  const algorithmLevel = hasQjlPayload ? 'LEVEL_1_EXPERIMENTAL_QJL' : 'LEVEL_0_TURBOQUANT_INSPIRED_MVP';
   if (metric === 'dot') {
     warnings.push('Dot product score is not normalized - higher values indicate more similarity');
   }
+  if (hasQjlPayload) {
+    warnings.push('Database carries an experimental QJL residual payload, but search does not yet apply QJL correction.');
+  }
   if (input.useQjl === true) {
-    warnings.push('useQjl was requested, but public LEVEL_0 databases store no QJL payload and no QJL correction is applied.');
+    warnings.push('useQjl was requested, but the current search path does not apply QJL correction.');
   }
 
   return {
     results: top,
     metric,
     vector_count: db.vectors.length,
-    algorithm_level: 'LEVEL_0_TURBOQUANT_INSPIRED_MVP',
+    algorithm_level: algorithmLevel,
     warnings,
   };
 }

@@ -254,6 +254,9 @@ if (report.approximate_tokens <= 0) throw new Error('open test approximate token
 if (report.compression_ratio <= 1) throw new Error(`compression_ratio must be > 1, got ${report.compression_ratio}`);
 if (report.format_version !== 3) throw new Error(`format_version must be 3, got ${report.format_version}`);
 if (report.include_qjl !== false) throw new Error('include_qjl must be false for LEVEL_0');
+if (report.algorithm_level !== 'LEVEL_0_TURBOQUANT_INSPIRED_MVP') {
+  throw new Error(`algorithm_level must be LEVEL_0_TURBOQUANT_INSPIRED_MVP for open test, got ${report.algorithm_level}`);
+}
 if (report.recall_at_5 < report.recall_at_1) {
   throw new Error(`recall_at_5 ${report.recall_at_5} must be >= recall_at_1 ${report.recall_at_1}`);
 }

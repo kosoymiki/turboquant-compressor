@@ -163,6 +163,7 @@ Expected:
 - compress returns `compressed_database_b64`
 - `format_version = 3`
 - `include_qjl = false`
+- `algorithm_level = LEVEL_0_TURBOQUANT_INSPIRED_MVP`
 - search returns `index: 0`
 - no stdout protocol corruption
 - diagnostics go to stderr only
@@ -181,7 +182,7 @@ If testing fails, please report:
 
 **Archive Info:**
 - Archive type: [source/portable]
-- Archive path: [/path/to/turboquant-compressor-3.2.0-*.tar.gz]
+- Archive path: [/path/to/turboquant-compressor-4.1.0-*.tar.gz]
 
 **Command Run:**
 ```bash

@@ -29,11 +29,12 @@ describe('compressVectors', () => {
     expect(result.compression_ratio).toBeGreaterThanOrEqual(0.25);
   });
 
-  test('should include LEVEL_1 info', () => {
+  test('default public path is LEVEL_0', () => {
     const vectors = [[0.1, -0.3, 0.5, -0.7]];
     const result = compressVectors({ vectors });
 
-    expect(result.warnings.some(w => w.includes('LEVEL_1_TURBOQUANT'))).toBe(true);
+    expect(result.algorithm_level).toBe('LEVEL_0_TURBOQUANT_INSPIRED_MVP');
+    expect(result.warnings.some(w => w.includes('LEVEL_0_TURBOQUANT_INSPIRED_MVP'))).toBe(true);
   });
 
   test('rejects ragged vectors', () => {
@@ -70,6 +71,8 @@ describe('compressVectors', () => {
 
     expect(result.include_qjl).toBe(true);
     expect(result.qjl_sketches_b64).toBeDefined();
+    const decoded = decodeCompressedDatabase(result.compressed_database_b64);
+    expect(decoded.qjlLength).toBeGreaterThan(0);
   });
 
   test('format_version matches decoded binary format version', () => {
@@ -96,6 +99,6 @@ describe('compressVectors', () => {
 
     expect(result.include_qjl).toBe(true);
     expect(result.qjl_sketches_b64).toBeDefined();
-    expect(result.algorithm_level).toBe('LEVEL_1_TURBOQUANT_QJL');
+    expect(result.algorithm_level).toBe('LEVEL_1_EXPERIMENTAL_QJL');
   });
 });

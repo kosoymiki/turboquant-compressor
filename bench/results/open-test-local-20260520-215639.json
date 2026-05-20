@@ -1,0 +1,30 @@
+{
+  "test_name": "turboquant_open_test_local",
+  "files": 102,
+  "chunks": 149,
+  "approximate_tokens": 90330,
+  "token_count_source": "approximate_bytes_div_4",
+  "dimensions": 384,
+  "vector_count": 149,
+  "compression_ratio": 5.895517774343122,
+  "compressed_bytes": 38820,
+  "original_bytes_estimate": 228864,
+  "compress_ms": 55.87979200000001,
+  "query_count": 50,
+  "recall_at_1": 0.04,
+  "recall_at_5": 0.1,
+  "mrr": 0.06166666666666666,
+  "score_mae_on_exact_topk": 0.20077421786106817,
+  "score_mse_on_exact_topk": 0.06723132206036977,
+  "score_p95_abs_error_on_exact_topk": 0.48799066165848215,
+  "score_mae_on_union_topk": 0.5449583267881372,
+  "score_mse_on_union_topk": 0.3903371775740076,
+  "algorithm_level": "LEVEL_0_TURBOQUANT_INSPIRED_MVP",
+  "format_version": 3,
+  "include_qjl": false,
+  "warnings": [
+    "LEVEL_0_TURBOQUANT_INSPIRED_MVP: Proof-of-concept public path with fixed uniform quantization and no QJL correction.",
+    "Uniform quantizer has fixed step size - may not be optimal for all distributions",
+    "QJL residual sketch/correction is not implemented in the public search path."
+  ]
+}

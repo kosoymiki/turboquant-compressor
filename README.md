@@ -46,17 +46,16 @@ The public benchmark artifacts in `bench/results/` show **5.5x+ compression** on
 | `bench/results/open-test-local-20260514-220247.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | — | Early open local test |
 | `bench/results/open-test-local-20260514-224444.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | 0.708 | 50-query evaluation |
 | `bench/results/open-test-local-20260514-233707.json` | 57 | 78 | 384 | **5.8844x** | 0.58 | 0.92 | 0.7047 | Larger corpus evaluation |
-| `bench/results/open-test-local-20260520-004949.json` | 91 | 135 | 384 | **5.8943x** | 0.04 | 0.10 | 0.0607 | Broader repo sweep; recall regression identified |
-| `bench/results/open-test-local-20260520-204549.json` | 96 | 142 | 384 | **5.8949x** | 0.02 | 0.06 | 0.0400 | Latest broader repo sweep; coverage increased, quality still below early open tests |
+| `bench/results/open-test-local-20260520-215639.json` | 102 | 149 | 384 | **5.8955x** | 0.04 | 0.10 | 0.0617 | Current truthful broader repo sweep after algorithm-level audit |
 
 ### Practical headline
 
 ```text
 Measured local corpus compression: 5.5x+
-Best public artifact:              5.894x
+Best public artifact:              5.8955x
 Recall@5 range:                    0.10–0.92
 Format version:                    3
-Algorithm level:                   LEVEL_0_TURBOQUANT_INSPIRED_MVP -> LEVEL_1_TURBOQUANT
+Algorithm level:                   LEVEL_0_TURBOQUANT_INSPIRED_MVP
 ````
 
 The benchmark artifacts intentionally include warnings when a feature is not part of the public LEVEL_0 path. In particular, current committed public local-corpus artifacts are generated with:
@@ -319,7 +318,7 @@ bench/results/open-test-local-YYYYMMDD-HHMMSS.json
 The current committed public local-corpus evidence shows:
 
 ```text
-compression_ratio: 5.8759x–5.8943x
+compression_ratio: 5.8759x–5.8955x
 recall_at_5:       0.10–0.92
 dimensions:        384
 format_version:    3
@@ -472,9 +471,11 @@ Adreno loader report when claiming Adreno
 * MCP stdio transport model
 * Termux Android runtime constraints
 * Mesa/Freedreno/Turnip/OpenCL driver ecosystem
+* QJL (arXiv:2406.03482) and TurboQuant (arXiv:2504.19874) theory papers
 
 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260514-220247.json
+ https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260520-215639.json
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/forensics/mcp-conformance-transcript.json 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/scripts/verify-release-evidence.mjs
 
