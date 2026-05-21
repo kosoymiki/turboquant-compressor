@@ -41,6 +41,8 @@ Canonical paths:
 Rules:
 - This is the only authoritative source for Rusticl/Freedreno/KGSL/Turnip runtime behavior in this repo.
 - Historical patch-centric recovery residue has been removed from tracked release truth.
+- Dead fused-attention fp16 variants and dev-only kernel harnesses are not part of the shipped kernel surface.
+- The tracked archive is the canonical release artifact; `native/opencl/driver-root/` is an installed execution surface, not a handwritten source layer.
 - Any runtime claim must be explainable from these paths first.
 
 ### 3. Installed Driver Runtime

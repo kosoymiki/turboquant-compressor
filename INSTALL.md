@@ -1,4 +1,4 @@
-# TurboQuant v4.1.0 — Installation Guide
+# TurboQuant v4.1.2 — Installation Guide
 
 ## Scope
 
@@ -75,8 +75,10 @@ bench/results/open-test-local-YYYYMMDD-HHMMSS.json
 Current committed public artifacts support:
 
 - `5.5x+` measured local corpus compression
-- best committed compression artifact: `5.8949x`
-- committed recall@5 range: `0.06–0.92`
+- best committed compression artifact: `5.8957x`
+- committed recall@5 range: `0.66–0.92`
+- current shipped public path: `hashed_tfidf + turboquant_beta`
+- latest committed broader repo sweep: `bench/results/open-test-local-20260521-095918.json`
 
 Do not claim stronger retrieval quality or throughput without committed artifacts.
 

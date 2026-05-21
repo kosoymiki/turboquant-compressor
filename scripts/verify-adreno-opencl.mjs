@@ -50,7 +50,12 @@ console.log(`[opencl-probe] available=${probeResult.available}, adreno=${probeRe
 
 const report = {
   timestamp: new Date().toISOString(),
-  state: probeResult.available ? 'ADRENO_VENDOR_OPENCL_PROBED' : 'ADRENO_VENDOR_OPENCL_UNAVAILABLE',
+  state:
+    !probeResult.available
+      ? 'ADRENO_VENDOR_OPENCL_UNAVAILABLE'
+      : probeResult.recommendedBackend === 'mesa_rusticl_kgsl'
+        ? 'CUSTOM_RUSTICL_STACK_PROBED'
+        : 'ADRENO_VENDOR_OPENCL_PROBED',
   all_pass: false,
   claim_safe: false,
   source: 'verify-adreno-opencl',

@@ -43,11 +43,13 @@ node scripts/verify-opencl-claims.mjs
 
 | State | Meaning |
 |-------|---------|
-| `ADRENO_NATIVE_NOT_BUILT` | tq_opencl_cli binary missing |
+| `ADRENO_NATIVE_NOT_BUILT` | `tq_opencl_cli` binary missing |
+| `CUSTOM_RUSTICL_STACK_PARITY_FAIL` | The shipped custom stack loads, but parity tests fail |
+| `CUSTOM_RUSTICL_STACK_READY` | The shipped custom stack loads and parity passes |
+| `ADRENO_VENDOR_OPENCL_PARITY_FAIL` | Diagnostic vendor OpenCL route loads, but parity fails |
+| `ADRENO_VENDOR_OPENCL_READY` | Diagnostic vendor OpenCL route loads and parity passes |
 | `ADRENO_VENDOR_OPENCL_BLOCKED_BY_NAMESPACE` | Library exists, dlopen blocked |
 | `ADRENO_VENDOR_OPENCL_UNAVAILABLE` | No library or no platforms |
-| `ADRENO_VENDOR_OPENCL_PARITY_FAIL` | OpenCL works but parity tests fail |
-| `ADRENO_VENDOR_OPENCL_READY` | OpenCL works and parity passes |
 
 ## Thermal Policy
 
@@ -63,7 +65,8 @@ node scripts/verify-opencl-claims.mjs
 
 `verify:release` does NOT require OpenCL. The release summary reports:
 
-- `ADRENO_VENDOR_OPENCL_READY` — if report exists with claim_safe=true
+- `CUSTOM_RUSTICL_STACK_READY` — if the tracked custom driver route passes parity
+- `ADRENO_VENDOR_OPENCL_READY` — diagnostic-only vendor route passes parity
 - `ADRENO_VENDOR_OPENCL_BLOCKED_BY_NAMESPACE` — expected on no-root Android
 - `ADRENO_VENDOR_OPENCL_UNAVAILABLE` — no library found
 - `ADRENO_NATIVE_NOT_BUILT` — binary not compiled

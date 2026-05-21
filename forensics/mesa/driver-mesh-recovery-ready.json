@@ -21,7 +21,7 @@
   "mesh": {
     "computePrimary": "mesa_rusticl_kgsl",
     "vulkanPrimary": "turnip_vulkan_kgsl",
-    "packaging": "release-slice canonical export plus repo-local runtime-pack",
+    "packaging": "tracked driver archive plus installed native/opencl/driver-root",
     "forensics": "safe_probe_selftest_single_run",
     "policy": "custom_driver_stack_only"
   },

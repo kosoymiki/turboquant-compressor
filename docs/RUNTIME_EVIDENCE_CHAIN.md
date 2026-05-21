@@ -2,17 +2,19 @@
 
 ## Goal
 
-This document defines the canonical evidence chain for release preparation of the custom driver artifact and its installed `native/opencl/driver-root` execution surface.
+This document defines the canonical evidence chain for release preparation of the tracked custom driver artifact and its installed `native/opencl/driver-root` execution surface.
 
 ## Chain
 
 ### 1. Driver-Root Manifest
 
 Files:
+- `native/opencl/driver-pack/tq-driver-pack-adreno-a7xx-a8xx.tar.zst`
 - `$TQ_DRIVER_ROOT/meta/manifest.json`
 - `$TQ_DRIVER_ROOT/meta/dependencies.txt`
 
 Purpose:
+- describe the tracked driver archive
 - describe the assembled driver root
 - define dependency closure and packed stack composition
 
@@ -55,10 +57,12 @@ Files:
 - `forensics/RELEASE_EVIDENCE_MANIFEST.json`
 - `forensics/mesa/driver-mesh-recovery-ready.json`
 - `forensics/mcp-stdio-transcript.jsonl`
+- `bench/results/open-test-local-*.json`
 
 Purpose:
 - preserve release-grade truth claims
 - anchor runtime and packaging state in committed evidence
+- anchor public retrieval/compression claims in committed benchmark evidence
 
 ## Claim Hierarchy
 

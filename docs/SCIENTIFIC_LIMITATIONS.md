@@ -37,13 +37,13 @@ The public benchmarked implementation is labeled as `LEVEL_0_TURBOQUANT_INSPIRED
 - Lloyd-Max algorithm for codebook training
 
 **Our Implementation:**
-- Fixed uniform quantizer over [-1, 1]
-- No codebook training
-- No adaptation to data distribution
+- Public path uses a precomputed TurboQuant Beta Lloyd-Max scalar codebook for 2/3/4-bit payloads
+- 8-bit mode falls back to uniform symmetric quantization
+- Public path does not perform corpus-trained or per-dataset codebook adaptation
 
 **Impact:**
-- Quantization error may be higher
-- No optimality guarantees
+- Quantization error is lower than the old fixed-uniform baseline on the current public path, but still lacks dataset-specific optimality guarantees
+- No claim of paper-faithful training on deployment data
 
 ### 3. QJL Residual Stage
 
@@ -76,21 +76,21 @@ The public benchmarked implementation is labeled as `LEVEL_0_TURBOQUANT_INSPIRED
 
 ## Known Issues
 
-### 1. Fixed Codebook Range
+### 1. Fixed Public Codebook
 
-The quantizer uses a fixed range of [-1, 1]. This means:
+The shipped 2/3/4-bit path uses a deterministic precomputed Beta Lloyd-Max codebook. This means:
 
-- Input values outside [-1, 1] are clipped
-- This may cause information loss
-- Not adaptive to data distribution
+- Inputs are still clipped to the supported scalar range
+- The codebook is dimension-aware but not dataset-trained at runtime
+- Deployment data may still be mismatched to the public codebook
 
-### 2. No Codebook Training
+### 2. No Corpus-Specific Training
 
-Unlike the paper's Lloyd-Max approach:
+Unlike a fully trained deployment pipeline:
 
-- No iterative optimization
-- No centroid calculation
-- No convergence guarantee
+- No per-corpus iterative optimization
+- No online centroid adaptation
+- No convergence claim on user data
 
 ### 3. No Residual Quantization
 

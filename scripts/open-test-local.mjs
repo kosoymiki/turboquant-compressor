@@ -16,6 +16,7 @@ const CHUNK_BYTES = Number(process.env.TQ_CHUNK_BYTES ?? 4096);
 const QUERY_LIMIT = Number(process.env.TQ_QUERY_LIMIT ?? 50);
 const BITS_PER_VALUE = Number(process.env.TQ_BITS_PER_VALUE ?? 4);
 const ROTATION_SEED = Number(process.env.TQ_ROTATION_SEED ?? 42);
+const SHIPPED_CODEBOOK = BITS_PER_VALUE === 8 ? 'uniform' : 'turboquant_beta';
 
 function walkFiles(root, predicate) {
   const out = [];
@@ -292,7 +293,7 @@ for (const [vectorizerName, vectorizer] of vectorizerEntries) {
     dimensions: DIM,
     bitsPerValue: BITS_PER_VALUE,
     seed: ROTATION_SEED,
-    codebookType: BITS_PER_VALUE === 8 ? 'uniform' : 'turboquant_beta',
+    codebookType: SHIPPED_CODEBOOK,
     includeQJL: false,
   });
   const t1 = performance.now();
@@ -333,16 +334,17 @@ for (const [vectorizerName, vectorizer] of vectorizerEntries) {
   const profile = {
     vectorizer_id: vectorizer.id,
     vectorizer_kind: vectorizer.kind,
+    codebook_type: compressed.codebook_type,
     compression_ratio: compressed.compression_ratio,
     compressed_bytes: compressed.compressed_bytes,
     compress_ms: t1 - t0,
     query_count: queryRecords.length,
     quantization: {
-      uniform: publicQuantization,
+      [compressed.codebook_type]: publicQuantization,
       lloyd_max_beta: lloydQuantization,
     },
     retrieval: {
-      uniform: publicRetrieval,
+      [compressed.codebook_type]: publicRetrieval,
       lloyd_max_beta: lloydRetrieval,
     },
     comparison: {
@@ -392,14 +394,15 @@ const report = {
   original_bytes_estimate: chunks.length * DIM * 4,
   compress_ms: canonicalProfile.compress_ms,
   query_count: canonicalProfile.query_count,
-  recall_at_1: canonicalProfile.retrieval.uniform.relevant_recall_at_1,
-  recall_at_5: canonicalProfile.retrieval.uniform.relevant_recall_at_5,
-  mrr: canonicalProfile.retrieval.uniform.relevant_mrr,
-  score_mae_on_exact_topk: canonicalProfile.quantization.uniform.score_mae_on_exact_topk,
-  score_mse_on_exact_topk: canonicalProfile.quantization.uniform.score_mse_on_exact_topk,
-  score_p95_abs_error_on_exact_topk: canonicalProfile.quantization.uniform.score_p95_abs_error_on_exact_topk,
-  score_mae_on_union_topk: canonicalProfile.quantization.uniform.score_mae_on_union_topk,
-  score_mse_on_union_topk: canonicalProfile.quantization.uniform.score_mse_on_union_topk,
+  codebook_type: canonicalProfile.codebook_type,
+  recall_at_1: canonicalProfile.retrieval[canonicalProfile.codebook_type].relevant_recall_at_1,
+  recall_at_5: canonicalProfile.retrieval[canonicalProfile.codebook_type].relevant_recall_at_5,
+  mrr: canonicalProfile.retrieval[canonicalProfile.codebook_type].relevant_mrr,
+  score_mae_on_exact_topk: canonicalProfile.quantization[canonicalProfile.codebook_type].score_mae_on_exact_topk,
+  score_mse_on_exact_topk: canonicalProfile.quantization[canonicalProfile.codebook_type].score_mse_on_exact_topk,
+  score_p95_abs_error_on_exact_topk: canonicalProfile.quantization[canonicalProfile.codebook_type].score_p95_abs_error_on_exact_topk,
+  score_mae_on_union_topk: canonicalProfile.quantization[canonicalProfile.codebook_type].score_mae_on_union_topk,
+  score_mse_on_union_topk: canonicalProfile.quantization[canonicalProfile.codebook_type].score_mse_on_union_topk,
   algorithm_level: canonicalProfile.algorithm_level,
   format_version: canonicalProfile.format_version,
   include_qjl: canonicalProfile.include_qjl,
@@ -414,6 +417,9 @@ if (report.approximate_tokens <= 0) throw new Error('open test approximate token
 if (report.compression_ratio <= 1) throw new Error(`compression_ratio must be > 1, got ${report.compression_ratio}`);
 if (report.format_version !== 3) throw new Error(`format_version must be 3, got ${report.format_version}`);
 if (report.include_qjl !== false) throw new Error('include_qjl must be false for LEVEL_0');
+if (report.codebook_type !== SHIPPED_CODEBOOK) {
+  throw new Error(`codebook_type must be ${SHIPPED_CODEBOOK}, got ${report.codebook_type}`);
+}
 if (report.algorithm_level !== 'LEVEL_0_TURBOQUANT_INSPIRED_MVP') {
   throw new Error(`algorithm_level must be LEVEL_0_TURBOQUANT_INSPIRED_MVP for open test, got ${report.algorithm_level}`);
 }

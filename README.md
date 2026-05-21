@@ -49,7 +49,7 @@ The public benchmark artifacts in `bench/results/` show **5.5x+ compression** on
 | `bench/results/open-test-local-20260514-220247.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | — | Early open local test |
 | `bench/results/open-test-local-20260514-224444.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | 0.708 | 50-query evaluation |
 | `bench/results/open-test-local-20260514-233707.json` | 57 | 78 | 384 | **5.8844x** | 0.58 | 0.92 | 0.7047 | Larger corpus evaluation |
-| `bench/results/open-test-local-20260521-022922.json` | 103 | 151 | 384 | **5.8957x** | 0.34 | 0.66 | 0.4633 | Current truthful broader repo sweep on the shipped Beta Lloyd-Max public path |
+| `bench/results/open-test-local-20260521-095918.json` | 103 | 151 | 384 | **5.8957x** | 0.34 | 0.66 | 0.4600 | Current truthful broader repo sweep on the shipped Beta Lloyd-Max public path |
 
 ### Practical headline
 
@@ -150,10 +150,11 @@ The public compressed-vector path uses:
 
 1. Deterministic vector validation
 2. Rotation/normalization path
-3. Uniform symmetric scalar quantization
-4. Compact binary format
-5. Base64 MCP-safe transport payload
-6. Decode/search path over compressed database contents
+3. TurboQuant Beta Lloyd-Max scalar quantization for 2/3/4-bit payloads
+4. Uniform symmetric fallback only for 8-bit payloads
+5. Compact binary format
+6. Base64 MCP-safe transport payload
+7. Decode/search path over compressed database contents
 
 The measured local-corpus artifacts currently report:
 
@@ -163,7 +164,7 @@ format_version: 3
 include_qjl: false
 ```
 
-This means the current public proof is strongest for the shipped LEVEL_0 compression/search path. Experimental QJL/Lloyd-Max/OpenCL components should be treated as separately gated until their evidence artifacts are present and wired into the public search path.
+This means the current public proof is strongest for the shipped LEVEL_0 compression/search path. Experimental QJL remains separately gated until a reproducible estimator/search path is committed with matching public evidence.
 
 ---
 
@@ -478,7 +479,7 @@ Adreno loader report when claiming Adreno
 
 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260514-220247.json
- https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260521-022922.json
+ https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260521-095918.json
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/forensics/mcp-conformance-transcript.json 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/scripts/verify-release-evidence.mjs
 

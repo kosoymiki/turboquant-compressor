@@ -9,8 +9,12 @@ The format follows Keep a Changelog and the project uses Semantic Versioning.
 ### Changed
 - Removed vendored `native/opencl/mesa-source` overlay from the repo release surface.
 - Removed legacy `native/opencl/driver-pack/patches/` from the repo release surface.
-- Made `native/opencl/driver-root/` the only primary runtime contract in live path resolution.
+- Switched the tracked driver release contract to `native/opencl/driver-pack/tq-driver-pack-adreno-a7xx-a8xx.tar.zst`, with `native/opencl/driver-root/` regenerated at install/runtime.
 - Simplified Mesa build source resolution to explicit upstream base input instead of repo-local source overlays.
+- Public retrieval path now ships `hashed_tfidf` plus `turboquant_beta` codebook metadata in format v3.
+- Kernel/runtime surface now derives subgroup/fp16 specialization from the real OpenCL route and no longer carries dead fused-attention fp16 lanes in the shipped tree.
+- Added file-based regression coverage for shipped `turboquant_beta` defaults and context-pack build provenance.
+- Refreshed the committed open local benchmark artifact to `bench/results/open-test-local-20260521-095918.json`.
 - Project release identity bumped to `v4.1.2`.
 
 ## [4.1.0] - 2026-05-20
