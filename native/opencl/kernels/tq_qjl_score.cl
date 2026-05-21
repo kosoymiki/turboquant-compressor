@@ -6,19 +6,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-// Byte-level popcount
-inline uint popcount8(uint x) {
-    x = x - ((x >> 1) & 0x55u);
-    x = (x & 0x33u) + ((x >> 2) & 0x33u);
-    return (x + (x >> 4)) & 0x0Fu;
-}
-
-// 32-bit popcount via byte decomposition
-inline uint popcount32(uint x) {
-    return popcount8(x & 0xFFu) + popcount8((x >> 8) & 0xFFu) +
-           popcount8((x >> 16) & 0xFFu) + popcount8((x >> 24) & 0xFFu);
-}
-
 __kernel void tq_qjl_score(
     __global const uint* query_signs,      // [proj_words]
     __global const uint* residual_signs,   // [tokens * proj_words]
@@ -38,7 +25,7 @@ __kernel void tq_qjl_score(
     uint hamming = 0;
     for (int w = 0; w < proj_words; w++) {
         uint xor_val = query_signs[w] ^ my_signs[w];
-        hamming += popcount32(xor_val);
+        hamming += popcount(xor_val);
     }
 
     // sign_dot = projections - 2 * hamming_distance
@@ -71,7 +58,7 @@ __kernel void tq_qjl_score_tiled(
     uint partial_hamming = 0;
     for (int w = lid; w < proj_words; w += local_size) {
         uint xor_val = query_signs[w] ^ my_signs[w];
-        partial_hamming += popcount32(xor_val);
+        partial_hamming += popcount(xor_val);
     }
 
     scratch[lid] = partial_hamming;

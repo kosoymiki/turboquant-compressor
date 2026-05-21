@@ -283,7 +283,7 @@ static bool query_device_caps(ClFuncs* f, DriverCaps* caps) {
     caps->has_fp16 = strstr(ext, "cl_khr_fp16") != nullptr;
     caps->has_subgroups = strstr(ext, "cl_khr_subgroups") != nullptr;
 
-    // Query subgroup size if available
+    // Query subgroup size if available from the actual OpenCL route.
     if (caps->has_subgroups) {
         uint32_t sgs = 0;
         // CL_DEVICE_SUB_GROUP_SIZES_INTEL or preferred subgroup size
@@ -291,12 +291,10 @@ static bool query_device_caps(ClFuncs* f, DriverCaps* caps) {
         caps->subgroup_size = sgs;
     }
 
-    // Enrich caps from GPU profile if KGSL detected
+    // Enrich only with safe performance hints from the GPU profile.
     if (g_kgsl_ok) {
         GpuProfile profile = profile_from_chip_id(g_kgsl_info.chip_id);
         if (profile.gen != GpuGen::UNKNOWN) {
-            if (caps->subgroup_size == 0)
-                caps->subgroup_size = (uint32_t)profile.compute_wave;
             caps->has_fma = profile.supports_fp16_fma;
         }
     }

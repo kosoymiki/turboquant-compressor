@@ -33,12 +33,15 @@ uint32_t get_compute_units();
 size_t get_max_wg_size();
 bool profiling_enabled();
 const GpuProfile& get_gpu_profile();
+bool device_has_fp16();
+bool device_has_subgroups();
 
 // Program/kernel compilation
 TqStatus build_program(const std::string& source, const std::string& options, cl_program* out);
 TqStatus load_kernel(const std::string& kernel_file, const std::string& kernel_name, const std::string& build_opts = "");
 cl_kernel get_kernel(const std::string& name);
 void release_all_programs();
+std::string get_default_build_opts();
 
 // CPU reference implementations (always available for parity)
 void mse_score_cpu_reference(const MseScoreInput& input, float* scores);

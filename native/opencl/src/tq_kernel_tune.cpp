@@ -43,8 +43,8 @@ static KernelTuneParams tune_fused_attention(const GpuProfile& p) {
         t.input_layout = MemoryLayout::TILED_4x4;
     }
 
-    // Local memory: softmax partial sums + shared KV tile
-    t.local_mem_bytes = t.wg_size_x * sizeof(float) + t.tile_m * t.tile_k * t.vec_width * 2;
+    // The shipped kernel declares static local arrays, so host-side dynamic __local is unused.
+    t.local_mem_bytes = 0;
     return t;
 }
 
@@ -108,7 +108,21 @@ static KernelTuneParams tune_attention_logits(const GpuProfile& p) {
     t.input_layout = MemoryLayout::TILED_16x4;  // Wide Q rows
     t.use_gmem_tiling = (p.gmem_size_kb >= 1024);
     t.prefetch_global = true;
-    t.local_mem_bytes = t.wg_size_x * sizeof(float);
+    // The shipped kernel has no dynamic __local argument.
+    t.local_mem_bytes = 0;
+    return t;
+}
+
+static KernelTuneParams tune_attention_apply_values(const GpuProfile& p) {
+    KernelTuneParams t;
+    t.kernel_name = "tq_attention_apply_values";
+    t.wg_size_x = p.attention_wg_size;
+    t.preferred_multiple = (uint32_t)p.compute_wave;
+    t.items_per_thread = 1;
+    t.vec_width = 4;
+    t.input_layout = MemoryLayout::LINEAR;
+    t.output_layout = MemoryLayout::LINEAR;
+    t.local_mem_bytes = 0;
     return t;
 }
 
@@ -136,6 +150,8 @@ KernelTuneParams get_kernel_tune_for(const char* kernel_name, const GpuProfile& 
         return tune_qjl_score(profile);
     if (strstr(kernel_name, "attention_logits"))
         return tune_attention_logits(profile);
+    if (strstr(kernel_name, "attention_apply_values"))
+        return tune_attention_apply_values(profile);
 
     return tune_generic(profile, kernel_name);
 }

@@ -48,16 +48,16 @@ bool approx_equal(float a, float b, float rel_tol = 1e-3f, float abs_tol = 1e-6f
 }
 
 bool load_self_test_kernels(const std::string& kernel_dir) {
+    const std::string build_opts = tq::get_default_build_opts();
     return
-        tq::load_kernel(kernel_dir + "/tq_mse_score.cl", "tq_mse_score") == tq::TqStatus::OK &&
-        tq::load_kernel(kernel_dir + "/tq_mse_score.cl", "tq_mse_score_tiled") == tq::TqStatus::OK &&
-        tq::load_kernel(kernel_dir + "/tq_qjl_score.cl", "tq_qjl_score") == tq::TqStatus::OK &&
-        tq::load_kernel(kernel_dir + "/tq_qjl_score.cl", "tq_qjl_score_tiled") == tq::TqStatus::OK &&
-        tq::load_kernel(kernel_dir + "/tq_value_dequant.cl", "tq_value_dequant") == tq::TqStatus::OK &&
-        tq::load_kernel(kernel_dir + "/tq_value_dequant.cl", "tq_value_weighted_accum") == tq::TqStatus::OK &&
-        tq::load_kernel(kernel_dir + "/tq_fused_attention.cl", "tq_fused_attention") == tq::TqStatus::OK &&
-        tq::load_kernel(kernel_dir + "/tq_attention_logits.cl", "tq_attention_logits") == tq::TqStatus::OK &&
-        tq::load_kernel(kernel_dir + "/tq_attention_apply_values.cl", "tq_attention_apply_values") == tq::TqStatus::OK;
+        tq::load_kernel(kernel_dir + "/tq_mse_score.cl", "tq_mse_score", build_opts) == tq::TqStatus::OK &&
+        tq::load_kernel(kernel_dir + "/tq_mse_score.cl", "tq_mse_score_tiled", build_opts) == tq::TqStatus::OK &&
+        tq::load_kernel(kernel_dir + "/tq_qjl_score.cl", "tq_qjl_score", build_opts) == tq::TqStatus::OK &&
+        tq::load_kernel(kernel_dir + "/tq_qjl_score.cl", "tq_qjl_score_tiled", build_opts) == tq::TqStatus::OK &&
+        tq::load_kernel(kernel_dir + "/tq_value_dequant.cl", "tq_value_dequant", build_opts) == tq::TqStatus::OK &&
+        tq::load_kernel(kernel_dir + "/tq_value_dequant.cl", "tq_value_weighted_accum", build_opts) == tq::TqStatus::OK &&
+        tq::load_kernel(kernel_dir + "/tq_attention_logits.cl", "tq_attention_logits", build_opts) == tq::TqStatus::OK &&
+        tq::load_kernel(kernel_dir + "/tq_attention_apply_values.cl", "tq_attention_apply_values", build_opts) == tq::TqStatus::OK;
 }
 
 void print_json_result(const std::string& payload) {

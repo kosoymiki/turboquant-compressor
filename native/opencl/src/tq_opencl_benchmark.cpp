@@ -488,16 +488,17 @@ int run_benchmark(int argc, char* argv[]) {
         return 1;
     }
 
-    // Load kernels
-    load_kernel(kernel_dir + "/tq_mse_score.cl", "tq_mse_score");
-    load_kernel(kernel_dir + "/tq_mse_score.cl", "tq_mse_score_tiled");
-    load_kernel(kernel_dir + "/tq_qjl_score.cl", "tq_qjl_score");
-    load_kernel(kernel_dir + "/tq_qjl_score.cl", "tq_qjl_score_tiled");
-    load_kernel(kernel_dir + "/tq_value_dequant.cl", "tq_value_dequant");
-    load_kernel(kernel_dir + "/tq_value_dequant.cl", "tq_value_weighted_accum");
-    load_kernel(kernel_dir + "/tq_fused_attention.cl", "tq_fused_attention");
-    load_kernel(kernel_dir + "/tq_attention_logits.cl", "tq_attention_logits");
-    load_kernel(kernel_dir + "/tq_attention_apply_values.cl", "tq_attention_apply_values");
+    const std::string build_opts = get_default_build_opts();
+
+    // Load shipped kernels only.
+    load_kernel(kernel_dir + "/tq_mse_score.cl", "tq_mse_score", build_opts);
+    load_kernel(kernel_dir + "/tq_mse_score.cl", "tq_mse_score_tiled", build_opts);
+    load_kernel(kernel_dir + "/tq_qjl_score.cl", "tq_qjl_score", build_opts);
+    load_kernel(kernel_dir + "/tq_qjl_score.cl", "tq_qjl_score_tiled", build_opts);
+    load_kernel(kernel_dir + "/tq_value_dequant.cl", "tq_value_dequant", build_opts);
+    load_kernel(kernel_dir + "/tq_value_dequant.cl", "tq_value_weighted_accum", build_opts);
+    load_kernel(kernel_dir + "/tq_attention_logits.cl", "tq_attention_logits", build_opts);
+    load_kernel(kernel_dir + "/tq_attention_apply_values.cl", "tq_attention_apply_values", build_opts);
 
     // Shape matrix
     std::vector<BenchShape> shapes = {

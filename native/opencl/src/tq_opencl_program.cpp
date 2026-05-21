@@ -64,10 +64,12 @@ TqStatus load_kernel(const std::string& kernel_file, const std::string& kernel_n
     // Check cache
     if (g_kernels.count(kernel_name)) return TqStatus::OK;
 
+    std::string program_key = kernel_file + "\n--opts--\n" + build_opts;
+
     // Build program if not cached
     cl_program prog = nullptr;
-    if (g_programs.count(kernel_file)) {
-        prog = g_programs[kernel_file];
+    if (g_programs.count(program_key)) {
+        prog = g_programs[program_key];
     } else {
         std::string source = read_file(kernel_file);
         if (source.empty()) {
@@ -76,7 +78,7 @@ TqStatus load_kernel(const std::string& kernel_file, const std::string& kernel_n
         }
         TqStatus st = build_program(source, build_opts, &prog);
         if (st != TqStatus::OK) return st;
-        g_programs[kernel_file] = prog;
+        g_programs[program_key] = prog;
     }
 
     // Create kernel

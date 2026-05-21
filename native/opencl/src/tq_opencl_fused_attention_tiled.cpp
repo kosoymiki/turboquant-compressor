@@ -135,7 +135,7 @@ TqStatus fused_attention_tiled_opencl(const FusedAttentionInput& input) {
     clSetKernelArg(k_values, arg++, sizeof(int), &n_groups);
 
     // Tuned dispatch pass 2: optimal WG for value accumulation
-    KernelTuneParams tune_values = get_kernel_tune("tq_fused_attention");
+    KernelTuneParams tune_values = get_kernel_tune("tq_attention_apply_values");
     size_t local_values = tune_values.wg_size_x;
     size_t global_dim = ((size_t)dim + local_values - 1) / local_values * local_values;
 
@@ -226,7 +226,7 @@ TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input,
     // Tuned dispatch parameters from kernel_tune database
     KernelTuneParams tune_logits = get_kernel_tune("tq_attention_logits");
     size_t local_logits = tune_logits.wg_size_x;
-    KernelTuneParams tune_values = get_kernel_tune("tq_fused_attention");
+    KernelTuneParams tune_values = get_kernel_tune("tq_attention_apply_values");
     size_t local_values = tune_values.wg_size_x;
 
     int a = 0;

@@ -42,6 +42,8 @@ struct OpenClContext {
     uint32_t compute_units = 0;
     size_t max_wg_size = 0;
     bool profiling_enabled = false;
+    bool has_fp16 = false;
+    bool has_subgroups = false;
     GpuProfile gpu_profile = {};
 };
 
@@ -57,6 +59,19 @@ uint32_t get_compute_units() { return g_ctx.compute_units; }
 size_t get_max_wg_size() { return g_ctx.max_wg_size; }
 bool profiling_enabled() { return g_ctx.profiling_enabled; }
 const GpuProfile& get_gpu_profile() { return g_ctx.gpu_profile; }
+bool device_has_fp16() { return g_ctx.has_fp16; }
+bool device_has_subgroups() { return g_ctx.has_subgroups; }
+
+std::string get_default_build_opts() {
+    std::string opts;
+    if (g_ctx.has_fp16) {
+        opts += " -DTQ_HAS_FP16=1";
+    }
+    if (g_ctx.has_subgroups) {
+        opts += " -DUSE_SUBGROUPS=1";
+    }
+    return opts;
+}
 
 TqStatus init_context() {
     if (g_ctx.initialized) return TqStatus::OK;
@@ -131,6 +146,15 @@ TqStatus init_context() {
     size_t wg = 0;
     clGetDeviceInfo(dev, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(wg), &wg, nullptr);
 
+    size_t ext_size = 0;
+    std::string exts;
+    if (clGetDeviceInfo(dev, CL_DEVICE_EXTENSIONS, 0, nullptr, &ext_size) == CL_SUCCESS && ext_size > 1) {
+        exts.resize(ext_size);
+        if (clGetDeviceInfo(dev, CL_DEVICE_EXTENSIONS, ext_size, exts.data(), nullptr) != CL_SUCCESS) {
+            exts.clear();
+        }
+    }
+
     g_ctx.platform = plat;
     g_ctx.device = dev;
     g_ctx.context = ctx;
@@ -140,6 +164,8 @@ TqStatus init_context() {
     g_ctx.compute_units = cu;
     g_ctx.max_wg_size = wg;
     g_ctx.profiling_enabled = queue_profiling_enabled;
+    g_ctx.has_fp16 = exts.find("cl_khr_fp16") != std::string::npos;
+    g_ctx.has_subgroups = exts.find("cl_khr_subgroups") != std::string::npos;
 
     // Detect GPU profile for per-kernel tuning
     g_ctx.gpu_profile = detect_gpu_profile();

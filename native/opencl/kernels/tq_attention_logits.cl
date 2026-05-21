@@ -26,12 +26,6 @@ inline uint logits_extract_2bit(__global const uchar* packed, uint coord) {
     return ((uint)packed[byte_idx] >> shift) & 0x3u;
 }
 
-inline uint logits_popcount32(uint x) {
-    x = x - ((x >> 1) & 0x55555555u);
-    x = (x & 0x33333333u) + ((x >> 2) & 0x33333333u);
-    return ((x + (x >> 4)) & 0x0F0F0F0Fu) * 0x01010101u >> 24;
-}
-
 __kernel void tq_attention_logits(
     __global const float* query_rotated,     // [dim]
     __global const uchar* key_packed,        // [tokens * key_packed_stride]
@@ -72,7 +66,7 @@ __kernel void tq_attention_logits(
     __global const uint* my_signs = residual_signs + tid * proj_words;
     uint hamming = 0;
     for (int w = 0; w < proj_words; w++)
-        hamming += logits_popcount32(query_signs[w] ^ my_signs[w]);
+        hamming += popcount(query_signs[w] ^ my_signs[w]);
     float sign_dot = (float)projections - 2.0f * (float)hamming;
     score += qjl_scale * residual_norms[tid] * sign_dot;
 
