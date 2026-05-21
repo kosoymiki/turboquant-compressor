@@ -5,7 +5,7 @@
 This audit covers the shipped `v4.1.2` surface after kernel/runtime cleanup, the fresh open local benchmark, and the current custom driver runtime contract.
 
 Evidence anchors:
-- `bench/results/open-test-local-20260521-095918.json`
+- `bench/results/open-test-local-20260521-111715.json`
 - `forensics/opencl-adreno-report.json`
 - `forensics/adreno/loader-report.json`
 - `forensics/mesa/driver-mesh-recovery-ready.json`

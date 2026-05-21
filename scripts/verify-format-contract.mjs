@@ -21,6 +21,6 @@ if (r.format_version !== db.version) {
 }
 if (db.version !== 3) fail(`expected format v3, got ${db.version}`);
 if (db.headerLength !== 80) fail(`expected headerLength 80, got ${db.headerLength}`);
-if (db.qjlLength !== 0) fail(`public LEVEL_0 must not store QJL payload`);
+if (db.qjlLength !== 0) fail(`public LEVEL_1 beta path must not store QJL payload`);
 
 console.log('[OK] format contract verified');

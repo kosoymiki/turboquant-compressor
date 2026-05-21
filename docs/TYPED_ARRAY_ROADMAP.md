@@ -1,6 +1,6 @@
 # Typed Array Roadmap
 
-Current LEVEL_0 implementation uses number[] for readability and MCP JSON compatibility.
+Current LEVEL_1 public beta implementation uses number[] for readability and MCP JSON compatibility.
 
 For Termux/Android and future WASM backend, internal numeric code should migrate to:
 

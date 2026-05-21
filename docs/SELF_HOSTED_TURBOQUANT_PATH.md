@@ -27,7 +27,7 @@ To claim QJL (Quantized Johnson-Lindenstrauss) capability:
 - Ranking recall benchmark
 - Variance reported
 
-## LEVEL_0 Status
+## LEVEL_1 Public Beta Status
 
 Current implementation:
 - No QJL payload stored

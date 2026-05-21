@@ -29,12 +29,12 @@ describe('compressVectors', () => {
     expect(result.compression_ratio).toBeGreaterThanOrEqual(0.25);
   });
 
-  test('default public path is LEVEL_0', () => {
+  test('default public path is LEVEL_1 public beta', () => {
     const vectors = [[0.1, -0.3, 0.5, -0.7]];
     const result = compressVectors({ vectors });
 
-    expect(result.algorithm_level).toBe('LEVEL_0_TURBOQUANT_INSPIRED_MVP');
-    expect(result.warnings.some(w => w.includes('LEVEL_0_TURBOQUANT_INSPIRED_MVP'))).toBe(true);
+    expect(result.algorithm_level).toBe('LEVEL_1_PUBLIC_BETA');
+    expect(result.warnings.some(w => w.includes('LEVEL_1_PUBLIC_BETA'))).toBe(true);
   });
 
   test('rejects ragged vectors', () => {

@@ -137,7 +137,7 @@ describe('searchVectors', () => {
       useQjl: true,
     });
 
-    expect(result.warnings).toContain('useQjl was requested, but public LEVEL_0 databases store no QJL payload and no QJL correction is applied.');
+    expect(result.warnings).toContain('useQjl was requested, but LEVEL_1_PUBLIC_BETA databases store no QJL payload and the current search path does not apply QJL correction.');
   });
 
   test('returns sorted top_k results without returning all vectors', () => {

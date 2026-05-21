@@ -10,6 +10,7 @@ import { encodeCompressedDatabase, encodeBase64 } from '../core/format.js';
 import { validateCompressionParams, estimateCompressionMemory } from '../core/limits.js';
 import { QJLResidualEstimator } from '../core/qjl.js';
 import { TurboQuantBetaCodebook } from '../core/codebook.js';
+import { EXPERIMENTAL_QJL_LEVEL, PUBLIC_ALGORITHM_LEVEL, publicLevelWarning } from '../core/algorithm_level.js';
 import { parseCompressInput } from './validation.js';
 import type { CompressResult } from './types.js';
 
@@ -76,9 +77,9 @@ export function compressVectors(
 
   const warnings: string[] = [];
   if (includeQJL) {
-    warnings.push('LEVEL_1_EXPERIMENTAL_QJL: Experimental residual sketch path; not paper-faithful and not wired into public search correction.');
+    warnings.push(`${EXPERIMENTAL_QJL_LEVEL}: Experimental residual sketch path; not paper-faithful and not wired into public search correction.`);
   } else {
-    warnings.push(`LEVEL_0_TURBOQUANT_INSPIRED_MVP: Public path uses ${codebookType === 'turboquant_beta' ? 'TurboQuant Beta Lloyd-Max scalar quantization' : 'fixed uniform quantization'} without QJL correction.`);
+    warnings.push(publicLevelWarning(codebookType));
     if (codebookType === 'uniform') {
       warnings.push('Uniform quantizer has fixed step size - may not be optimal for all distributions');
     }
@@ -168,7 +169,7 @@ export function compressVectors(
     codebook_type: codebookType,
     include_qjl: includeQJL,
     qjl_sketches_b64: qjlSketchesB64,
-    algorithm_level: includeQJL ? 'LEVEL_1_EXPERIMENTAL_QJL' : 'LEVEL_0_TURBOQUANT_INSPIRED_MVP',
+    algorithm_level: includeQJL ? EXPERIMENTAL_QJL_LEVEL : PUBLIC_ALGORITHM_LEVEL,
     original_bytes_estimate: originalSize,
     compressed_bytes: compressedSize,
     compression_ratio: compressionRatio,

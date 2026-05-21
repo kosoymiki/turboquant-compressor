@@ -11,6 +11,7 @@ import { decodeCompressedDatabase } from '../core/format.js';
 import { validateSearchParams } from '../core/limits.js';
 import type { SearchResult, SearchResultItem } from './types.js';
 import { TurboQuantBetaCodebook } from '../core/codebook.js';
+import { EXPERIMENTAL_QJL_LEVEL, PUBLIC_ALGORITHM_LEVEL } from '../core/algorithm_level.js';
 
 export type SearchVectorsInput = {
   compressed_database_b64?: string;
@@ -157,7 +158,7 @@ function runSearch(input: SearchVectorsInput): SearchResult {
 
   const warnings: string[] = [];
   const hasQjlPayload = (db.qjlLength ?? 0) > 0;
-  const algorithmLevel = hasQjlPayload ? 'LEVEL_1_EXPERIMENTAL_QJL' : 'LEVEL_0_TURBOQUANT_INSPIRED_MVP';
+  const algorithmLevel = hasQjlPayload ? EXPERIMENTAL_QJL_LEVEL : PUBLIC_ALGORITHM_LEVEL;
   if (metric === 'dot') {
     warnings.push('Dot product score is not normalized - higher values indicate more similarity');
   }
@@ -165,7 +166,7 @@ function runSearch(input: SearchVectorsInput): SearchResult {
     warnings.push('Database carries an experimental QJL residual payload, but search does not yet apply QJL correction.');
   }
   if (input.useQjl === true) {
-    warnings.push('useQjl was requested, but the current search path does not apply QJL correction.');
+    warnings.push(`useQjl was requested, but ${PUBLIC_ALGORITHM_LEVEL} databases store no QJL payload and the current search path does not apply QJL correction.`);
   }
 
   return {

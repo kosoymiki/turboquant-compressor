@@ -49,7 +49,7 @@ The public benchmark artifacts in `bench/results/` show **5.5x+ compression** on
 | `bench/results/open-test-local-20260514-220247.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | — | Early open local test |
 | `bench/results/open-test-local-20260514-224444.json` | 38 | 57 | 384 | **5.8759x** | 0.60 | 0.90 | 0.708 | 50-query evaluation |
 | `bench/results/open-test-local-20260514-233707.json` | 57 | 78 | 384 | **5.8844x** | 0.58 | 0.92 | 0.7047 | Larger corpus evaluation |
-| `bench/results/open-test-local-20260521-095918.json` | 103 | 151 | 384 | **5.8957x** | 0.34 | 0.66 | 0.4600 | Current truthful broader repo sweep on the shipped Beta Lloyd-Max public path |
+| `bench/results/open-test-local-20260521-111715.json` | 105 | 154 | 384 | **5.8959x** | 0.40 | 0.66 | 0.4933 | Current truthful broader repo sweep on the shipped Beta Lloyd-Max public path |
 
 ### Practical headline
 
@@ -58,10 +58,10 @@ Measured local corpus compression: 5.5x+
 Best public artifact:              5.8957x
 Recall@5 range:                    0.66–0.92
 Format version:                    3
-Algorithm level:                   LEVEL_0_TURBOQUANT_INSPIRED_MVP
+Algorithm level:                   LEVEL_1_PUBLIC_BETA
 ````
 
-The benchmark artifacts intentionally include warnings when a feature is not part of the public LEVEL_0 path. In particular, current committed public local-corpus artifacts are generated with:
+The benchmark artifacts intentionally include warnings when a feature is not part of the current public LEVEL_1 path. In particular, current committed public local-corpus artifacts are generated with:
 
 ```text
 include_qjl: false
@@ -159,12 +159,12 @@ The public compressed-vector path uses:
 The measured local-corpus artifacts currently report:
 
 ```text
-algorithm_level: LEVEL_0_TURBOQUANT_INSPIRED_MVP
+algorithm_level: LEVEL_1_PUBLIC_BETA
 format_version: 3
 include_qjl: false
 ```
 
-This means the current public proof is strongest for the shipped LEVEL_0 compression/search path. Experimental QJL remains separately gated until a reproducible estimator/search path is committed with matching public evidence.
+This means the current public proof is strongest for the shipped LEVEL_1 compression/search path. Experimental QJL remains separately gated until a reproducible estimator/search path is committed with matching public evidence.
 
 ---
 
@@ -367,7 +367,7 @@ Do not publish those as verified unless the matching forensic artifacts exist an
 
 ## Known Limits
 
-* Current public local benchmark path is LEVEL_0.
+* Current public local benchmark path is LEVEL_1 public beta.
 * Public local benchmark artifacts do not include QJL correction.
 * `useQjl` in search does not apply QJL correction unless the database format stores the required payload.
 * OpenCL/Adreno acceleration must be verified per device.
@@ -479,7 +479,7 @@ Adreno loader report when claiming Adreno
 
 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260514-220247.json
- https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260521-095918.json
+ https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/bench/results/open-test-local-20260521-111715.json
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/forensics/mcp-conformance-transcript.json 
  https://raw.githubusercontent.com/kosoymiki/turboquant-compressor/main/scripts/verify-release-evidence.mjs
 

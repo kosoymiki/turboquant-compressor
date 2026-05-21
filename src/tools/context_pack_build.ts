@@ -166,7 +166,7 @@ export function turboquantContextPackBuild(
 
   const warnings: string[] = [
     'Deterministic local vectorizers are lexical baselines, not semantic embedding quality.',
-    'LEVEL_0 implementation does not store QJL payload.',
+    'LEVEL_1_PUBLIC_BETA implementation does not store QJL payload.',
     'This tool does not reduce Anthropic API token billing directly.',
   ];
 
