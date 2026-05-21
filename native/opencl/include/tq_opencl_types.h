@@ -16,6 +16,11 @@ struct DeviceInfo {
     std::string version;
     bool has_fp16 = false;
     bool has_subgroups = false;
+    bool has_il_program = false;
+    bool has_svm = false;
+    bool has_svm_coarse = false;
+    bool has_svm_fine = false;
+    bool has_svm_atomics = false;
     bool is_adreno = false;
     uint64_t global_mem_bytes = 0;
     uint32_t max_work_group_size = 0;

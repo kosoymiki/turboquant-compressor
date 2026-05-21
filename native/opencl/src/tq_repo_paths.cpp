@@ -109,6 +109,42 @@ std::vector<std::string> runtime_pack_roots() {
     return canonical_driver_roots();
 }
 
+std::string resolve_forensics_dir() {
+    for (const auto& repo_root : repo_root_candidates()) {
+        std::string candidate = join_repo_path(repo_root, "forensics");
+        if (dir_exists(candidate)) return candidate;
+    }
+    return std::string();
+}
+
+std::string resolve_native_build_dir() {
+    std::string env_dir = env_or_empty("TQ_OPENCL_BUILD_DIR");
+    if (dir_exists(env_dir)) return env_dir;
+
+    for (const auto& repo_root : repo_root_candidates()) {
+        std::string candidate = join_repo_path(repo_root, "native/opencl/build");
+        if (dir_exists(candidate)) return candidate;
+    }
+    return env_dir;
+}
+
+std::string resolve_spirv_dir() {
+    std::string env_dir = env_or_empty("TQ_OPENCL_SPIRV_DIR");
+    if (dir_exists(env_dir)) return env_dir;
+
+    std::string build_dir = resolve_native_build_dir();
+    if (!build_dir.empty()) {
+        std::string candidate = join_repo_path(build_dir, "spirv");
+        if (dir_exists(candidate)) return candidate;
+    }
+
+    for (const auto& repo_root : repo_root_candidates()) {
+        std::string candidate = join_repo_path(repo_root, "native/opencl/build/spirv");
+        if (dir_exists(candidate)) return candidate;
+    }
+    return build_dir.empty() ? std::string() : join_repo_path(build_dir, "spirv");
+}
+
 std::string resolve_kernel_dir(const std::string& requested_dir) {
     if (dir_exists(requested_dir)) return requested_dir;
 

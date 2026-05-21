@@ -5,6 +5,7 @@
  */
 
 #include "tq_opencl.h"
+#include "tq_buffer.h"
 #include "tq_kernel_tune.h"
 #include <CL/cl.h>
 #include <chrono>
@@ -49,58 +50,58 @@ TqStatus qjl_score_opencl(const QjlScoreInput& input) {
     }
 
     cl_kernel k = get_kernel(kernel_name);
-    cl_int err;
-    cl_context ctx = get_context();
     cl_command_queue queue = get_queue();
+    const int tokens = input.tokens;
+    const int projections = input.projections;
+    const float qjl_scale = input.qjl_scale;
 
-    size_t qsigns_size = (size_t)proj_words * sizeof(uint32_t);
-    size_t rsigns_size = (size_t)input.tokens * proj_words * sizeof(uint32_t);
-    size_t rnorms_size = (size_t)input.tokens * sizeof(float);
-    size_t scores_size = (size_t)input.tokens * sizeof(float);
+    try {
+        TqBuffer<uint32_t> d_qsigns((size_t)proj_words, CL_MEM_READ_ONLY);
+        TqBuffer<uint32_t> d_rsigns((size_t)input.tokens * proj_words, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_rnorms((size_t)input.tokens, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_scores((size_t)input.tokens, CL_MEM_READ_WRITE);
 
-    cl_mem d_qsigns = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, qsigns_size, (void*)input.query_signs, &err);
-    cl_mem d_rsigns = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, rsigns_size, (void*)input.residual_signs, &err);
-    cl_mem d_rnorms = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, rnorms_size, (void*)input.residual_norms, &err);
-    cl_mem d_scores = clCreateBuffer(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, scores_size, (void*)input.base_scores, &err);
+        d_qsigns.write_to_device(queue, input.query_signs);
+        d_rsigns.write_to_device(queue, input.residual_signs);
+        d_rnorms.write_to_device(queue, input.residual_norms);
+        d_scores.write_to_device(queue, input.base_scores);
 
-    int tokens = input.tokens;
-    int projections = input.projections;
-    float qjl_scale = input.qjl_scale;
+        if (d_qsigns.bind_kernel_arg(k, 0) != TqStatus::OK ||
+            d_rsigns.bind_kernel_arg(k, 1) != TqStatus::OK ||
+            d_rnorms.bind_kernel_arg(k, 2) != TqStatus::OK ||
+            d_scores.bind_kernel_arg(k, 3) != TqStatus::OK) {
+            qjl_score_cpu_reference(input);
+            return TqStatus::OK;
+        }
+        clSetKernelArg(k, 4, sizeof(int), &tokens);
+        clSetKernelArg(k, 5, sizeof(int), &projections);
+        clSetKernelArg(k, 6, sizeof(float), &qjl_scale);
+        clSetKernelArg(k, 7, sizeof(int), &proj_words);
 
-    clSetKernelArg(k, 0, sizeof(cl_mem), &d_qsigns);
-    clSetKernelArg(k, 1, sizeof(cl_mem), &d_rsigns);
-    clSetKernelArg(k, 2, sizeof(cl_mem), &d_rnorms);
-    clSetKernelArg(k, 3, sizeof(cl_mem), &d_scores);
-    clSetKernelArg(k, 4, sizeof(int), &tokens);
-    clSetKernelArg(k, 5, sizeof(int), &projections);
-    clSetKernelArg(k, 6, sizeof(float), &qjl_scale);
-    clSetKernelArg(k, 7, sizeof(int), &proj_words);
+        size_t local_size = local_work[0];
+        if (local_size == 0) local_size = 64;
+        size_t global_size = (kernel_name == std::string("tq_qjl_score_tiled"))
+            ? ((size_t)input.tokens * local_size)
+            : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
+        cl_event event;
+        if (kernel_name == std::string("tq_qjl_score_tiled")) {
+            clSetKernelArg(k, 8, local_size * sizeof(cl_uint), nullptr);
+        }
+        cl_int err = clEnqueueNDRangeKernel(queue, k, 1, nullptr, &global_size, &local_size, 0, nullptr, &event);
+        if (err != CL_SUCCESS) {
+            qjl_score_cpu_reference(input);
+            return TqStatus::OK;
+        }
 
-    size_t local_size = local_work[0];
-    if (local_size == 0) local_size = 64;
-    size_t global_size = (kernel_name == std::string("tq_qjl_score_tiled"))
-        ? ((size_t)input.tokens * local_size)
-        : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
-    cl_event event;
-    if (kernel_name == std::string("tq_qjl_score_tiled")) {
-        clSetKernelArg(k, 8, local_size * sizeof(cl_uint), nullptr);
-    }
-    err = clEnqueueNDRangeKernel(queue, k, 1, nullptr, &global_size, &local_size, 0, nullptr, &event);
-    if (err != CL_SUCCESS) {
-        clReleaseMemObject(d_qsigns); clReleaseMemObject(d_rsigns);
-        clReleaseMemObject(d_rnorms); clReleaseMemObject(d_scores);
+        clWaitForEvents(1, &event);
+        d_scores.read_from_device(queue, input.base_scores);
+
+        clReleaseEvent(event);
+        return TqStatus::OK;
+    } catch (...) {
         qjl_score_cpu_reference(input);
         return TqStatus::OK;
     }
-
-    clWaitForEvents(1, &event);
-    clEnqueueReadBuffer(queue, d_scores, CL_TRUE, 0, scores_size, input.base_scores, 0, nullptr, nullptr);
-
-    clReleaseEvent(event);
-    clReleaseMemObject(d_qsigns); clReleaseMemObject(d_rsigns);
-    clReleaseMemObject(d_rnorms); clReleaseMemObject(d_scores);
-
-    return TqStatus::OK;
 }
 
 TqStatus qjl_score_opencl_profiled(const QjlScoreInput& input, uint64_t* kernel_ns) {
@@ -116,74 +117,76 @@ TqStatus qjl_score_opencl_profiled(const QjlScoreInput& input, uint64_t* kernel_
     }
 
     cl_kernel k = get_kernel(kernel_name);
-    cl_int err;
-    cl_context ctx = get_context();
     cl_command_queue queue = get_queue();
+    const int tokens = input.tokens;
+    const int projections = input.projections;
+    const float qjl_scale = input.qjl_scale;
 
-    size_t qsigns_size = (size_t)proj_words * sizeof(uint32_t);
-    size_t rsigns_size = (size_t)input.tokens * proj_words * sizeof(uint32_t);
-    size_t rnorms_size = (size_t)input.tokens * sizeof(float);
-    size_t scores_size = (size_t)input.tokens * sizeof(float);
+    try {
+        TqBuffer<uint32_t> d_qsigns((size_t)proj_words, CL_MEM_READ_ONLY);
+        TqBuffer<uint32_t> d_rsigns((size_t)input.tokens * proj_words, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_rnorms((size_t)input.tokens, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_scores((size_t)input.tokens, CL_MEM_READ_WRITE);
 
-    cl_mem d_qsigns = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, qsigns_size, (void*)input.query_signs, &err);
-    cl_mem d_rsigns = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, rsigns_size, (void*)input.residual_signs, &err);
-    cl_mem d_rnorms = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, rnorms_size, (void*)input.residual_norms, &err);
-    cl_mem d_scores = clCreateBuffer(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, scores_size, (void*)input.base_scores, &err);
+        d_qsigns.write_to_device(queue, input.query_signs);
+        d_rsigns.write_to_device(queue, input.residual_signs);
+        d_rnorms.write_to_device(queue, input.residual_norms);
+        d_scores.write_to_device(queue, input.base_scores);
 
-    int tokens = input.tokens;
-    int projections = input.projections;
-    float qjl_scale = input.qjl_scale;
+        if (d_qsigns.bind_kernel_arg(k, 0) != TqStatus::OK ||
+            d_rsigns.bind_kernel_arg(k, 1) != TqStatus::OK ||
+            d_rnorms.bind_kernel_arg(k, 2) != TqStatus::OK ||
+            d_scores.bind_kernel_arg(k, 3) != TqStatus::OK) {
+            qjl_score_cpu_reference(input);
+            *kernel_ns = 0;
+            return TqStatus::OK;
+        }
+        clSetKernelArg(k, 4, sizeof(int), &tokens);
+        clSetKernelArg(k, 5, sizeof(int), &projections);
+        clSetKernelArg(k, 6, sizeof(float), &qjl_scale);
+        clSetKernelArg(k, 7, sizeof(int), &proj_words);
 
-    clSetKernelArg(k, 0, sizeof(cl_mem), &d_qsigns);
-    clSetKernelArg(k, 1, sizeof(cl_mem), &d_rsigns);
-    clSetKernelArg(k, 2, sizeof(cl_mem), &d_rnorms);
-    clSetKernelArg(k, 3, sizeof(cl_mem), &d_scores);
-    clSetKernelArg(k, 4, sizeof(int), &tokens);
-    clSetKernelArg(k, 5, sizeof(int), &projections);
-    clSetKernelArg(k, 6, sizeof(float), &qjl_scale);
-    clSetKernelArg(k, 7, sizeof(int), &proj_words);
+        size_t local_size = local_work[0];
+        if (local_size == 0) local_size = 64;
+        size_t global_size = (kernel_name == std::string("tq_qjl_score_tiled"))
+            ? ((size_t)input.tokens * local_size)
+            : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
+        cl_event event;
+        if (kernel_name == std::string("tq_qjl_score_tiled")) {
+            clSetKernelArg(k, 8, local_size * sizeof(cl_uint), nullptr);
+        }
+        cl_int err = clEnqueueNDRangeKernel(queue, k, 1, nullptr, &global_size, &local_size, 0, nullptr, &event);
+        if (err != CL_SUCCESS) {
+            qjl_score_cpu_reference(input);
+            *kernel_ns = 0;
+            return TqStatus::OK;
+        }
 
-    size_t local_size = local_work[0];
-    if (local_size == 0) local_size = 64;
-    size_t global_size = (kernel_name == std::string("tq_qjl_score_tiled"))
-        ? ((size_t)input.tokens * local_size)
-        : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
-    cl_event event;
-    if (kernel_name == std::string("tq_qjl_score_tiled")) {
-        clSetKernelArg(k, 8, local_size * sizeof(cl_uint), nullptr);
-    }
-    err = clEnqueueNDRangeKernel(queue, k, 1, nullptr, &global_size, &local_size, 0, nullptr, &event);
-    if (err != CL_SUCCESS) {
-        clReleaseMemObject(d_qsigns); clReleaseMemObject(d_rsigns);
-        clReleaseMemObject(d_rnorms); clReleaseMemObject(d_scores);
+        auto wall_start = std::chrono::steady_clock::now();
+        clWaitForEvents(1, &event);
+        auto wall_end = std::chrono::steady_clock::now();
+
+        if (profiling_enabled()) {
+            cl_ulong t_start = 0, t_end = 0;
+            if (clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(t_start), &t_start, nullptr) == CL_SUCCESS &&
+                clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(t_end), &t_end, nullptr) == CL_SUCCESS) {
+                *kernel_ns = (uint64_t)(t_end - t_start);
+            } else {
+                *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
+            }
+        } else {
+            *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
+        }
+
+        d_scores.read_from_device(queue, input.base_scores);
+
+        clReleaseEvent(event);
+        return TqStatus::OK;
+    } catch (...) {
         qjl_score_cpu_reference(input);
         *kernel_ns = 0;
         return TqStatus::OK;
     }
-
-    auto wall_start = std::chrono::steady_clock::now();
-    clWaitForEvents(1, &event);
-    auto wall_end = std::chrono::steady_clock::now();
-
-    if (profiling_enabled()) {
-        cl_ulong t_start = 0, t_end = 0;
-        if (clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(t_start), &t_start, nullptr) == CL_SUCCESS &&
-            clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(t_end), &t_end, nullptr) == CL_SUCCESS) {
-            *kernel_ns = (uint64_t)(t_end - t_start);
-        } else {
-            *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
-        }
-    } else {
-        *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
-    }
-
-    clEnqueueReadBuffer(queue, d_scores, CL_TRUE, 0, scores_size, input.base_scores, 0, nullptr, nullptr);
-
-    clReleaseEvent(event);
-    clReleaseMemObject(d_qsigns); clReleaseMemObject(d_rsigns);
-    clReleaseMemObject(d_rnorms); clReleaseMemObject(d_scores);
-
-    return TqStatus::OK;
 }
 
 } // namespace tq

@@ -7,6 +7,7 @@
  */
 
 #include "tq_opencl.h"
+#include "tq_buffer.h"
 #include "../include/tq_kernel_tune.h"
 #include <CL/cl.h>
 #include <chrono>
@@ -29,8 +30,6 @@ TqStatus fused_attention_tiled_opencl(const FusedAttentionInput& input) {
         return TqStatus::OK;
     }
 
-    cl_int err;
-    cl_context ctx = get_context();
     cl_command_queue queue = get_queue();
 
     int dim = input.mse.dim;
@@ -40,135 +39,112 @@ TqStatus fused_attention_tiled_opencl(const FusedAttentionInput& input) {
     int n_groups = (input.value.dim + input.value.group_size - 1) / input.value.group_size;
     int proj_words = (input.qjl.projections + 31) / 32;
 
-    // Buffers for pass 1 (logits)
-    cl_mem d_query = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        dim * sizeof(float), (void*)input.mse.query_rotated, &err);
-    cl_mem d_key_packed = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (size_t)tokens * key_packed_stride, (void*)input.mse.packed_indices, &err);
-    cl_mem d_key_norms = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        tokens * sizeof(float), (void*)input.mse.norms, &err);
-    cl_mem d_centroids = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (1 << input.mse.bits) * sizeof(float), (void*)input.mse.centroids, &err);
-    cl_mem d_qsigns = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        proj_words * sizeof(uint32_t), (void*)input.qjl.query_signs, &err);
-    cl_mem d_rsigns = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (size_t)tokens * proj_words * sizeof(uint32_t), (void*)input.qjl.residual_signs, &err);
-    cl_mem d_rnorms = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        tokens * sizeof(float), (void*)input.qjl.residual_norms, &err);
+    try {
+        TqBuffer<float> d_query((size_t)dim, CL_MEM_READ_ONLY);
+        TqBuffer<uint8_t> d_key_packed((size_t)tokens * key_packed_stride, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_key_norms((size_t)tokens, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_centroids((size_t)(1 << input.mse.bits), CL_MEM_READ_ONLY);
+        TqBuffer<uint32_t> d_qsigns((size_t)proj_words, CL_MEM_READ_ONLY);
+        TqBuffer<uint32_t> d_rsigns((size_t)tokens * proj_words, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_rnorms((size_t)tokens, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_scores((size_t)tokens, CL_MEM_READ_WRITE);
+        TqBuffer<uint8_t> d_val_packed((size_t)tokens * val_packed_stride, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_val_scales((size_t)tokens * n_groups, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_val_zeros((size_t)tokens * n_groups, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_output((size_t)dim, CL_MEM_WRITE_ONLY);
 
-    // Intermediate scores buffer (device only)
-    cl_mem d_scores = clCreateBuffer(ctx, CL_MEM_READ_WRITE,
-        tokens * sizeof(float), nullptr, &err);
+        d_query.write_to_device(queue, input.mse.query_rotated);
+        d_key_packed.write_to_device(queue, input.mse.packed_indices);
+        d_key_norms.write_to_device(queue, input.mse.norms);
+        d_centroids.write_to_device(queue, input.mse.centroids);
+        d_qsigns.write_to_device(queue, input.qjl.query_signs);
+        d_rsigns.write_to_device(queue, input.qjl.residual_signs);
+        d_rnorms.write_to_device(queue, input.qjl.residual_norms);
+        d_val_packed.write_to_device(queue, input.value.packed_values);
+        d_val_scales.write_to_device(queue, input.value.scales);
+        d_val_zeros.write_to_device(queue, input.value.zeros);
 
-    // Buffers for pass 2 (values)
-    cl_mem d_val_packed = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (size_t)tokens * val_packed_stride, (void*)input.value.packed_values, &err);
-    cl_mem d_val_scales = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (size_t)tokens * n_groups * sizeof(float), (void*)input.value.scales, &err);
-    cl_mem d_val_zeros = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (size_t)tokens * n_groups * sizeof(float), (void*)input.value.zeros, &err);
-    cl_mem d_output = clCreateBuffer(ctx, CL_MEM_WRITE_ONLY,
-        dim * sizeof(float), nullptr, &err);
+        // Pass 1: logits kernel args
+        int key_bits = input.mse.bits;
+        int projections = input.qjl.projections;
+        float qjl_scale = input.qjl.qjl_scale;
+        float sm_scale = input.sm_scale;
 
-    // Pass 1: logits kernel args
-    int key_bits = input.mse.bits;
-    int projections = input.qjl.projections;
-    float qjl_scale = input.qjl.qjl_scale;
-    float sm_scale = input.sm_scale;
+        int arg = 0;
+        if (d_query.bind_kernel_arg(k_logits, arg++) != TqStatus::OK ||
+            d_key_packed.bind_kernel_arg(k_logits, arg++) != TqStatus::OK ||
+            d_key_norms.bind_kernel_arg(k_logits, arg++) != TqStatus::OK ||
+            d_centroids.bind_kernel_arg(k_logits, arg++) != TqStatus::OK ||
+            d_qsigns.bind_kernel_arg(k_logits, arg++) != TqStatus::OK ||
+            d_rsigns.bind_kernel_arg(k_logits, arg++) != TqStatus::OK ||
+            d_rnorms.bind_kernel_arg(k_logits, arg++) != TqStatus::OK ||
+            d_scores.bind_kernel_arg(k_logits, arg++) != TqStatus::OK) {
+            fused_attention_cpu_reference(input);
+            return TqStatus::OK;
+        }
+        clSetKernelArg(k_logits, arg++, sizeof(int), &tokens);
+        clSetKernelArg(k_logits, arg++, sizeof(int), &dim);
+        clSetKernelArg(k_logits, arg++, sizeof(int), &key_bits);
+        clSetKernelArg(k_logits, arg++, sizeof(int), &key_packed_stride);
+        clSetKernelArg(k_logits, arg++, sizeof(int), &projections);
+        clSetKernelArg(k_logits, arg++, sizeof(int), &proj_words);
+        clSetKernelArg(k_logits, arg++, sizeof(float), &qjl_scale);
+        clSetKernelArg(k_logits, arg++, sizeof(float), &sm_scale);
 
-    int arg = 0;
-    clSetKernelArg(k_logits, arg++, sizeof(cl_mem), &d_query);
-    clSetKernelArg(k_logits, arg++, sizeof(cl_mem), &d_key_packed);
-    clSetKernelArg(k_logits, arg++, sizeof(cl_mem), &d_key_norms);
-    clSetKernelArg(k_logits, arg++, sizeof(cl_mem), &d_centroids);
-    clSetKernelArg(k_logits, arg++, sizeof(cl_mem), &d_qsigns);
-    clSetKernelArg(k_logits, arg++, sizeof(cl_mem), &d_rsigns);
-    clSetKernelArg(k_logits, arg++, sizeof(cl_mem), &d_rnorms);
-    clSetKernelArg(k_logits, arg++, sizeof(cl_mem), &d_scores);
-    clSetKernelArg(k_logits, arg++, sizeof(int), &tokens);
-    clSetKernelArg(k_logits, arg++, sizeof(int), &dim);
-    clSetKernelArg(k_logits, arg++, sizeof(int), &key_bits);
-    clSetKernelArg(k_logits, arg++, sizeof(int), &key_packed_stride);
-    clSetKernelArg(k_logits, arg++, sizeof(int), &projections);
-    clSetKernelArg(k_logits, arg++, sizeof(int), &proj_words);
-    clSetKernelArg(k_logits, arg++, sizeof(float), &qjl_scale);
-    clSetKernelArg(k_logits, arg++, sizeof(float), &sm_scale);
+        KernelTuneParams tune_logits = get_kernel_tune("tq_attention_logits");
+        size_t local_logits = tune_logits.wg_size_x;
+        size_t global_tokens = ((size_t)tokens + local_logits - 1) / local_logits * local_logits;
 
-    // Tuned dispatch: use kernel_tune for optimal WG size + local mem
-    KernelTuneParams tune_logits = get_kernel_tune("tq_attention_logits");
-    size_t local_logits = tune_logits.wg_size_x;
-    size_t global_tokens = ((size_t)tokens + local_logits - 1) / local_logits * local_logits;
+        if (tune_logits.local_mem_bytes > 0) {
+            clSetKernelArg(k_logits, arg++, tune_logits.local_mem_bytes, nullptr);
+        }
 
-    // Allocate __local memory for partial reductions (bank-conflict-free sizing)
-    if (tune_logits.local_mem_bytes > 0) {
-        clSetKernelArg(k_logits, arg++, tune_logits.local_mem_bytes, nullptr);
-    }
+        cl_int err = clEnqueueNDRangeKernel(queue, k_logits, 1, nullptr, &global_tokens, &local_logits, 0, nullptr, nullptr);
+        if (err != CL_SUCCESS) {
+            fused_attention_cpu_reference(input);
+            return TqStatus::OK;
+        }
 
-    err = clEnqueueNDRangeKernel(queue, k_logits, 1, nullptr, &global_tokens, &local_logits, 0, nullptr, nullptr);
-    if (err != CL_SUCCESS) {
-        // Cleanup and fallback
-        clReleaseMemObject(d_query); clReleaseMemObject(d_key_packed);
-        clReleaseMemObject(d_key_norms); clReleaseMemObject(d_centroids);
-        clReleaseMemObject(d_qsigns); clReleaseMemObject(d_rsigns);
-        clReleaseMemObject(d_rnorms); clReleaseMemObject(d_scores);
-        clReleaseMemObject(d_val_packed); clReleaseMemObject(d_val_scales);
-        clReleaseMemObject(d_val_zeros); clReleaseMemObject(d_output);
+        int val_bits = input.value.bits;
+        int group_size = input.value.group_size;
+        arg = 0;
+        if (d_scores.bind_kernel_arg(k_values, arg++) != TqStatus::OK ||
+            d_val_packed.bind_kernel_arg(k_values, arg++) != TqStatus::OK ||
+            d_val_scales.bind_kernel_arg(k_values, arg++) != TqStatus::OK ||
+            d_val_zeros.bind_kernel_arg(k_values, arg++) != TqStatus::OK ||
+            d_output.bind_kernel_arg(k_values, arg++) != TqStatus::OK) {
+            fused_attention_cpu_reference(input);
+            return TqStatus::OK;
+        }
+        clSetKernelArg(k_values, arg++, sizeof(int), &tokens);
+        clSetKernelArg(k_values, arg++, sizeof(int), &dim);
+        clSetKernelArg(k_values, arg++, sizeof(int), &val_bits);
+        clSetKernelArg(k_values, arg++, sizeof(int), &val_packed_stride);
+        clSetKernelArg(k_values, arg++, sizeof(int), &group_size);
+        clSetKernelArg(k_values, arg++, sizeof(int), &n_groups);
+
+        KernelTuneParams tune_values = get_kernel_tune("tq_attention_apply_values");
+        size_t local_values = tune_values.wg_size_x;
+        size_t global_dim = ((size_t)dim + local_values - 1) / local_values * local_values;
+
+        if (tune_values.local_mem_bytes > 0) {
+            clSetKernelArg(k_values, arg++, tune_values.local_mem_bytes, nullptr);
+        }
+
+        err = clEnqueueNDRangeKernel(queue, k_values, 1, nullptr, &global_dim, &local_values, 0, nullptr, nullptr);
+        if (err != CL_SUCCESS) {
+            fused_attention_cpu_reference(input);
+            return TqStatus::OK;
+        }
+
+        clFinish(queue);
+        d_output.read_from_device(queue, input.output);
+
+        return TqStatus::OK;
+    } catch (...) {
         fused_attention_cpu_reference(input);
         return TqStatus::OK;
     }
-
-    // Pass 2: apply values kernel args
-    int val_bits = input.value.bits;
-    int group_size = input.value.group_size;
-
-    arg = 0;
-    clSetKernelArg(k_values, arg++, sizeof(cl_mem), &d_scores);
-    clSetKernelArg(k_values, arg++, sizeof(cl_mem), &d_val_packed);
-    clSetKernelArg(k_values, arg++, sizeof(cl_mem), &d_val_scales);
-    clSetKernelArg(k_values, arg++, sizeof(cl_mem), &d_val_zeros);
-    clSetKernelArg(k_values, arg++, sizeof(cl_mem), &d_output);
-    clSetKernelArg(k_values, arg++, sizeof(int), &tokens);
-    clSetKernelArg(k_values, arg++, sizeof(int), &dim);
-    clSetKernelArg(k_values, arg++, sizeof(int), &val_bits);
-    clSetKernelArg(k_values, arg++, sizeof(int), &val_packed_stride);
-    clSetKernelArg(k_values, arg++, sizeof(int), &group_size);
-    clSetKernelArg(k_values, arg++, sizeof(int), &n_groups);
-
-    // Tuned dispatch pass 2: optimal WG for value accumulation
-    KernelTuneParams tune_values = get_kernel_tune("tq_attention_apply_values");
-    size_t local_values = tune_values.wg_size_x;
-    size_t global_dim = ((size_t)dim + local_values - 1) / local_values * local_values;
-
-    // Allocate __local memory for softmax partial sums + shared KV tile
-    if (tune_values.local_mem_bytes > 0) {
-        clSetKernelArg(k_values, arg++, tune_values.local_mem_bytes, nullptr);
-    }
-
-    err = clEnqueueNDRangeKernel(queue, k_values, 1, nullptr, &global_dim, &local_values, 0, nullptr, nullptr);
-    if (err != CL_SUCCESS) {
-        clReleaseMemObject(d_query); clReleaseMemObject(d_key_packed);
-        clReleaseMemObject(d_key_norms); clReleaseMemObject(d_centroids);
-        clReleaseMemObject(d_qsigns); clReleaseMemObject(d_rsigns);
-        clReleaseMemObject(d_rnorms); clReleaseMemObject(d_scores);
-        clReleaseMemObject(d_val_packed); clReleaseMemObject(d_val_scales);
-        clReleaseMemObject(d_val_zeros); clReleaseMemObject(d_output);
-        fused_attention_cpu_reference(input);
-        return TqStatus::OK;
-    }
-
-    // Read output
-    clFinish(queue);
-    clEnqueueReadBuffer(queue, d_output, CL_TRUE, 0, dim * sizeof(float), input.output, 0, nullptr, nullptr);
-
-    // Cleanup
-    clReleaseMemObject(d_query); clReleaseMemObject(d_key_packed);
-    clReleaseMemObject(d_key_norms); clReleaseMemObject(d_centroids);
-    clReleaseMemObject(d_qsigns); clReleaseMemObject(d_rsigns);
-    clReleaseMemObject(d_rnorms); clReleaseMemObject(d_scores);
-    clReleaseMemObject(d_val_packed); clReleaseMemObject(d_val_scales);
-    clReleaseMemObject(d_val_zeros); clReleaseMemObject(d_output);
-
-    return TqStatus::OK;
 }
 
 TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input, uint64_t* kernel_ns) {
@@ -180,8 +156,6 @@ TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input,
 
     cl_kernel k_logits = get_kernel("tq_attention_logits");
     cl_kernel k_values = get_kernel("tq_attention_apply_values");
-    cl_int err;
-    cl_context ctx = get_context();
     cl_command_queue queue = get_queue();
 
     int dim = input.mse.dim;
@@ -191,134 +165,130 @@ TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input,
     int n_groups = (input.value.dim + input.value.group_size - 1) / input.value.group_size;
     int proj_words = (input.qjl.projections + 31) / 32;
 
-    cl_mem d_query = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        dim * sizeof(float), (void*)input.mse.query_rotated, &err);
-    cl_mem d_key_packed = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (size_t)tokens * key_packed_stride, (void*)input.mse.packed_indices, &err);
-    cl_mem d_key_norms = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        tokens * sizeof(float), (void*)input.mse.norms, &err);
-    cl_mem d_centroids = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (1 << input.mse.bits) * sizeof(float), (void*)input.mse.centroids, &err);
-    cl_mem d_qsigns = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        proj_words * sizeof(uint32_t), (void*)input.qjl.query_signs, &err);
-    cl_mem d_rsigns = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (size_t)tokens * proj_words * sizeof(uint32_t), (void*)input.qjl.residual_signs, &err);
-    cl_mem d_rnorms = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        tokens * sizeof(float), (void*)input.qjl.residual_norms, &err);
-    cl_mem d_scores = clCreateBuffer(ctx, CL_MEM_READ_WRITE,
-        tokens * sizeof(float), nullptr, &err);
-    cl_mem d_val_packed = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (size_t)tokens * val_packed_stride, (void*)input.value.packed_values, &err);
-    cl_mem d_val_scales = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (size_t)tokens * n_groups * sizeof(float), (void*)input.value.scales, &err);
-    cl_mem d_val_zeros = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-        (size_t)tokens * n_groups * sizeof(float), (void*)input.value.zeros, &err);
-    cl_mem d_output = clCreateBuffer(ctx, CL_MEM_WRITE_ONLY,
-        dim * sizeof(float), nullptr, &err);
+    try {
+        TqBuffer<float> d_query((size_t)dim, CL_MEM_READ_ONLY);
+        TqBuffer<uint8_t> d_key_packed((size_t)tokens * key_packed_stride, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_key_norms((size_t)tokens, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_centroids((size_t)(1 << input.mse.bits), CL_MEM_READ_ONLY);
+        TqBuffer<uint32_t> d_qsigns((size_t)proj_words, CL_MEM_READ_ONLY);
+        TqBuffer<uint32_t> d_rsigns((size_t)tokens * proj_words, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_rnorms((size_t)tokens, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_scores((size_t)tokens, CL_MEM_READ_WRITE);
+        TqBuffer<uint8_t> d_val_packed((size_t)tokens * val_packed_stride, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_val_scales((size_t)tokens * n_groups, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_val_zeros((size_t)tokens * n_groups, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_output((size_t)dim, CL_MEM_WRITE_ONLY);
 
-    int key_bits = input.mse.bits;
-    int projections = input.qjl.projections;
-    float qjl_scale = input.qjl.qjl_scale;
-    float sm_scale = input.sm_scale;
-    int val_bits = input.value.bits;
-    int group_size = input.value.group_size;
+        d_query.write_to_device(queue, input.mse.query_rotated);
+        d_key_packed.write_to_device(queue, input.mse.packed_indices);
+        d_key_norms.write_to_device(queue, input.mse.norms);
+        d_centroids.write_to_device(queue, input.mse.centroids);
+        d_qsigns.write_to_device(queue, input.qjl.query_signs);
+        d_rsigns.write_to_device(queue, input.qjl.residual_signs);
+        d_rnorms.write_to_device(queue, input.qjl.residual_norms);
+        d_val_packed.write_to_device(queue, input.value.packed_values);
+        d_val_scales.write_to_device(queue, input.value.scales);
+        d_val_zeros.write_to_device(queue, input.value.zeros);
 
-    // Tuned dispatch parameters from kernel_tune database
-    KernelTuneParams tune_logits = get_kernel_tune("tq_attention_logits");
-    size_t local_logits = tune_logits.wg_size_x;
-    KernelTuneParams tune_values = get_kernel_tune("tq_attention_apply_values");
-    size_t local_values = tune_values.wg_size_x;
+        int key_bits = input.mse.bits;
+        int projections = input.qjl.projections;
+        float qjl_scale = input.qjl.qjl_scale;
+        float sm_scale = input.sm_scale;
+        int val_bits = input.value.bits;
+        int group_size = input.value.group_size;
 
-    int a = 0;
-    clSetKernelArg(k_logits, a++, sizeof(cl_mem), &d_query);
-    clSetKernelArg(k_logits, a++, sizeof(cl_mem), &d_key_packed);
-    clSetKernelArg(k_logits, a++, sizeof(cl_mem), &d_key_norms);
-    clSetKernelArg(k_logits, a++, sizeof(cl_mem), &d_centroids);
-    clSetKernelArg(k_logits, a++, sizeof(cl_mem), &d_qsigns);
-    clSetKernelArg(k_logits, a++, sizeof(cl_mem), &d_rsigns);
-    clSetKernelArg(k_logits, a++, sizeof(cl_mem), &d_rnorms);
-    clSetKernelArg(k_logits, a++, sizeof(cl_mem), &d_scores);
-    clSetKernelArg(k_logits, a++, sizeof(int), &tokens);
-    clSetKernelArg(k_logits, a++, sizeof(int), &dim);
-    clSetKernelArg(k_logits, a++, sizeof(int), &key_bits);
-    clSetKernelArg(k_logits, a++, sizeof(int), &key_packed_stride);
-    clSetKernelArg(k_logits, a++, sizeof(int), &projections);
-    clSetKernelArg(k_logits, a++, sizeof(int), &proj_words);
-    clSetKernelArg(k_logits, a++, sizeof(float), &qjl_scale);
-    clSetKernelArg(k_logits, a++, sizeof(float), &sm_scale);
+        KernelTuneParams tune_logits = get_kernel_tune("tq_attention_logits");
+        size_t local_logits = tune_logits.wg_size_x;
+        KernelTuneParams tune_values = get_kernel_tune("tq_attention_apply_values");
+        size_t local_values = tune_values.wg_size_x;
 
-    size_t global_tokens = ((size_t)tokens + local_logits - 1) / local_logits * local_logits;
-    cl_event ev1;
-    err = clEnqueueNDRangeKernel(queue, k_logits, 1, nullptr, &global_tokens, &local_logits, 0, nullptr, &ev1);
-    if (err != CL_SUCCESS) {
-        clReleaseMemObject(d_query); clReleaseMemObject(d_key_packed);
-        clReleaseMemObject(d_key_norms); clReleaseMemObject(d_centroids);
-        clReleaseMemObject(d_qsigns); clReleaseMemObject(d_rsigns);
-        clReleaseMemObject(d_rnorms); clReleaseMemObject(d_scores);
-        clReleaseMemObject(d_val_packed); clReleaseMemObject(d_val_scales);
-        clReleaseMemObject(d_val_zeros); clReleaseMemObject(d_output);
-        fused_attention_cpu_reference(input);
-        *kernel_ns = 0;
-        return TqStatus::OK;
-    }
+        int a = 0;
+        if (d_query.bind_kernel_arg(k_logits, a++) != TqStatus::OK ||
+            d_key_packed.bind_kernel_arg(k_logits, a++) != TqStatus::OK ||
+            d_key_norms.bind_kernel_arg(k_logits, a++) != TqStatus::OK ||
+            d_centroids.bind_kernel_arg(k_logits, a++) != TqStatus::OK ||
+            d_qsigns.bind_kernel_arg(k_logits, a++) != TqStatus::OK ||
+            d_rsigns.bind_kernel_arg(k_logits, a++) != TqStatus::OK ||
+            d_rnorms.bind_kernel_arg(k_logits, a++) != TqStatus::OK ||
+            d_scores.bind_kernel_arg(k_logits, a++) != TqStatus::OK) {
+            fused_attention_cpu_reference(input);
+            *kernel_ns = 0;
+            return TqStatus::OK;
+        }
+        clSetKernelArg(k_logits, a++, sizeof(int), &tokens);
+        clSetKernelArg(k_logits, a++, sizeof(int), &dim);
+        clSetKernelArg(k_logits, a++, sizeof(int), &key_bits);
+        clSetKernelArg(k_logits, a++, sizeof(int), &key_packed_stride);
+        clSetKernelArg(k_logits, a++, sizeof(int), &projections);
+        clSetKernelArg(k_logits, a++, sizeof(int), &proj_words);
+        clSetKernelArg(k_logits, a++, sizeof(float), &qjl_scale);
+        clSetKernelArg(k_logits, a++, sizeof(float), &sm_scale);
 
-    a = 0;
-    clSetKernelArg(k_values, a++, sizeof(cl_mem), &d_scores);
-    clSetKernelArg(k_values, a++, sizeof(cl_mem), &d_val_packed);
-    clSetKernelArg(k_values, a++, sizeof(cl_mem), &d_val_scales);
-    clSetKernelArg(k_values, a++, sizeof(cl_mem), &d_val_zeros);
-    clSetKernelArg(k_values, a++, sizeof(cl_mem), &d_output);
-    clSetKernelArg(k_values, a++, sizeof(int), &tokens);
-    clSetKernelArg(k_values, a++, sizeof(int), &dim);
-    clSetKernelArg(k_values, a++, sizeof(int), &val_bits);
-    clSetKernelArg(k_values, a++, sizeof(int), &val_packed_stride);
-    clSetKernelArg(k_values, a++, sizeof(int), &group_size);
-    clSetKernelArg(k_values, a++, sizeof(int), &n_groups);
+        size_t global_tokens = ((size_t)tokens + local_logits - 1) / local_logits * local_logits;
+        cl_event ev1;
+        cl_int err = clEnqueueNDRangeKernel(queue, k_logits, 1, nullptr, &global_tokens, &local_logits, 0, nullptr, &ev1);
+        if (err != CL_SUCCESS) {
+            fused_attention_cpu_reference(input);
+            *kernel_ns = 0;
+            return TqStatus::OK;
+        }
 
-    size_t global_dim = ((size_t)dim + local_values - 1) / local_values * local_values;
-    cl_event ev2;
-    err = clEnqueueNDRangeKernel(queue, k_values, 1, nullptr, &global_dim, &local_values, 1, &ev1, &ev2);
-    if (err != CL_SUCCESS) {
-        clWaitForEvents(1, &ev1);
-        clReleaseEvent(ev1);
-        clReleaseMemObject(d_query); clReleaseMemObject(d_key_packed);
-        clReleaseMemObject(d_key_norms); clReleaseMemObject(d_centroids);
-        clReleaseMemObject(d_qsigns); clReleaseMemObject(d_rsigns);
-        clReleaseMemObject(d_rnorms); clReleaseMemObject(d_scores);
-        clReleaseMemObject(d_val_packed); clReleaseMemObject(d_val_scales);
-        clReleaseMemObject(d_val_zeros); clReleaseMemObject(d_output);
-        fused_attention_cpu_reference(input);
-        *kernel_ns = 0;
-        return TqStatus::OK;
-    }
+        a = 0;
+        if (d_scores.bind_kernel_arg(k_values, a++) != TqStatus::OK ||
+            d_val_packed.bind_kernel_arg(k_values, a++) != TqStatus::OK ||
+            d_val_scales.bind_kernel_arg(k_values, a++) != TqStatus::OK ||
+            d_val_zeros.bind_kernel_arg(k_values, a++) != TqStatus::OK ||
+            d_output.bind_kernel_arg(k_values, a++) != TqStatus::OK) {
+            clWaitForEvents(1, &ev1);
+            clReleaseEvent(ev1);
+            fused_attention_cpu_reference(input);
+            *kernel_ns = 0;
+            return TqStatus::OK;
+        }
+        clSetKernelArg(k_values, a++, sizeof(int), &tokens);
+        clSetKernelArg(k_values, a++, sizeof(int), &dim);
+        clSetKernelArg(k_values, a++, sizeof(int), &val_bits);
+        clSetKernelArg(k_values, a++, sizeof(int), &val_packed_stride);
+        clSetKernelArg(k_values, a++, sizeof(int), &group_size);
+        clSetKernelArg(k_values, a++, sizeof(int), &n_groups);
 
-    auto wall_start = std::chrono::steady_clock::now();
-    clWaitForEvents(1, &ev2);
-    auto wall_end = std::chrono::steady_clock::now();
+        size_t global_dim = ((size_t)dim + local_values - 1) / local_values * local_values;
+        cl_event ev2;
+        err = clEnqueueNDRangeKernel(queue, k_values, 1, nullptr, &global_dim, &local_values, 1, &ev1, &ev2);
+        if (err != CL_SUCCESS) {
+            clWaitForEvents(1, &ev1);
+            clReleaseEvent(ev1);
+            fused_attention_cpu_reference(input);
+            *kernel_ns = 0;
+            return TqStatus::OK;
+        }
 
-    if (profiling_enabled()) {
-        cl_ulong t1_start = 0, t2_end = 0;
-        if (clGetEventProfilingInfo(ev1, CL_PROFILING_COMMAND_START, sizeof(t1_start), &t1_start, nullptr) == CL_SUCCESS &&
-            clGetEventProfilingInfo(ev2, CL_PROFILING_COMMAND_END, sizeof(t2_end), &t2_end, nullptr) == CL_SUCCESS) {
-            *kernel_ns = (uint64_t)(t2_end - t1_start);
+        auto wall_start = std::chrono::steady_clock::now();
+        clWaitForEvents(1, &ev2);
+        auto wall_end = std::chrono::steady_clock::now();
+
+        if (profiling_enabled()) {
+            cl_ulong t1_start = 0, t2_end = 0;
+            if (clGetEventProfilingInfo(ev1, CL_PROFILING_COMMAND_START, sizeof(t1_start), &t1_start, nullptr) == CL_SUCCESS &&
+                clGetEventProfilingInfo(ev2, CL_PROFILING_COMMAND_END, sizeof(t2_end), &t2_end, nullptr) == CL_SUCCESS) {
+                *kernel_ns = (uint64_t)(t2_end - t1_start);
+            } else {
+                *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
+            }
         } else {
             *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
         }
-    } else {
-        *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
+
+        d_output.read_from_device(queue, input.output);
+
+        clReleaseEvent(ev1);
+        clReleaseEvent(ev2);
+        return TqStatus::OK;
+    } catch (...) {
+        fused_attention_cpu_reference(input);
+        *kernel_ns = 0;
+        return TqStatus::OK;
     }
-
-    clEnqueueReadBuffer(queue, d_output, CL_TRUE, 0, dim * sizeof(float), input.output, 0, nullptr, nullptr);
-
-    clReleaseEvent(ev1); clReleaseEvent(ev2);
-    clReleaseMemObject(d_query); clReleaseMemObject(d_key_packed);
-    clReleaseMemObject(d_key_norms); clReleaseMemObject(d_centroids);
-    clReleaseMemObject(d_qsigns); clReleaseMemObject(d_rsigns);
-    clReleaseMemObject(d_rnorms); clReleaseMemObject(d_scores);
-    clReleaseMemObject(d_val_packed); clReleaseMemObject(d_val_scales);
-    clReleaseMemObject(d_val_zeros); clReleaseMemObject(d_output);
-
-    return TqStatus::OK;
 }
 
 } // namespace tq

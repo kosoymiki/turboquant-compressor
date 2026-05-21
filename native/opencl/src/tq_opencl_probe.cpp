@@ -242,6 +242,7 @@ ProbeResult probe_opencl() {
             std::string exts(ext_buf);
             info.has_fp16 = exts.find("cl_khr_fp16") != std::string::npos;
             info.has_subgroups = exts.find("cl_khr_subgroups") != std::string::npos;
+            info.has_il_program = exts.find("cl_khr_il_program") != std::string::npos;
             info.is_adreno = (info.name.find("Adreno") != std::string::npos ||
                               info.vendor.find("QUALCOMM") != std::string::npos ||
                               info.vendor.find("Qualcomm") != std::string::npos ||
@@ -294,6 +295,27 @@ ProbeResult probe_opencl() {
             std::string exts(ext_buf);
             info.has_fp16 = exts.find("cl_khr_fp16") != std::string::npos;
             info.has_subgroups = exts.find("cl_khr_subgroups") != std::string::npos;
+            info.has_il_program = exts.find("cl_khr_il_program") != std::string::npos;
+#if defined(CL_DEVICE_IL_VERSION)
+            size_t il_size = 0;
+            if (clGetDeviceInfo(dev, CL_DEVICE_IL_VERSION, 0, nullptr, &il_size) == CL_SUCCESS && il_size > 1) {
+                std::string il_versions(il_size, '\0');
+                if (clGetDeviceInfo(dev, CL_DEVICE_IL_VERSION, il_size, il_versions.data(), nullptr) == CL_SUCCESS) {
+                    info.has_il_program = info.has_il_program || il_versions.find("SPIR-V") != std::string::npos;
+                }
+            }
+#endif
+#if defined(CL_DEVICE_SVM_CAPABILITIES)
+            cl_device_svm_capabilities svm_caps = 0;
+            if (clGetDeviceInfo(dev, CL_DEVICE_SVM_CAPABILITIES, sizeof(svm_caps), &svm_caps, nullptr) == CL_SUCCESS) {
+                info.has_svm_coarse = (svm_caps & CL_DEVICE_SVM_COARSE_GRAIN_BUFFER) != 0;
+                info.has_svm_fine = (svm_caps & CL_DEVICE_SVM_FINE_GRAIN_BUFFER) != 0;
+                info.has_svm_atomics =
+                    (svm_caps & CL_DEVICE_SVM_FINE_GRAIN_SYSTEM) != 0 ||
+                    (svm_caps & CL_DEVICE_SVM_ATOMICS) != 0;
+                info.has_svm = info.has_svm_coarse || info.has_svm_fine;
+            }
+#endif
             info.is_adreno = (info.name.find("Adreno") != std::string::npos ||
                               info.vendor.find("QUALCOMM") != std::string::npos ||
                               info.vendor.find("Qualcomm") != std::string::npos);

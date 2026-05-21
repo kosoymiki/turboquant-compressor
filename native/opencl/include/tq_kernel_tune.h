@@ -78,5 +78,8 @@ KernelTuneParams get_kernel_tune_for(const char* kernel_name, const GpuProfile& 
  * Returns {wg_size_x, wg_size_y, wg_size_z}.
  */
 void get_local_work_size(const KernelTuneParams& t, size_t out[3]);
+void set_kernel_tune_override(const char* kernel_name, const KernelTuneParams& params);
+void clear_kernel_tune_overrides();
+std::string autotune_cache_path();
 
 } // namespace tq

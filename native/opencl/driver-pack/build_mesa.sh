@@ -39,8 +39,11 @@ TERMUX_CLANGXX="${TERMUX_BIN}/clang++"
 TERMUX_LLVM_CONFIG="${TERMUX_BIN}/llvm-config"
 TERMUX_LLVM_AR="${TERMUX_BIN}/llvm-ar"
 TERMUX_RANLIB="${TERMUX_BIN}/llvm-ranlib"
+TERMUX_LLVM_SPIRV="${TERMUX_BIN}/llvm-spirv"
+TERMUX_SPIRV_LINK="${TERMUX_BIN}/spirv-link"
+TERMUX_SPIRV_VAL="${TERMUX_BIN}/spirv-val"
 
-for tool in "$TERMUX_CLANG" "$TERMUX_CLANGXX" "$TERMUX_LLVM_CONFIG" "$TERMUX_LLVM_AR" "$TERMUX_RANLIB"; do
+for tool in "$TERMUX_CLANG" "$TERMUX_CLANGXX" "$TERMUX_LLVM_CONFIG" "$TERMUX_LLVM_AR" "$TERMUX_RANLIB" "$TERMUX_LLVM_SPIRV" "$TERMUX_SPIRV_LINK" "$TERMUX_SPIRV_VAL"; do
     [ -x "$tool" ] || die "Required Termux tool not found: $tool"
 done
 
@@ -49,6 +52,10 @@ export PATH="${TERMUX_BIN}:$PATH"
 export AR="${TERMUX_LLVM_AR}"
 export RANLIB="${TERMUX_RANLIB}"
 export LLVM_CONFIG="${TERMUX_LLVM_CONFIG}"
+export LLVM_SPIRV="${TERMUX_LLVM_SPIRV}"
+export SPIRV_LINK="${TERMUX_SPIRV_LINK}"
+export SPIRV_VAL="${TERMUX_SPIRV_VAL}"
+export LIBCLC_PATH="${LIBCLC_PATH:-${TERMUX_PREFIX}/share/clc}"
 
 resolve_upstream_mesa_base() {
     if [ -n "${TQ_MESA_UPSTREAM_BASE:-}" ] && [ -d "${TQ_MESA_UPSTREAM_BASE}/src/freedreno" ]; then
@@ -160,7 +167,20 @@ data = {
   "android_target": "${ANDROID_TARGET}",
   "android_target_triple": "${ANDROID_TARGET_TRIPLE}",
   "llvm_state": "${LLVM_STATE}",
-  "rusticl_enable_drivers": "${RUSTICL_ENABLE_DRIVERS}"
+  "rusticl_enable_drivers": "${RUSTICL_ENABLE_DRIVERS}",
+  "toolchain_contract": {
+    "clang": "${TERMUX_CLANG}",
+    "clangxx": "${TERMUX_CLANGXX}",
+    "llvm_config": "${TERMUX_LLVM_CONFIG}",
+    "llvm_spirv": "${TERMUX_LLVM_SPIRV}",
+    "spirv_link": "${TERMUX_SPIRV_LINK}",
+    "spirv_val": "${TERMUX_SPIRV_VAL}",
+    "libclc_path": "${LIBCLC_PATH}"
+  },
+  "rusticl_runtime_env": {
+    "RUSTICL_ENABLE": "${RUSTICL_ENABLE_DRIVERS}",
+    "MESA_SHADER_CACHE_DIR": "${TQ_CACHE_HOME}/turboquant-rusticl"
+  }
 }
 with open("${BUILD_META_JSON}", "w") as f:
     json.dump(data, f, indent=2)

@@ -16,9 +16,17 @@
 #include "tq_cl_vk_interop.h"
 
 #include <CL/cl.h>
+#include <cstddef>
 #include <string>
 
 namespace tq {
+
+struct KernelMetadata {
+    size_t preferred_work_group_size_multiple = 0;
+    size_t work_group_size = 0;
+    cl_ulong local_mem_size = 0;
+    cl_ulong private_mem_size = 0;
+};
 
 // Context
 TqStatus init_context();
@@ -35,11 +43,17 @@ bool profiling_enabled();
 const GpuProfile& get_gpu_profile();
 bool device_has_fp16();
 bool device_has_subgroups();
+bool device_has_il_program();
+bool device_has_svm();
+bool device_has_svm_coarse();
+bool device_has_svm_fine();
+bool device_has_svm_atomics();
 
 // Program/kernel compilation
 TqStatus build_program(const std::string& source, const std::string& options, cl_program* out);
 TqStatus load_kernel(const std::string& kernel_file, const std::string& kernel_name, const std::string& build_opts = "");
 cl_kernel get_kernel(const std::string& name);
+KernelMetadata get_kernel_metadata(const std::string& name);
 void release_all_programs();
 std::string get_default_build_opts();
 

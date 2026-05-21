@@ -6,6 +6,21 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+#ifdef TQ_HAS_FP16
+#pragma OPENCL EXTENSION cl_khr_fp16 : enable
+typedef half tq_fp16_t;
+typedef half4 tq_fp16_vec_t;
+#define TQ_FP16_AVAILABLE 1
+#else
+typedef float tq_fp16_t;
+typedef float4 tq_fp16_vec_t;
+#define TQ_FP16_AVAILABLE 0
+#endif
+
+#ifdef USE_SUBGROUPS
+#pragma OPENCL EXTENSION cl_khr_subgroups : enable
+#endif
+
 // Extract bits from packed byte array
 inline uint tq_extract_bits(__global const uchar* packed, uint byte_offset, uint bit_offset_in_byte, uint bits) {
     uint val = (uint)packed[byte_offset];

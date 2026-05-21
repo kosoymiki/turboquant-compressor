@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 
+find_program(BASH_EXECUTABLE bash)
+
 # OpenCL header path (Termux: pkg install opencl-headers)
 find_path(OPENCL_INCLUDE_DIR CL/cl.h
   PATHS
@@ -31,12 +33,15 @@ if(NOT OPENCL_INCLUDE_DIR)
   message(WARNING "OpenCL headers not found — install: pkg install opencl-headers")
 endif()
 
-add_executable(tq_opencl_cli
-  src/tq_opencl_cli.cpp
+add_library(tq_opencl_core
   src/tq_opencl_probe.cpp
   src/tq_opencl_context.cpp
   src/tq_opencl_program.cpp
+  src/tq_opencl_kernel_manager.cpp
+  src/tq_kernel_cache.cpp
   src/tq_opencl_memory.cpp
+  src/tq_buffer.cpp
+  src/tq_autotuner.cpp
   src/tq_opencl_mse_score.cpp
   src/tq_opencl_qjl_score.cpp
   src/tq_opencl_value_dequant.cpp
@@ -52,17 +57,61 @@ add_executable(tq_opencl_cli
   src/tq_cl_vk_interop.cpp
 )
 
-target_include_directories(tq_opencl_cli PRIVATE include)
+target_include_directories(tq_opencl_core PRIVATE include)
 if(OPENCL_INCLUDE_DIR)
-  target_include_directories(tq_opencl_cli PRIVATE ${OPENCL_INCLUDE_DIR})
+  target_include_directories(tq_opencl_core PRIVATE ${OPENCL_INCLUDE_DIR})
 endif()
 
 if(OPENCL_LIB)
-  target_link_libraries(tq_opencl_cli PRIVATE ${OPENCL_LIB})
+  target_link_libraries(tq_opencl_core PRIVATE ${OPENCL_LIB})
 else()
   # Dynamic loading fallback — link dl for dlopen
-  target_link_libraries(tq_opencl_cli PRIVATE dl)
-  target_compile_definitions(tq_opencl_cli PRIVATE TQ_OPENCL_DYNAMIC_LOAD=1)
+  target_link_libraries(tq_opencl_core PRIVATE dl)
+  target_compile_definitions(tq_opencl_core PRIVATE TQ_OPENCL_DYNAMIC_LOAD=1)
 endif()
 
-target_compile_options(tq_opencl_cli PRIVATE -Wall -Wextra -O2)
+target_compile_options(tq_opencl_core PRIVATE -Wall -Wextra -O2)
+
+add_executable(tq_opencl_cli src/tq_opencl_cli.cpp)
+target_include_directories(tq_opencl_cli PRIVATE include)
+target_link_libraries(tq_opencl_cli PRIVATE tq_opencl_core)
+
+if(BASH_EXECUTABLE)
+  add_custom_target(tq_spirv_kernels
+    COMMAND "${BASH_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/compile_spirv.sh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/kernels"
+            "${CMAKE_BINARY_DIR}/spirv"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Compiling OpenCL kernels to SPIR-V"
+  )
+endif()
+
+add_executable(test_mse_parity
+  test/test_mse_parity.cpp
+)
+target_include_directories(test_mse_parity PRIVATE include)
+target_link_libraries(test_mse_parity PRIVATE tq_opencl_core)
+
+add_executable(test_qjl_parity
+  test/test_qjl_parity.cpp
+)
+target_include_directories(test_qjl_parity PRIVATE include)
+target_link_libraries(test_qjl_parity PRIVATE tq_opencl_core)
+
+add_executable(test_value_dequant_parity
+  test/test_value_dequant_parity.cpp
+)
+target_include_directories(test_value_dequant_parity PRIVATE include)
+target_link_libraries(test_value_dequant_parity PRIVATE tq_opencl_core)
+
+add_executable(test_fused_attention_parity
+  test/test_fused_attention_parity.cpp
+)
+target_include_directories(test_fused_attention_parity PRIVATE include)
+target_link_libraries(test_fused_attention_parity PRIVATE tq_opencl_core)
+
+add_executable(test_kernel_cache
+  test/test_kernel_cache.cpp
+)
+target_include_directories(test_kernel_cache PRIVATE include)
+target_link_libraries(test_kernel_cache PRIVATE tq_opencl_core)

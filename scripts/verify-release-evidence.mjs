@@ -22,6 +22,8 @@ const REQUIRED_EVIDENCE = [
 const OPTIONAL_EVIDENCE = [
   { path: 'forensics/adreno/opencl-performance-report.json', field: 'all_pass', description: 'Performance benchmark' },
   { path: 'forensics/adreno/opencl-sustained-report.json', field: 'total_runs', description: 'Sustained benchmark' },
+  { path: 'forensics/autotune-cache.json', field: 'device_name', description: 'Runtime autotune cache' },
+  { path: 'forensics/spirv-parity-report.json', field: 'all_pass', description: 'SPIR-V parity verification' },
 ];
 
 let errors = 0;

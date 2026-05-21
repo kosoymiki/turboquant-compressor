@@ -8,6 +8,7 @@
 #include "../include/tq_repo_paths.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <sstream>
@@ -288,11 +289,18 @@ static void print_json_probe(const tq::ProbeResult& r) {
         auto& d = r.devices[i];
         if (i > 0) printf(",");
         printf("\n    {\"name\":\"%s\",\"vendor\":\"%s\",\"version\":\"%s\","
-               "\"hasFp16\":%s,\"hasSubgroups\":%s,\"isAdreno\":%s,"
+               "\"hasFp16\":%s,\"hasSubgroups\":%s,\"hasIlProgram\":%s,"
+               "\"hasSvm\":%s,\"hasSvmCoarse\":%s,\"hasSvmFine\":%s,\"hasSvmAtomics\":%s,"
+               "\"isAdreno\":%s,"
                "\"globalMemBytes\":%llu,\"computeUnits\":%u}",
                json_escape(d.name).c_str(), json_escape(d.vendor).c_str(), json_escape(d.version).c_str(),
                d.has_fp16 ? "true" : "false",
                d.has_subgroups ? "true" : "false",
+               d.has_il_program ? "true" : "false",
+               d.has_svm ? "true" : "false",
+               d.has_svm_coarse ? "true" : "false",
+               d.has_svm_fine ? "true" : "false",
+               d.has_svm_atomics ? "true" : "false",
                d.is_adreno ? "true" : "false",
                (unsigned long long)d.global_mem_bytes, d.compute_units);
     }
@@ -311,11 +319,11 @@ static void usage() {
     fprintf(stderr, "Usage: tq_opencl_cli <command> [options]\n");
     fprintf(stderr, "Commands:\n");
     fprintf(stderr, "  probe                              Detect OpenCL platform/devices\n");
-    fprintf(stderr, "  benchmark [--warmup N] [--iters N] Run profiled benchmark suite\n");
-    fprintf(stderr, "  mse-score --self-test              Compute MSE attention scores\n");
-    fprintf(stderr, "  qjl-score --self-test              Compute QJL correction scores\n");
-    fprintf(stderr, "  value-dequant --self-test          Dequantize values\n");
-    fprintf(stderr, "  fused-attention --self-test        Full fused decode\n");
+    fprintf(stderr, "  benchmark [--warmup N] [--iters N] [--autotune] Run profiled benchmark suite\n");
+    fprintf(stderr, "  mse-score --self-test [--spirv|--source]       Compute MSE attention scores\n");
+    fprintf(stderr, "  qjl-score --self-test [--spirv|--source]       Compute QJL correction scores\n");
+    fprintf(stderr, "  value-dequant --self-test [--spirv|--source]   Dequantize values\n");
+    fprintf(stderr, "  fused-attention --self-test [--spirv|--source] Full fused decode\n");
 }
 
 int main(int argc, char* argv[]) {
@@ -325,6 +333,18 @@ int main(int argc, char* argv[]) {
     }
 
     std::string cmd = argv[1];
+    bool force_source = false;
+    bool prefer_spirv = false;
+    for (int i = 2; i < argc; ++i) {
+        if (std::string(argv[i]) == "--source") force_source = true;
+        if (std::string(argv[i]) == "--spirv") prefer_spirv = true;
+    }
+
+    if (force_source) {
+        setenv("TQ_OPENCL_FORCE_SOURCE", "1", 1);
+    } else if (prefer_spirv) {
+        unsetenv("TQ_OPENCL_FORCE_SOURCE");
+    }
 
     if (cmd == "probe") {
         auto result = tq::probe_opencl();

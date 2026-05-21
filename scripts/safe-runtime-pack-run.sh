@@ -14,6 +14,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 INSTALLER="$ROOT_DIR/scripts/install-driver-root.sh"
+LOCK_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/turboquant/opencl-serial.lock"
+
+acquire_lock() {
+  mkdir -p "$(dirname "$LOCK_DIR")"
+  while ! mkdir "$LOCK_DIR" 2>/dev/null; do
+    sleep 1
+  done
+  trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT INT TERM
+}
 resolve_cli() {
   if [ -n "${TQ_OPENCL_CLI:-}" ] && [ -x "${TQ_OPENCL_CLI}" ]; then
     printf '%s\n' "${TQ_OPENCL_CLI}"
@@ -84,6 +93,8 @@ case "$cmd" in
     exit 2
     ;;
 esac
+
+acquire_lock
 
 shell_quote() {
   printf "%q " "$@"

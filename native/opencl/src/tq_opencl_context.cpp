@@ -44,6 +44,11 @@ struct OpenClContext {
     bool profiling_enabled = false;
     bool has_fp16 = false;
     bool has_subgroups = false;
+    bool has_il_program = false;
+    bool has_svm = false;
+    bool has_svm_coarse = false;
+    bool has_svm_fine = false;
+    bool has_svm_atomics = false;
     GpuProfile gpu_profile = {};
 };
 
@@ -61,6 +66,11 @@ bool profiling_enabled() { return g_ctx.profiling_enabled; }
 const GpuProfile& get_gpu_profile() { return g_ctx.gpu_profile; }
 bool device_has_fp16() { return g_ctx.has_fp16; }
 bool device_has_subgroups() { return g_ctx.has_subgroups; }
+bool device_has_il_program() { return g_ctx.has_il_program; }
+bool device_has_svm() { return g_ctx.has_svm; }
+bool device_has_svm_coarse() { return g_ctx.has_svm_coarse; }
+bool device_has_svm_fine() { return g_ctx.has_svm_fine; }
+bool device_has_svm_atomics() { return g_ctx.has_svm_atomics; }
 
 std::string get_default_build_opts() {
     std::string opts;
@@ -155,6 +165,22 @@ TqStatus init_context() {
         }
     }
 
+    size_t il_size = 0;
+    std::string il_versions;
+#if defined(CL_DEVICE_IL_VERSION)
+    if (clGetDeviceInfo(dev, CL_DEVICE_IL_VERSION, 0, nullptr, &il_size) == CL_SUCCESS && il_size > 1) {
+        il_versions.resize(il_size);
+        if (clGetDeviceInfo(dev, CL_DEVICE_IL_VERSION, il_size, il_versions.data(), nullptr) != CL_SUCCESS) {
+            il_versions.clear();
+        }
+    }
+#endif
+
+    cl_device_svm_capabilities svm_caps = 0;
+#if defined(CL_DEVICE_SVM_CAPABILITIES)
+    (void)clGetDeviceInfo(dev, CL_DEVICE_SVM_CAPABILITIES, sizeof(svm_caps), &svm_caps, nullptr);
+#endif
+
     g_ctx.platform = plat;
     g_ctx.device = dev;
     g_ctx.context = ctx;
@@ -166,6 +192,15 @@ TqStatus init_context() {
     g_ctx.profiling_enabled = queue_profiling_enabled;
     g_ctx.has_fp16 = exts.find("cl_khr_fp16") != std::string::npos;
     g_ctx.has_subgroups = exts.find("cl_khr_subgroups") != std::string::npos;
+    g_ctx.has_il_program =
+        (!il_versions.empty() && il_versions.find("SPIR-V") != std::string::npos) ||
+        exts.find("cl_khr_il_program") != std::string::npos;
+    g_ctx.has_svm_coarse = (svm_caps & CL_DEVICE_SVM_COARSE_GRAIN_BUFFER) != 0;
+    g_ctx.has_svm_fine = (svm_caps & CL_DEVICE_SVM_FINE_GRAIN_BUFFER) != 0;
+    g_ctx.has_svm_atomics =
+        (svm_caps & CL_DEVICE_SVM_FINE_GRAIN_SYSTEM) != 0 ||
+        (svm_caps & CL_DEVICE_SVM_ATOMICS) != 0;
+    g_ctx.has_svm = g_ctx.has_svm_coarse || g_ctx.has_svm_fine;
 
     // Detect GPU profile for per-kernel tuning
     g_ctx.gpu_profile = detect_gpu_profile();

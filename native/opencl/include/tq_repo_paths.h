@@ -14,6 +14,9 @@ std::string detect_repo_root();
 std::vector<std::string> repo_root_candidates();
 std::vector<std::string> runtime_pack_roots();
 std::vector<std::string> canonical_driver_roots();
+std::string resolve_forensics_dir();
+std::string resolve_native_build_dir();
+std::string resolve_spirv_dir();
 std::string resolve_kernel_dir(const std::string& requested_dir = "");
 
 } // namespace tq

@@ -5,6 +5,7 @@
  */
 
 #include "tq_opencl.h"
+#include "../include/tq_autotuner.h"
 #include "../include/tq_repo_paths.h"
 #include <CL/cl.h>
 #include <cstdio>
@@ -14,9 +15,11 @@
 #include <vector>
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
 #include <string>
 #include <fstream>
 #include <random>
+#include <sstream>
 
 namespace tq {
 
@@ -40,6 +43,11 @@ struct KernelResult {
     double cpu_mean_ms;
     double speedup_vs_cpu;
     size_t memory_bytes;
+};
+
+struct AutoTuneSnapshot {
+    KernelTuneParams params;
+    TuneResult result;
 };
 
 static double percentile(std::vector<double>& v, double p) {
@@ -467,10 +475,69 @@ static void print_result_json(const KernelResult& r) {
     printf("    }");
 }
 
+static std::string json_escape(const std::string& s) {
+    std::string out;
+    out.reserve(s.size() + 8);
+    for (unsigned char c : s) {
+        switch (c) {
+            case '\"': out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            case '\n': out += "\\n"; break;
+            case '\r': out += "\\r"; break;
+            case '\t': out += "\\t"; break;
+            default:
+                if (c < 0x20) {
+                    char buf[7];
+                    std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+                    out += buf;
+                } else {
+                    out.push_back(static_cast<char>(c));
+                }
+        }
+    }
+    return out;
+}
+
+static void write_autotune_cache(const std::vector<AutoTuneSnapshot>& tuned,
+                                 const std::string& device_name,
+                                 const std::string& driver_version) {
+    const std::string path = autotune_cache_path();
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::path(path).parent_path(), ec);
+    std::ofstream out(path, std::ios::trunc);
+    if (!out.is_open()) return;
+    out << "{\n";
+    out << "  \"device_name\": \"" << json_escape(device_name) << "\",\n";
+    out << "  \"driver_version\": \"" << json_escape(driver_version) << "\",\n";
+    out << "  \"entries\": {\n";
+    for (size_t i = 0; i < tuned.size(); ++i) {
+        const auto& t = tuned[i].params;
+        const auto& r = tuned[i].result;
+        out << "    \"" << json_escape(t.kernel_name) << "\": {";
+        out << "\"wg_size\": " << t.wg_size_x
+            << ", \"items_per_thread\": " << t.items_per_thread
+            << ", \"preferred_multiple\": " << t.preferred_multiple
+            << ", \"local_mem_bytes\": " << t.local_mem_bytes
+            << ", \"best_time_us\": " << r.best_time_us
+            << ", \"all_results\": [";
+        for (size_t j = 0; j < r.all_results.size(); ++j) {
+            const auto& item = r.all_results[j];
+            out << "[" << std::get<0>(item) << "," << std::get<1>(item) << "," << std::get<2>(item) << "]";
+            if (j + 1 != r.all_results.size()) out << ",";
+        }
+        out << "]}";
+        if (i + 1 != tuned.size()) out << ",";
+        out << "\n";
+    }
+    out << "  }\n";
+    out << "}\n";
+}
+
 int run_benchmark(int argc, char* argv[]) {
     int warmup = 10;
     int iters = 100;
     bool json_output = true;
+    bool autotune = false;
     std::string kernel_dir;
 
     // Parse args
@@ -478,6 +545,7 @@ int run_benchmark(int argc, char* argv[]) {
         if (std::string(argv[i]) == "--warmup" && i + 1 < argc) warmup = atoi(argv[++i]);
         else if (std::string(argv[i]) == "--iters" && i + 1 < argc) iters = atoi(argv[++i]);
         else if (std::string(argv[i]) == "--kernel-dir" && i + 1 < argc) kernel_dir = argv[++i];
+        else if (std::string(argv[i]) == "--autotune") autotune = true;
     }
     kernel_dir = tq::resolve_kernel_dir(kernel_dir);
 
@@ -531,6 +599,51 @@ int run_benchmark(int argc, char* argv[]) {
 
     std::mt19937 rng(42);
     std::vector<KernelResult> results;
+
+    if (autotune) {
+        AutoTuner tuner;
+        std::vector<AutoTuneSnapshot> tuned_params;
+        const BenchShape tune_shape = {512, 8, 64, 4};
+        const std::vector<size_t> wg_candidates = {64, 128, 256};
+        const std::vector<int> item_candidates = {1, 2, 4};
+
+        auto autotune_kernel = [&](const char* kernel_name, auto&& measure_fn) {
+            KernelTuneParams base = get_kernel_tune(kernel_name);
+            TuneJob job;
+            job.kernel_name = kernel_name;
+            job.candidate_wg_sizes = wg_candidates;
+            job.candidate_items_per_thread = item_candidates;
+            job.configure = [&](size_t wg, int items) {
+                KernelTuneParams tuned = base;
+                tuned.wg_size_x = static_cast<uint32_t>(wg);
+                tuned.items_per_thread = items;
+                set_kernel_tune_override(kernel_name, tuned);
+            };
+            job.measure = [&]() {
+                std::mt19937 seeded_rng(42);
+                return measure_fn(tune_shape, 1, 2, seeded_rng).mean_ms * 1000.0;
+            };
+            TuneResult best = tuner.auto_tune(job);
+            KernelTuneParams tuned = base;
+            if (best.best_wg_size > 0) tuned.wg_size_x = static_cast<uint32_t>(best.best_wg_size);
+            tuned.items_per_thread = best.best_items_per_thread;
+            tuned.kernel_name = kernel_name;
+            set_kernel_tune_override(kernel_name, tuned);
+            tuned_params.push_back({tuned, best});
+        };
+
+        autotune_kernel("tq_mse_score", bench_mse);
+        autotune_kernel("tq_qjl_score", bench_qjl);
+        autotune_kernel("tq_value_dequant", bench_value_dequant);
+        autotune_kernel("tq_attention_logits", bench_fused_attention);
+        autotune_kernel("tq_attention_apply_values", bench_fused_attention);
+
+        char tune_device[256] = {};
+        char tune_driver[256] = {};
+        clGetDeviceInfo(get_device(), CL_DEVICE_NAME, sizeof(tune_device), tune_device, nullptr);
+        clGetDeviceInfo(get_device(), CL_DRIVER_VERSION, sizeof(tune_driver), tune_driver, nullptr);
+        write_autotune_cache(tuned_params, tune_device, tune_driver);
+    }
 
     for (auto& shape : shapes) {
         results.push_back(bench_mse(shape, warmup, iters, rng));

@@ -5,6 +5,7 @@
  */
 
 #include "tq_opencl.h"
+#include "tq_buffer.h"
 #include "tq_kernel_tune.h"
 #include <CL/cl.h>
 #include <chrono>
@@ -63,59 +64,57 @@ TqStatus mse_score_opencl(const MseScoreInput& input, float* scores) {
         return TqStatus::OK;
     }
 
-    cl_int err;
-    cl_context ctx = get_context();
     cl_command_queue queue = get_queue();
 
-    size_t packed_size = (size_t)input.tokens * input.packed_stride;
-    size_t norms_size = (size_t)input.tokens * sizeof(float);
-    size_t query_size = (size_t)input.dim * sizeof(float);
-    size_t centroids_size = (size_t)(1 << input.bits) * sizeof(float);
-    size_t scores_size = (size_t)input.tokens * sizeof(float);
+    try {
+        TqBuffer<float> d_query((size_t)input.dim, CL_MEM_READ_ONLY);
+        TqBuffer<uint8_t> d_packed((size_t)input.tokens * input.packed_stride, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_norms((size_t)input.tokens, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_centroids((size_t)(1 << input.bits), CL_MEM_READ_ONLY);
+        TqBuffer<float> d_scores((size_t)input.tokens, CL_MEM_WRITE_ONLY);
 
-    cl_mem d_query = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, query_size, (void*)input.query_rotated, &err);
-    cl_mem d_packed = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, packed_size, (void*)input.packed_indices, &err);
-    cl_mem d_norms = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, norms_size, (void*)input.norms, &err);
-    cl_mem d_centroids = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, centroids_size, (void*)input.centroids, &err);
-    cl_mem d_scores = clCreateBuffer(ctx, CL_MEM_WRITE_ONLY, scores_size, nullptr, &err);
+        d_query.write_to_device(queue, input.query_rotated);
+        d_packed.write_to_device(queue, input.packed_indices);
+        d_norms.write_to_device(queue, input.norms);
+        d_centroids.write_to_device(queue, input.centroids);
 
-    clSetKernelArg(k, 0, sizeof(cl_mem), &d_query);
-    clSetKernelArg(k, 1, sizeof(cl_mem), &d_packed);
-    clSetKernelArg(k, 2, sizeof(cl_mem), &d_norms);
-    clSetKernelArg(k, 3, sizeof(cl_mem), &d_centroids);
-    clSetKernelArg(k, 4, sizeof(cl_mem), &d_scores);
-    clSetKernelArg(k, 5, sizeof(int), &input.tokens);
-    clSetKernelArg(k, 6, sizeof(int), &input.dim);
-    clSetKernelArg(k, 7, sizeof(int), &input.bits);
-    clSetKernelArg(k, 8, sizeof(int), &input.packed_stride);
+        if (d_query.bind_kernel_arg(k, 0) != TqStatus::OK ||
+            d_packed.bind_kernel_arg(k, 1) != TqStatus::OK ||
+            d_norms.bind_kernel_arg(k, 2) != TqStatus::OK ||
+            d_centroids.bind_kernel_arg(k, 3) != TqStatus::OK ||
+            d_scores.bind_kernel_arg(k, 4) != TqStatus::OK) {
+            mse_score_cpu_reference(input, scores);
+            return TqStatus::OK;
+        }
+        clSetKernelArg(k, 5, sizeof(int), &input.tokens);
+        clSetKernelArg(k, 6, sizeof(int), &input.dim);
+        clSetKernelArg(k, 7, sizeof(int), &input.bits);
+        clSetKernelArg(k, 8, sizeof(int), &input.packed_stride);
 
-    size_t local_size = local_work[0];
-    if (local_size == 0) local_size = 64;
-    size_t global_size = (kernel_name == std::string("tq_mse_score_tiled"))
-        ? ((size_t)input.tokens * local_size)
-        : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
-    if (kernel_name == std::string("tq_mse_score_tiled")) {
-        clSetKernelArg(k, 9, local_size * sizeof(cl_float), nullptr);
-    }
-    cl_event event;
-    err = clEnqueueNDRangeKernel(queue, k, 1, nullptr, &global_size, &local_size, 0, nullptr, &event);
-    if (err != CL_SUCCESS) {
-        clReleaseMemObject(d_query); clReleaseMemObject(d_packed);
-        clReleaseMemObject(d_norms); clReleaseMemObject(d_centroids);
-        clReleaseMemObject(d_scores);
+        size_t local_size = local_work[0];
+        if (local_size == 0) local_size = 64;
+        size_t global_size = (kernel_name == std::string("tq_mse_score_tiled"))
+            ? ((size_t)input.tokens * local_size)
+            : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
+        if (kernel_name == std::string("tq_mse_score_tiled")) {
+            clSetKernelArg(k, 9, local_size * sizeof(cl_float), nullptr);
+        }
+        cl_event event;
+        cl_int err = clEnqueueNDRangeKernel(queue, k, 1, nullptr, &global_size, &local_size, 0, nullptr, &event);
+        if (err != CL_SUCCESS) {
+            mse_score_cpu_reference(input, scores);
+            return TqStatus::OK;
+        }
+
+        clWaitForEvents(1, &event);
+        d_scores.read_from_device(queue, scores);
+
+        clReleaseEvent(event);
+        return TqStatus::OK;
+    } catch (...) {
         mse_score_cpu_reference(input, scores);
         return TqStatus::OK;
     }
-
-    clWaitForEvents(1, &event);
-    clEnqueueReadBuffer(queue, d_scores, CL_TRUE, 0, scores_size, scores, 0, nullptr, nullptr);
-
-    clReleaseEvent(event);
-    clReleaseMemObject(d_query); clReleaseMemObject(d_packed);
-    clReleaseMemObject(d_norms); clReleaseMemObject(d_centroids);
-    clReleaseMemObject(d_scores);
-
-    return TqStatus::OK;
 }
 
 // --- Profiled dispatch (returns kernel time in nanoseconds) ---
@@ -132,75 +131,75 @@ TqStatus mse_score_opencl_profiled(const MseScoreInput& input, float* scores, ui
     }
 
     cl_kernel k = get_kernel(kernel_name);
-    cl_int err;
-    cl_context ctx = get_context();
     cl_command_queue queue = get_queue();
 
-    size_t packed_size = (size_t)input.tokens * input.packed_stride;
-    size_t norms_size = (size_t)input.tokens * sizeof(float);
-    size_t query_size = (size_t)input.dim * sizeof(float);
-    size_t centroids_size = (size_t)(1 << input.bits) * sizeof(float);
-    size_t scores_size = (size_t)input.tokens * sizeof(float);
+    try {
+        TqBuffer<float> d_query((size_t)input.dim, CL_MEM_READ_ONLY);
+        TqBuffer<uint8_t> d_packed((size_t)input.tokens * input.packed_stride, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_norms((size_t)input.tokens, CL_MEM_READ_ONLY);
+        TqBuffer<float> d_centroids((size_t)(1 << input.bits), CL_MEM_READ_ONLY);
+        TqBuffer<float> d_scores((size_t)input.tokens, CL_MEM_WRITE_ONLY);
 
-    cl_mem d_query = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, query_size, (void*)input.query_rotated, &err);
-    cl_mem d_packed = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, packed_size, (void*)input.packed_indices, &err);
-    cl_mem d_norms = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, norms_size, (void*)input.norms, &err);
-    cl_mem d_centroids = clCreateBuffer(ctx, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, centroids_size, (void*)input.centroids, &err);
-    cl_mem d_scores = clCreateBuffer(ctx, CL_MEM_WRITE_ONLY, scores_size, nullptr, &err);
+        d_query.write_to_device(queue, input.query_rotated);
+        d_packed.write_to_device(queue, input.packed_indices);
+        d_norms.write_to_device(queue, input.norms);
+        d_centroids.write_to_device(queue, input.centroids);
 
-    clSetKernelArg(k, 0, sizeof(cl_mem), &d_query);
-    clSetKernelArg(k, 1, sizeof(cl_mem), &d_packed);
-    clSetKernelArg(k, 2, sizeof(cl_mem), &d_norms);
-    clSetKernelArg(k, 3, sizeof(cl_mem), &d_centroids);
-    clSetKernelArg(k, 4, sizeof(cl_mem), &d_scores);
-    clSetKernelArg(k, 5, sizeof(int), &input.tokens);
-    clSetKernelArg(k, 6, sizeof(int), &input.dim);
-    clSetKernelArg(k, 7, sizeof(int), &input.bits);
-    clSetKernelArg(k, 8, sizeof(int), &input.packed_stride);
+        if (d_query.bind_kernel_arg(k, 0) != TqStatus::OK ||
+            d_packed.bind_kernel_arg(k, 1) != TqStatus::OK ||
+            d_norms.bind_kernel_arg(k, 2) != TqStatus::OK ||
+            d_centroids.bind_kernel_arg(k, 3) != TqStatus::OK ||
+            d_scores.bind_kernel_arg(k, 4) != TqStatus::OK) {
+            mse_score_cpu_reference(input, scores);
+            *kernel_ns = 0;
+            return TqStatus::OK;
+        }
+        clSetKernelArg(k, 5, sizeof(int), &input.tokens);
+        clSetKernelArg(k, 6, sizeof(int), &input.dim);
+        clSetKernelArg(k, 7, sizeof(int), &input.bits);
+        clSetKernelArg(k, 8, sizeof(int), &input.packed_stride);
 
-    size_t local_size = local_work[0];
-    if (local_size == 0) local_size = 64;
-    size_t global_size = (kernel_name == std::string("tq_mse_score_tiled"))
-        ? ((size_t)input.tokens * local_size)
-        : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
-    if (kernel_name == std::string("tq_mse_score_tiled")) {
-        clSetKernelArg(k, 9, local_size * sizeof(cl_float), nullptr);
-    }
-    cl_event event;
-    err = clEnqueueNDRangeKernel(queue, k, 1, nullptr, &global_size, &local_size, 0, nullptr, &event);
-    if (err != CL_SUCCESS) {
-        clReleaseMemObject(d_query); clReleaseMemObject(d_packed);
-        clReleaseMemObject(d_norms); clReleaseMemObject(d_centroids);
-        clReleaseMemObject(d_scores);
+        size_t local_size = local_work[0];
+        if (local_size == 0) local_size = 64;
+        size_t global_size = (kernel_name == std::string("tq_mse_score_tiled"))
+            ? ((size_t)input.tokens * local_size)
+            : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
+        if (kernel_name == std::string("tq_mse_score_tiled")) {
+            clSetKernelArg(k, 9, local_size * sizeof(cl_float), nullptr);
+        }
+        cl_event event;
+        cl_int err = clEnqueueNDRangeKernel(queue, k, 1, nullptr, &global_size, &local_size, 0, nullptr, &event);
+        if (err != CL_SUCCESS) {
+            mse_score_cpu_reference(input, scores);
+            *kernel_ns = 0;
+            return TqStatus::OK;
+        }
+
+        auto wall_start = std::chrono::steady_clock::now();
+        clWaitForEvents(1, &event);
+        auto wall_end = std::chrono::steady_clock::now();
+
+        if (profiling_enabled()) {
+            cl_ulong t_start = 0, t_end = 0;
+            if (clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(t_start), &t_start, nullptr) == CL_SUCCESS &&
+                clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(t_end), &t_end, nullptr) == CL_SUCCESS) {
+                *kernel_ns = (uint64_t)(t_end - t_start);
+            } else {
+                *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
+            }
+        } else {
+            *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
+        }
+
+        d_scores.read_from_device(queue, scores);
+
+        clReleaseEvent(event);
+        return TqStatus::OK;
+    } catch (...) {
         mse_score_cpu_reference(input, scores);
         *kernel_ns = 0;
         return TqStatus::OK;
     }
-
-    auto wall_start = std::chrono::steady_clock::now();
-    clWaitForEvents(1, &event);
-    auto wall_end = std::chrono::steady_clock::now();
-
-    if (profiling_enabled()) {
-        cl_ulong t_start = 0, t_end = 0;
-        if (clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(t_start), &t_start, nullptr) == CL_SUCCESS &&
-            clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(t_end), &t_end, nullptr) == CL_SUCCESS) {
-            *kernel_ns = (uint64_t)(t_end - t_start);
-        } else {
-            *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
-        }
-    } else {
-        *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
-    }
-
-    clEnqueueReadBuffer(queue, d_scores, CL_TRUE, 0, scores_size, scores, 0, nullptr, nullptr);
-
-    clReleaseEvent(event);
-    clReleaseMemObject(d_query); clReleaseMemObject(d_packed);
-    clReleaseMemObject(d_norms); clReleaseMemObject(d_centroids);
-    clReleaseMemObject(d_scores);
-
-    return TqStatus::OK;
 }
 
 } // namespace tq
