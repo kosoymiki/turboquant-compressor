@@ -16,8 +16,9 @@
 
 set -euo pipefail
 
-# Default LLVM version — 18 (apt.llvm.org/bionic) for CI, 21 (Termux) for local
-DEFAULT_LLVM_VERSION="18"
+# Default LLVM version — 22 (latest stable on apt.llvm.org/noble)
+# Termux uses 21.1.8, CI uses LLVM 22 for SPIR-V 1.3 + OpenCL 3.0
+DEFAULT_LLVM_VERSION="22"
 
 # Auto-detect Termux LLVM 21 vs CI LLVM 18
 if [[ -x "/data/data/com.termux/files/usr/bin/clang" ]]; then
