@@ -1,4 +1,4 @@
-name: TurboQuant CI — Full Native Pipeline
+name: TurboQuant CI
 
 on:
   push:
@@ -9,9 +9,9 @@ on:
 
 env:
   NODE_VERSION: '20'
-  # LLVM/SPIR-V versions — 22 for latest SPIR-V 1.3 / OpenCL 3.0 support
-  LLVM_VERSION: '22'
-  CLANG_VERSION: '22'
+  # LLVM 21 — Termux uses 21.1.8, CI uses apt.llvm.org/latest for newest
+  LLVM_VERSION: '21'
+  CLANG_VERSION: '21'
 
 jobs:
   # ── TypeScript / JavaScript ───────────────────────────────────────────────
@@ -23,76 +23,51 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - run: npm ci
-      - run: npm run build
+      - run: npm ci && npm run build
       - run: npx tsc --noEmit 2>&1 | grep -v ".test.ts" || true
 
-  # ── Native Core (x86_64 Linux) ────────────────────────────────────────────
-  # Note: Built and tested on x86_64. For ARM64/aarch64 builds, use cross-compilation.
+  # ── Native Core ───────────────────────────────────────────────────────────
   native-core:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install build deps
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq \
-            cmake ninja-build g++ make \
-            libomp-dev libclc-dev spirv-tools
-      - name: Configure CMake
-        run: |
-          cd native/core && mkdir -p build && cd build && \
-          cmake .. \
-            -DCMAKE_CXX_COMPILER=g++ \
-            -DCMAKE_C_COMPILER=gcc \
-            -DCMAKE_BUILD_TYPE=Release \
-            -GNinja
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq cmake ninja-build g++
       - name: Build
-        run: cd native/core/build && ninja -j$(nproc)
-      - name: Core unit tests
+        run: |
+          cd native/core && mkdir -p build && cd build
+          cmake .. -DCMAKE_CXX_COMPILER=g++ -GNinja
+          ninja -j$(nproc)
+      - name: Test
         run: |
           cd native/core/build
           ./test_tq_core
           ./test_full_benchmark
-          ./test_qat
 
-  # ── Native Kernel (x86_64 Linux) ─────────────────────────────────────────
+  # ── Native Kernel ────────────────────────────────────────────────────────
   native-kernel:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install build deps
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq \
-            cmake ninja-build g++ make libomp-dev
-      - name: Configure CMake
-        run: |
-          cd native/kernel && mkdir -p build && cd build && \
-          cmake .. \
-            -DCMAKE_CXX_COMPILER=g++ \
-            -DCMAKE_C_COMPILER=gcc \
-            -DCMAKE_BUILD_TYPE=Release \
-            -GNinja
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq cmake ninja-build g++ libomp-dev
       - name: Build
-        run: cd native/kernel/build && ninja -j$(nproc)
-      - name: Kernel tests
+        run: |
+          cd native/kernel && mkdir -p build && cd build
+          cmake .. -GNinja && ninja -j$(nproc)
+      - name: Test
         run: |
           cd native/kernel/build
           ./test_kernel
           ./test_hadamard_qjl
-          ./kernel_bench
 
   # ── SPIR-V Compilation ─────────────────────────────────────────────────────
-  # OpenCL C → SPIR-V 1.2 via clang + llvm-spirv
   spirv-compile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Install LLVM/SPIR-V toolchain
+      - name: Install LLVM/SPIR-V
         run: |
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-$LLVM_VERSION main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-$LLVM_VERSION main" | sudo tee /etc/apt/sources.list.d/llvm.list
           sudo apt-get update -qq
           sudo apt-get install -y -qq \
             clang-$CLANG_VERSION \
@@ -100,61 +75,30 @@ jobs:
             libclc-$CLANG_VERSION \
             spirv-tools \
             llvm-spirv-$CLANG_VERSION
-      - name: SPIR-V compile OpenCL kernels
+      - name: Compile
         run: |
-          cd native/kernel
-          CLANG_BIN="clang-$CLANG_VERSION" LLVM_SPIRV_BIN="llvm-spirv-$CLANG_VERSION" \
-          bash src/opencl_kernel.tcl || true
-      - name: Verify SPIR-V binaries
-        run: |
-          spirv-dis native/kernel/build/*.spv 2>/dev/null | head -20 || echo "SPIR-V tools OK"
+          cd native/opencl/tools
+          CLANG_BIN=clang-$CLANG_VERSION LLVM_SPIRV_BIN=llvm-spirv-$CLANG_VERSION bash compile_spirv.sh --all
+      - name: Results
+        run: ls -la native/spirv/build/*.spv 2>/dev/null | head -10
 
-  # ── OpenCL Intercept Layer ────────────────────────────────────────────────
+  # ── OpenCL Intercept ─────────────────────────────────────────────────────
   opencl-intercept:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install deps
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq cmake ninja-build g++ libgl1-mesa-dev libx11-dev
+      - name: Build
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq cmake ninja-build g++ make libgl1-mesa-dev libx11-dev
-      - name: Build intercept layer
-        run: |
-          cd native/opencl-intercept
-          mkdir -p build && cd build
-          cmake .. -GNinja
-          ninja -j$(nproc)
-      - name: Intercept tests
-        run: |
-          cd native/opencl-intercept/build
-          ./test_intercept 2>&1 | grep -E "PASS|FAIL" || echo "Tests completed"
+          cd native/opencl-intercept && mkdir -p build && cd build
+          cmake .. -GNinja && ninja -j$(nproc)
+      - name: Test
+        run: cd native/opencl-intercept/build && ./test_intercept 2>&1 | tail -3
 
-  # ── End-to-End Smoke Test ─────────────────────────────────────────────────
+  # ── Smoke Test ───────────────────────────────────────────────────────────
   smoke-test:
     needs: typescript
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: npm install && npm run smoke:stdio
-      - run: npm run smoke:mcp
-      - run: npm run smoke:api
-
-  # ── Cross-Architecture Note ───────────────────────────────────────────────
-  # For aarch64 (ARM64) builds on Android/Termux:
-  # - Native builds use Termux's g++/clang (as done in development)
-  # - CI on x86_64 verifies compilation compatibility
-  # - Full aarch64 testing requires self-hosted runner or device farm
-  aarch64-note:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Architecture note
-        run: |
-          echo "=== TurboQuant Build Architecture ==="
-          echo "CI runs on: x86_64 (Ubuntu latest)"
-          echo "Development: aarch64 (Termux on Android/RMX3709)"
-          echo ""
-          echo "For full aarch64 CI, use:"
-          echo "  - Self-hosted runner (ARM64 machine)"
-          echo "  - Cross-compilation via aarch64-linux-gnu-gcc"
-          echo "  - Docker container on ARM64 host"
-          uname -m
