@@ -1,6 +1,7 @@
 /**
- * TurboQuant Adreno Command Client — MCP-facing command buffer submission.
- * Vortek-inspired: submit compute commands, backend routed by quirks.
+ * TurboQuant Adreno Command Client — MCP-facing command routing surface.
+ * Vortek-inspired: route compute command descriptions through backend quirks.
+ * This module does not itself prove command-buffer extension support or GPU submission.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -34,6 +35,7 @@ export interface Command {
 export interface CommandBuffer {
   version: 1;
   commands: Command[];
+  nativeCommandBufferEligible?: boolean;
 }
 
 export interface CmdResult {
@@ -52,12 +54,13 @@ export interface CommandBufferResult {
 }
 
 export function createCommandBuffer(commands: Command[]): CommandBuffer {
-  return { version: 1, commands };
+  return { version: 1, commands, nativeCommandBufferEligible: false };
 }
 
 export function routeCommandBuffer(buf: CommandBuffer, profile: QuirksProfile): CommandBuffer {
   return {
     version: 1,
+    nativeCommandBufferEligible: false,
     commands: buf.commands.map(cmd => ({
       ...cmd,
       backend: cmd.backend ?? routeKernel(profile, cmd.op, cmd.shape.tokens),
@@ -66,7 +69,17 @@ export function routeCommandBuffer(buf: CommandBuffer, profile: QuirksProfile): 
 }
 
 export function buildProfileFromProbe(probe: {
-  devices?: Array<{ name: string; vendor: string; version: string; hasFp16: boolean; hasSubgroups: boolean; globalMemBytes: number; computeUnits: number }>;
+  devices?: Array<{
+    name: string;
+    vendor: string;
+    version: string;
+    hasFp16: boolean;
+    hasSubgroups: boolean;
+    globalMemBytes: number;
+    computeUnits: number;
+    hasCommandBuffer?: boolean;
+    hasCommandBufferMutableDispatch?: boolean;
+  }>;
   recommendedBackend?: string;
 }): QuirksProfile | null {
   const dev = probe.devices?.[0];
@@ -83,4 +96,16 @@ export function buildProfileFromProbe(probe: {
   };
 
   return buildQuirksProfile(device);
+}
+
+export function markNativeCommandBufferEligibility(
+  buf: CommandBuffer,
+  probe: { devices?: Array<{ hasCommandBuffer?: boolean; hasCommandBufferMutableDispatch?: boolean }> },
+): CommandBuffer {
+  const dev = probe.devices?.[0];
+  const eligible = dev?.hasCommandBuffer === true;
+  return {
+    ...buf,
+    nativeCommandBufferEligible: eligible,
+  };
 }

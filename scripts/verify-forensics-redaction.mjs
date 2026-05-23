@@ -8,6 +8,7 @@ import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync } from 'node
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
@@ -35,7 +36,7 @@ const FIXTURES = [
 ];
 
 // Create temp forensics dir with fixture file
-const tmpDir = join(rootDir, 'forensics', '_redaction_test');
+const tmpDir = join(rootDir, 'forensics', `_redaction_test_${process.pid}_${randomUUID()}`);
 mkdirSync(tmpDir, { recursive: true });
 const fixtureFile = join(tmpDir, 'test-secrets.txt');
 writeFileSync(fixtureFile, FIXTURES.join('\n') + '\n');

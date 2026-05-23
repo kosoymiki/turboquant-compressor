@@ -1,4 +1,5 @@
 import {
+  buildContextualHashedTfidfVectorizer,
   buildHashedTfidfVectorizer,
   createTokenHashVectorizer,
   createVectorizerFromSpec,
@@ -39,5 +40,17 @@ describe('vectorizer', () => {
 
     expect(dot(retrieval, driver)).toBeLessThan(dot(retrieval, retrieval));
     expect(dot(quant, driver)).toBeLessThan(dot(quant, quant));
+  });
+
+  test('contextual hashed tfidf preserves contextual mode in spec', () => {
+    const vectorizer = buildContextualHashedTfidfVectorizer(64, [
+      { path: 'docs/retrieval.md', text: 'retrieval baseline', chunkIndex: 0 },
+      { path: 'src/driver/kgsl.ts', text: 'rusticl kgsl svm gate', chunkIndex: 1 },
+    ]);
+
+    const rebuilt = createVectorizerFromSpec(vectorizer.spec);
+    expect(vectorizer.id).toBe('contextual_identifier_tfidf_hash_v1');
+    expect(vectorizer.spec.config?.contextualMode).toBe('path_chunk_prefix_v1');
+    expect(rebuilt.embed('retrieval baseline')).toEqual(vectorizer.embed('retrieval baseline'));
   });
 });

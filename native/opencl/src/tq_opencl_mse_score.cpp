@@ -7,6 +7,7 @@
 #include "tq_opencl.h"
 #include "tq_buffer.h"
 #include "tq_kernel_tune.h"
+#include "../include/tq_trace.h"
 #include <CL/cl.h>
 #include <chrono>
 #include <cstdint>
@@ -18,6 +19,16 @@ namespace tq {
 namespace {
 const char* select_mse_kernel_name(int dim, size_t local_size) {
     return (dim >= (int)local_size * 2) ? "tq_mse_score_tiled" : "tq_mse_score";
+}
+
+size_t choose_local_size_from_runtime_query(cl_kernel kernel, size_t fallback_local_size, size_t global_size) {
+    size_t suggested_local_size = 0;
+    if (global_size > 0 &&
+        query_kernel_suggested_local_work_size(kernel, 1, nullptr, &global_size, &suggested_local_size) &&
+        suggested_local_size > 0) {
+        return suggested_local_size;
+    }
+    return fallback_local_size;
 }
 }
 
@@ -72,6 +83,8 @@ TqStatus mse_score_opencl(const MseScoreInput& input, float* scores) {
         TqBuffer<float> d_norms((size_t)input.tokens, CL_MEM_READ_ONLY);
         TqBuffer<float> d_centroids((size_t)(1 << input.bits), CL_MEM_READ_ONLY);
         TqBuffer<float> d_scores((size_t)input.tokens, CL_MEM_WRITE_ONLY);
+        trace_log("mse-profiled", "shape tokens=%d dim=%d bits=%d local_hint=%zu kernel=%s svm_scores=%d",
+                  input.tokens, input.dim, input.bits, local_work[0], kernel_name, d_scores.uses_svm() ? 1 : 0);
 
         d_query.write_to_device(queue, input.query_rotated);
         d_packed.write_to_device(queue, input.packed_indices);
@@ -94,6 +107,11 @@ TqStatus mse_score_opencl(const MseScoreInput& input, float* scores) {
         size_t local_size = local_work[0];
         if (local_size == 0) local_size = 64;
         size_t global_size = (kernel_name == std::string("tq_mse_score_tiled"))
+            ? ((size_t)input.tokens * local_size)
+            : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
+        local_size = choose_local_size_from_runtime_query(k, local_size, global_size);
+        if (local_size == 0) local_size = 64;
+        global_size = (kernel_name == std::string("tq_mse_score_tiled"))
             ? ((size_t)input.tokens * local_size)
             : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
         if (kernel_name == std::string("tq_mse_score_tiled")) {
@@ -164,6 +182,11 @@ TqStatus mse_score_opencl_profiled(const MseScoreInput& input, float* scores, ui
         size_t global_size = (kernel_name == std::string("tq_mse_score_tiled"))
             ? ((size_t)input.tokens * local_size)
             : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
+        local_size = choose_local_size_from_runtime_query(k, local_size, global_size);
+        if (local_size == 0) local_size = 64;
+        global_size = (kernel_name == std::string("tq_mse_score_tiled"))
+            ? ((size_t)input.tokens * local_size)
+            : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
         if (kernel_name == std::string("tq_mse_score_tiled")) {
             clSetKernelArg(k, 9, local_size * sizeof(cl_float), nullptr);
         }
@@ -180,10 +203,17 @@ TqStatus mse_score_opencl_profiled(const MseScoreInput& input, float* scores, ui
         auto wall_end = std::chrono::steady_clock::now();
 
         if (profiling_enabled()) {
-            cl_ulong t_start = 0, t_end = 0;
-            if (clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(t_start), &t_start, nullptr) == CL_SUCCESS &&
+            cl_ulong t_queue = 0, t_start = 0, t_end = 0;
+            if (clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_QUEUED, sizeof(t_queue), &t_queue, nullptr) == CL_SUCCESS &&
+                clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(t_start), &t_start, nullptr) == CL_SUCCESS &&
                 clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(t_end), &t_end, nullptr) == CL_SUCCESS) {
                 *kernel_ns = (uint64_t)(t_end - t_start);
+                trace_log("mse-profiled", "event_ns queued=%llu start=%llu end=%llu dur=%llu wall=%llu",
+                          static_cast<unsigned long long>(t_queue),
+                          static_cast<unsigned long long>(t_start),
+                          static_cast<unsigned long long>(t_end),
+                          static_cast<unsigned long long>(t_end - t_start),
+                          static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count()));
             } else {
                 *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
             }

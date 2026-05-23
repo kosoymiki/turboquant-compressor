@@ -203,10 +203,13 @@ static KernelTuneParams tune_attention_apply_values(const GpuProfile& p) {
     t.kernel_name = "tq_attention_apply_values";
     t.wg_size_x = p.attention_wg_size;
     t.preferred_multiple = (uint32_t)p.compute_wave;
-    t.items_per_thread = 1;
+    t.items_per_thread = (p.gen == GpuGen::ADRENO_8XX) ? 4 : (p.gen == GpuGen::ADRENO_7XX ? 2 : 1);
     t.vec_width = 4;
+    t.tile_k = (p.gmem_size_kb >= 1024) ? 16 : 8;
     t.input_layout = MemoryLayout::LINEAR;
     t.output_layout = MemoryLayout::LINEAR;
+    t.use_gmem_tiling = (p.tile_strategy != TileStrategy::SYSMEM && p.gmem_size_kb >= 768);
+    t.prefetch_global = (p.gen >= GpuGen::ADRENO_7XX);
     t.local_mem_bytes = 0;
     return t;
 }

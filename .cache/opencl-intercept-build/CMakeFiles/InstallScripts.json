@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/data/data/com.termux/files/home/tmp_turboquant/.cache/opencl-intercept-build/cmake_install.cmake",
+		"/data/data/com.termux/files/home/tmp_turboquant/.cache/opencl-intercept-build/intercept/cmake_install.cmake",
+		"/data/data/com.termux/files/home/tmp_turboquant/.cache/opencl-intercept-build/cliloader/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

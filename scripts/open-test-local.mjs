@@ -5,13 +5,15 @@ import { extname, join } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { compressVectors, searchVectors } from '../dist/index.js';
 import {
+  buildContextualHashedTfidfVectorizer,
   buildHashedTfidfVectorizer,
+  contextualizeDocumentText,
   createTokenHashVectorizer,
 } from '../dist/context/vectorizer.js';
 import { computeLloydMaxBetaCodebook } from '../dist/core/beta_sphere.js';
 import { RotationEngine } from '../dist/core/rotation.js';
 
-const DIM = Number(process.env.TQ_DIM ?? 384);
+const DIM = Number(process.env.TQ_DIM ?? 1024);
 const CHUNK_BYTES = Number(process.env.TQ_CHUNK_BYTES ?? 4096);
 const QUERY_LIMIT = Number(process.env.TQ_QUERY_LIMIT ?? 50);
 const BITS_PER_VALUE = Number(process.env.TQ_BITS_PER_VALUE ?? 4);
@@ -247,7 +249,7 @@ for (const file of files) {
   fileTexts.set(file, text);
   for (const chunk of chunkText(text, CHUNK_BYTES)) {
     approximateTokenCount += approximateTokens(chunk);
-    chunks.push({ file, text: chunk });
+    chunks.push({ file, text: chunk, chunkIndex: chunks.length });
   }
 }
 
@@ -273,14 +275,25 @@ const fileQueries = files
 
 const vectorizerEntries = [
   ['token_hash', createTokenHashVectorizer(DIM)],
-  ['hashed_tfidf', buildHashedTfidfVectorizer(DIM, chunks.map((chunk) => chunk.text))],
+  [
+    'hashed_tfidf',
+    buildContextualHashedTfidfVectorizer(
+      DIM,
+      chunks.map((chunk) => ({ path: chunk.file, text: chunk.text, chunkIndex: chunk.chunkIndex }))
+    ),
+  ],
+  ['plain_hashed_tfidf', buildHashedTfidfVectorizer(DIM, chunks.map((chunk) => chunk.text))],
 ];
 
 const vectorizerProfiles = {};
 let canonicalProfile = null;
 
 for (const [vectorizerName, vectorizer] of vectorizerEntries) {
-  const vectors = chunks.map((chunk) => vectorizer.embed(chunk.text));
+  const vectors = chunks.map((chunk) => vectorizer.embed(
+    vectorizerName === 'hashed_tfidf'
+      ? contextualizeDocumentText({ path: chunk.file, text: chunk.text, chunkIndex: chunk.chunkIndex })
+      : chunk.text
+  ));
   const queryRecords = fileQueries.map((item) => ({
     ...item,
     vector: vectorizer.embed(item.query),
@@ -416,12 +429,12 @@ if (report.query_count <= 0) throw new Error('query_count must be positive');
 if (report.approximate_tokens <= 0) throw new Error('open test approximate token count must be positive');
 if (report.compression_ratio <= 1) throw new Error(`compression_ratio must be > 1, got ${report.compression_ratio}`);
 if (report.format_version !== 3) throw new Error(`format_version must be 3, got ${report.format_version}`);
-if (report.include_qjl !== false) throw new Error('include_qjl must be false for LEVEL_1 public beta');
+if (report.include_qjl !== false) throw new Error('include_qjl must be false for LEVEL_1 public');
 if (report.codebook_type !== SHIPPED_CODEBOOK) {
   throw new Error(`codebook_type must be ${SHIPPED_CODEBOOK}, got ${report.codebook_type}`);
 }
-if (report.algorithm_level !== 'LEVEL_1_PUBLIC_BETA') {
-  throw new Error(`algorithm_level must be LEVEL_1_PUBLIC_BETA for open test, got ${report.algorithm_level}`);
+if (report.algorithm_level !== 'LEVEL_1_PUBLIC') {
+  throw new Error(`algorithm_level must be LEVEL_1_PUBLIC for open test, got ${report.algorithm_level}`);
 }
 
 for (const [name, value] of Object.entries(report)) {

@@ -1,6 +1,6 @@
 /**
  * MCP tool: turboquant_adreno_loader_probe — Android linker namespace diagnosis.
- * Reports exact loader state for vendor OpenCL on this device.
+ * Reports whether the active OpenCL route is vendor/system or the custom Rusticl stack.
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -45,7 +45,9 @@ export function turboquantAdrenoLoaderProbe(args: { deep?: boolean }): object {
       recommendation = 'OpenCL loads but no platforms found. Driver may be broken.';
       break;
     case 'READY':
-      recommendation = 'Vendor OpenCL ready. Use opencl_adreno or opencl_generic backend.';
+      recommendation = probe.recommendedBackend === 'mesa_rusticl_kgsl'
+        ? 'Custom Rusticl/KGSL stack ready. Use mesa_rusticl_kgsl.'
+        : 'Vendor OpenCL ready. Use opencl_adreno or opencl_generic backend.';
       break;
   }
 

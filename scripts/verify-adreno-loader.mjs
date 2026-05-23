@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { execSync } from 'child_process';
 import { existsSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -26,11 +25,8 @@ if (!existsSync(distProbe)) {
 
 let probeResult;
 try {
-  const out = execSync(
-    `node -e "import('${distProbe.replace(/\\/g, '/')}').then(m => console.log(JSON.stringify(m.probeOpenCl({ deep: true, timeoutMs: 3000 }))))"`,
-    { timeout: 8000, encoding: 'utf-8', cwd: rootDir }
-  );
-  probeResult = JSON.parse(out.trim());
+  const { probeOpenCl } = await import(distProbe);
+  probeResult = probeOpenCl({ deep: true, timeoutMs: 3000 });
 } catch (e) {
   probeResult = { loaderState: 'NO_LIBRARY', available: false, libraryExists: false, loadable: false, warnings: [e.message] };
 }

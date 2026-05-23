@@ -1,4 +1,4 @@
-export const PUBLIC_ALGORITHM_LEVEL = 'LEVEL_1_PUBLIC_BETA';
+export const PUBLIC_ALGORITHM_LEVEL = 'LEVEL_1_PUBLIC';
 export const EXPERIMENTAL_QJL_LEVEL = 'LEVEL_1_EXPERIMENTAL_QJL';
 
 export function publicLevelWarning(codebookType: 'uniform' | 'turboquant_beta'): string {

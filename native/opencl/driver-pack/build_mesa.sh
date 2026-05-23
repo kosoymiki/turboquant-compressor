@@ -56,6 +56,8 @@ export LLVM_SPIRV="${TERMUX_LLVM_SPIRV}"
 export SPIRV_LINK="${TERMUX_SPIRV_LINK}"
 export SPIRV_VAL="${TERMUX_SPIRV_VAL}"
 export LIBCLC_PATH="${LIBCLC_PATH:-${TERMUX_PREFIX}/share/clc}"
+STATIC_LIBCLC="${TQ_STATIC_LIBCLC:-all}"
+DEVICE_LIBCLC_PATH="${TQ_DEVICE_LIBCLC_PATH:-/data/local/tmp/tq-rusticl/clc}"
 
 resolve_upstream_mesa_base() {
     if [ -n "${TQ_MESA_UPSTREAM_BASE:-}" ] && [ -d "${TQ_MESA_UPSTREAM_BASE}/src/freedreno" ]; then
@@ -106,8 +108,8 @@ ranlib = '${TERMUX_RANLIB}'
 llvm-config = '${TERMUX_LLVM_CONFIG}'
 
 [built-in options]
-c_args = ['--target=${ANDROID_TARGET}', '-O2', '-march=armv8.2-a']
-cpp_args = ['--target=${ANDROID_TARGET}', '-O2', '-march=armv8.2-a']
+c_args = ['--target=${ANDROID_TARGET}', '-O2', '-march=armv8.2-a', '-mno-outline-atomics']
+cpp_args = ['--target=${ANDROID_TARGET}', '-O2', '-march=armv8.2-a', '-mno-outline-atomics']
 c_link_args = ['--target=${ANDROID_TARGET}']
 cpp_link_args = ['--target=${ANDROID_TARGET}']
 EOF
@@ -124,6 +126,7 @@ configure_args=(
     -Dfreedreno-kmds=kgsl
     -Dllvm="${LLVM_STATE}"
     -Dshared-llvm=enabled
+    -Dstatic-libclc="${STATIC_LIBCLC}"
     -Dbuildtype=debugoptimized
     -Dstrip=false
     -Dglx=disabled
@@ -155,7 +158,7 @@ if [ -f "${RUSTICL}" ] && [ -f "${TURNIP}" ]; then
 python3 - <<EOF
 import json
 data = {
-  "meson_options": "-Dplatforms=android -Dplatform-sdk-version=${SDK_LEVEL} -Dandroid-stub=true -Dandroid-libbacktrace=disabled -Dgallium-rusticl=true -Dgallium-rusticl-enable-drivers=${RUSTICL_ENABLE_DRIVERS} -Dvulkan-drivers=freedreno -Dgallium-drivers=freedreno -Dfreedreno-kmds=kgsl -Dllvm=${LLVM_STATE} -Dshared-llvm=enabled -Dbuildtype=debugoptimized -Dstrip=false",
+  "meson_options": "-Dplatforms=android -Dplatform-sdk-version=${SDK_LEVEL} -Dandroid-stub=true -Dandroid-libbacktrace=disabled -Dgallium-rusticl=true -Dgallium-rusticl-enable-drivers=${RUSTICL_ENABLE_DRIVERS} -Dvulkan-drivers=freedreno -Dgallium-drivers=freedreno -Dfreedreno-kmds=kgsl -Dllvm=${LLVM_STATE} -Dshared-llvm=enabled -Dstatic-libclc=${STATIC_LIBCLC} -Dbuildtype=debugoptimized -Dstrip=false",
   "compiler": "llvm/clang (Termux canonical toolchain)",
   "linker": "lld",
   "static_libcxx": False,
@@ -168,6 +171,7 @@ data = {
   "android_target_triple": "${ANDROID_TARGET_TRIPLE}",
   "llvm_state": "${LLVM_STATE}",
   "rusticl_enable_drivers": "${RUSTICL_ENABLE_DRIVERS}",
+  "static_libclc": "${STATIC_LIBCLC}",
   "toolchain_contract": {
     "clang": "${TERMUX_CLANG}",
     "clangxx": "${TERMUX_CLANGXX}",
@@ -175,7 +179,8 @@ data = {
     "llvm_spirv": "${TERMUX_LLVM_SPIRV}",
     "spirv_link": "${TERMUX_SPIRV_LINK}",
     "spirv_val": "${TERMUX_SPIRV_VAL}",
-    "libclc_path": "${LIBCLC_PATH}"
+    "libclc_path": "${LIBCLC_PATH}",
+    "device_libclc_path": "${DEVICE_LIBCLC_PATH}"
   },
   "rusticl_runtime_env": {
     "RUSTICL_ENABLE": "${RUSTICL_ENABLE_DRIVERS}",

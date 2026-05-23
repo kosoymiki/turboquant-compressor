@@ -31,6 +31,7 @@ detect_termux_prefix() {
 TERMUX_PREFIX="${TQ_TERMUX_PREFIX:-$(detect_termux_prefix || true)}"
 [ -n "${TERMUX_PREFIX}" ] || { echo "[FATAL] Unable to resolve Termux prefix; set PREFIX or TQ_TERMUX_PREFIX" >&2; exit 1; }
 TERMUX_LIB_DIR="${TERMUX_PREFIX}/lib"
+TERMUX_SHARE_DIR="${TERMUX_PREFIX}/share"
 
 resolve_mesa_build() {
   local sdk_level="${TQ_ANDROID_SDK_LEVEL:-34}"
@@ -110,11 +111,14 @@ info "Driver root dir: $OUT_DIR"
 rm -rf "$STAGING"
 find "$OUT_DIR" -mindepth 1 -maxdepth 1 -name '.staging-*' -exec rm -rf {} + 2>/dev/null || true
 mkdir -p "$STAGING/layer1-compute" "$STAGING/layer2-vulkan" "$STAGING/meta" "$STAGING/kernels"
+mkdir -p "$STAGING/layer1-compute/clc"
 
 # --- Layer 1: Compute (Rusticl OpenCL via KGSL) ---
 info "Packing Layer 1: Rusticl/KGSL compute..."
 cp "$RUSTICL_SO" "$STAGING/layer1-compute/libRusticlOpenCL.so.1"
+cp "$RUSTICL_SO" "$STAGING/layer1-compute/libRusticlOpenCL.so.1.0.0"
 # Symlinks for ICD compatibility
+ln -sf libRusticlOpenCL.so.1.0.0 "$STAGING/layer1-compute/libRusticlOpenCL.so.1"
 ln -sf libRusticlOpenCL.so.1 "$STAGING/layer1-compute/libRusticlOpenCL.so"
 ln -sf libRusticlOpenCL.so.1 "$STAGING/layer1-compute/libOpenCL.so.1"
 
@@ -128,6 +132,15 @@ cp "${TQ_STACK_ROOT}/kernels/"*.cl "$STAGING/kernels/"
 # --- Layer 2: Vulkan Backend (Turnip for VkCompute fallback + shader compile) ---
 info "Packing Layer 2: Turnip Vulkan backend..."
 cp "$TURNIP_SO" "$STAGING/layer2-vulkan/libvulkan_freedreno.so"
+
+for clc_blob in \
+  "${TERMUX_SHARE_DIR}/clc/spirv-mesa3d-.spv" \
+  "${TERMUX_SHARE_DIR}/clc/spirv64-mesa3d-.spv"
+do
+  if [ -f "$clc_blob" ]; then
+    cp "$clc_blob" "$STAGING/layer1-compute/clc/"
+  fi
+done
 
 # Vulkan ICD manifest
 cat > "$STAGING/layer2-vulkan/freedreno_icd.aarch64.json" << 'EOF'
@@ -179,9 +192,12 @@ m["artifact_layout"] = {
   "files": [
     "env.sh",
     "layer1-compute/libRusticlOpenCL.so.1",
+    "layer1-compute/libRusticlOpenCL.so.1.0.0",
     "layer1-compute/libRusticlOpenCL.so",
     "layer1-compute/libOpenCL.so.1",
     "layer1-compute/rusticl.icd",
+    "layer1-compute/clc/spirv-mesa3d-.spv",
+    "layer1-compute/clc/spirv64-mesa3d-.spv",
     "layer2-vulkan/libvulkan_freedreno.so",
     "layer2-vulkan/freedreno_icd.aarch64.json",
     "meta/manifest.json",
@@ -190,6 +206,7 @@ m["artifact_layout"] = {
 }
 m['sha256'] = {
     'libRusticlOpenCL.so.1': '$RUSTICL_SHA',
+    'libRusticlOpenCL.so.1.0.0': '$RUSTICL_SHA',
     'libvulkan_freedreno.so': '$TURNIP_SHA'
 }
 m['validated'] = True
@@ -227,6 +244,7 @@ export TQ_DRIVER_ROOT="$PACK_DIR"
 export OCL_ICD_VENDORS="$PACK_DIR/layer1-compute"
 export LD_LIBRARY_PATH="$PACK_DIR/layer1-compute${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export TQ_OPENCL_KERNEL_DIR="$PACK_DIR/kernels"
+export TQ_LIBCLC_DIR="$PACK_DIR/layer1-compute/clc"
 export TQ_OPENCL_CUSTOM_STACK_ONLY="${TQ_OPENCL_CUSTOM_STACK_ONLY:-1}"
 export TQ_OPENCL_SILENCE_STDERR="${TQ_OPENCL_SILENCE_STDERR:-1}"
 export TQ_OPENCL_VERBOSE_INIT="${TQ_OPENCL_VERBOSE_INIT:-0}"

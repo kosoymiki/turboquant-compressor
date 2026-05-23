@@ -83,11 +83,18 @@ struct kgsl_devinfo {
 };
 
 // --- Forensic trace (compile-time toggleable) ---
+static bool driver_trace_enabled() {
+    static int cached = -1;
+    if (cached != -1) return cached == 1;
+    const char* env = getenv("TQ_DRIVER_TRACE");
+    cached = (env && (std::strcmp(env, "1") == 0 || std::strcmp(env, "true") == 0 || std::strcmp(env, "yes") == 0)) ? 1 : 0;
 #ifdef TQ_DRIVER_TRACE
-#define DRV_TRACE(fmt, ...) fprintf(stderr, "[tq-drv] " fmt "\n", ##__VA_ARGS__)
-#else
-#define DRV_TRACE(fmt, ...) ((void)0)
+    cached = 1;
 #endif
+    return cached == 1;
+}
+
+#define DRV_TRACE(fmt, ...) do { if (driver_trace_enabled()) fprintf(stderr, "[tq-drv] " fmt "\n", ##__VA_ARGS__); } while (0)
 
 // --- Thread-safe KGSL probe (#3: atomic guard) ---
 static std::once_flag g_kgsl_once;
@@ -240,16 +247,29 @@ static bool load_cl_funcs(void* lib, ClFuncs* f) {
     f->CreateQueue = (pfn_clCreateCommandQueueWithProperties)dlsym(lib, "clCreateCommandQueueWithProperties");
     f->ReleaseContext = (pfn_clReleaseContext)dlsym(lib, "clReleaseContext");
     f->ReleaseQueue = (pfn_clReleaseCommandQueue)dlsym(lib, "clReleaseCommandQueue");
-    return f->GetPlatformIDs && f->GetDeviceIDs && f->GetDeviceInfo && f->CreateContext;
+    const bool ok = f->GetPlatformIDs && f->GetDeviceIDs && f->GetDeviceInfo && f->CreateContext;
+    DRV_TRACE(
+        "load_cl_funcs lib=%p ok=%d platform=%d device_ids=%d device_info=%d create_context=%d create_queue=%d",
+        lib,
+        ok ? 1 : 0,
+        f->GetPlatformIDs ? 1 : 0,
+        f->GetDeviceIDs ? 1 : 0,
+        f->GetDeviceInfo ? 1 : 0,
+        f->CreateContext ? 1 : 0,
+        f->CreateQueue ? 1 : 0);
+    return ok;
 }
 
 // --- Query device caps ---
 static bool query_device_caps(ClFuncs* f, DriverCaps* caps) {
     uint32_t np = 0;
-    if (f->GetPlatformIDs(0, nullptr, &np) != 0 || np == 0) return false;
+    const int err_np = f->GetPlatformIDs(0, nullptr, &np);
+    DRV_TRACE("query_device_caps clGetPlatformIDs count err=%d np=%u", err_np, np);
+    if (err_np != 0 || np == 0) return false;
 
     void* plat = nullptr;
-    f->GetPlatformIDs(1, &plat, nullptr);
+    const int err_plat = f->GetPlatformIDs(1, &plat, nullptr);
+    DRV_TRACE("query_device_caps clGetPlatformIDs first err=%d plat=%p", err_plat, plat);
     if (!plat) return false;
 
     char pname[128] = {};
@@ -259,7 +279,9 @@ static bool query_device_caps(ClFuncs* f, DriverCaps* caps) {
 
     void* dev = nullptr;
     uint32_t nd = 0;
-    if (f->GetDeviceIDs(plat, 4/*CL_DEVICE_TYPE_GPU*/, 1, &dev, &nd) != 0 || nd == 0)
+    const int err_dev = f->GetDeviceIDs(plat, 4/*CL_DEVICE_TYPE_GPU*/, 1, &dev, &nd);
+    DRV_TRACE("query_device_caps clGetDeviceIDs err=%d nd=%u dev=%p", err_dev, nd, dev);
+    if (err_dev != 0 || nd == 0)
         return false;
 
     char dname[128] = {};
@@ -280,8 +302,15 @@ static bool query_device_caps(ClFuncs* f, DriverCaps* caps) {
 
     char ext[4096] = {};
     f->GetDeviceInfo(dev, 0x1030/*CL_DEVICE_EXTENSIONS*/, sizeof(ext), ext, nullptr);
+    DRV_TRACE("query_device_caps extensions=%s", ext);
     caps->has_fp16 = strstr(ext, "cl_khr_fp16") != nullptr;
     caps->has_subgroups = strstr(ext, "cl_khr_subgroups") != nullptr;
+    uint32_t max_subgroups = 0;
+    if (f->GetDeviceInfo(dev, 0x2033/*CL_DEVICE_MAX_NUM_SUB_GROUPS*/, sizeof(max_subgroups), &max_subgroups, nullptr) ==
+            0 &&
+        max_subgroups > 0) {
+        caps->has_subgroups = true;
+    }
 
     // Query subgroup size if available from the actual OpenCL route.
     if (caps->has_subgroups) {
@@ -299,6 +328,15 @@ static bool query_device_caps(ClFuncs* f, DriverCaps* caps) {
         }
     }
 
+    DRV_TRACE(
+        "query_device_caps ok dev=\"%s\" cu=%u wg=%zu lmem=%zu fp16=%d subgroups=%d subgroup_size=%u",
+        caps->device_name.c_str(),
+        caps->compute_units,
+        caps->max_wg_size,
+        caps->local_mem_size,
+        caps->has_fp16 ? 1 : 0,
+        caps->has_subgroups ? 1 : 0,
+        caps->subgroup_size);
     return true;
 }
 

@@ -15,6 +15,7 @@ export interface VectorizerSpec {
     documentCount?: number;
     maxFeaturesPerDocument?: number;
     idfWeights?: number[];
+    contextualMode?: 'none' | 'path_chunk_prefix_v1';
   };
 }
 
@@ -26,11 +27,31 @@ export interface ContextVectorizer {
   embed(text: string): number[];
 }
 
-function normalizeToken(text: string): string[] {
-  return text
+function splitIdentifierLikeToken(token: string): string[] {
+  const parts = token
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z0-9]+)/g, '$1 $2')
     .toLowerCase()
-    .split(/[^a-z0-9_]+/i)
+    .split(/[^a-z0-9]+/i)
     .filter(Boolean);
+  return parts.length > 0 ? parts : [token.toLowerCase()];
+}
+
+function normalizeToken(text: string): string[] {
+  const raw = text
+    .replaceAll('/', ' ')
+    .replaceAll('\\', ' ')
+    .replaceAll('-', ' ')
+    .split(/[^A-Za-z0-9_]+/)
+    .filter(Boolean);
+  const out: string[] = [];
+  for (const token of raw) {
+    out.push(token.toLowerCase());
+    for (const part of splitIdentifierLikeToken(token)) {
+      out.push(part);
+    }
+  }
+  return out;
 }
 
 function hash32(str: string, seed = 2166136261): number {
@@ -93,6 +114,29 @@ export function createTokenHashVectorizer(dimensions: number): ContextVectorizer
 
 type FeatureCountMap = Map<string, number>;
 
+export interface ContextualDocument {
+  path: string;
+  text: string;
+  chunkIndex?: number;
+}
+
+function normalizePathTerms(path: string): string {
+  return path
+    .replace(/\.[^.]+$/u, '')
+    .replaceAll('\\', '/')
+    .split('/')
+    .flatMap((segment) => splitIdentifierLikeToken(segment))
+    .join(' ')
+    .trim();
+}
+
+export function contextualizeDocumentText(document: ContextualDocument): string {
+  const pathTerms = normalizePathTerms(document.path);
+  const chunkTag = document.chunkIndex === undefined ? '' : ` chunk ${document.chunkIndex}`;
+  const stablePrefix = `path ${pathTerms}${chunkTag} ${pathTerms}`.trim();
+  return `${stablePrefix}\n${document.text}`;
+}
+
 function buildFeatureCounts(text: string, maxFeaturesPerDocument: number): FeatureCountMap {
   const tokens = normalizeToken(text);
   const counts: FeatureCountMap = new Map();
@@ -112,14 +156,21 @@ function buildFeatureCounts(text: string, maxFeaturesPerDocument: number): Featu
 
 export class HashedTfidfVectorizer implements ContextVectorizer {
   readonly spec: VectorizerSpec;
-  readonly id = 'hashed_tfidf_fnv1a_v1';
+  readonly id: string;
   readonly kind: VectorizerKind = 'hashed_tfidf';
   readonly dimensions: number;
   private readonly idfWeights: Float32Array;
   private readonly maxFeaturesPerDocument: number;
   private readonly documentCount: number;
+  private readonly contextualMode: 'none' | 'path_chunk_prefix_v1';
 
-  constructor(dimensions: number, idfWeights: number[], documentCount: number, maxFeaturesPerDocument = 4096) {
+  constructor(
+    dimensions: number,
+    idfWeights: number[],
+    documentCount: number,
+    maxFeaturesPerDocument = 4096,
+    contextualMode: 'none' | 'path_chunk_prefix_v1' = 'none'
+  ) {
     if (dimensions < 1 || dimensions > 8192) {
       throw new Error(`dimensions must be 1–8192, got ${dimensions}`);
     }
@@ -127,9 +178,13 @@ export class HashedTfidfVectorizer implements ContextVectorizer {
       throw new Error(`idfWeights length ${idfWeights.length} must match dimensions ${dimensions}`);
     }
     this.dimensions = dimensions;
+    this.id = contextualMode === 'path_chunk_prefix_v1'
+      ? 'contextual_identifier_tfidf_hash_v1'
+      : 'hashed_tfidf_fnv1a_v1';
     this.idfWeights = new Float32Array(idfWeights);
     this.maxFeaturesPerDocument = maxFeaturesPerDocument;
     this.documentCount = documentCount;
+    this.contextualMode = contextualMode;
     this.spec = {
       id: this.id,
       kind: this.kind,
@@ -138,6 +193,7 @@ export class HashedTfidfVectorizer implements ContextVectorizer {
         documentCount: this.documentCount,
         maxFeaturesPerDocument: this.maxFeaturesPerDocument,
         idfWeights: Array.from(this.idfWeights),
+        contextualMode: this.contextualMode,
       },
     };
   }
@@ -159,7 +215,8 @@ export class HashedTfidfVectorizer implements ContextVectorizer {
 export function buildHashedTfidfVectorizer(
   dimensions: number,
   documents: string[],
-  maxFeaturesPerDocument = 4096
+  maxFeaturesPerDocument = 4096,
+  contextualMode: 'none' | 'path_chunk_prefix_v1' = 'none'
 ): ContextVectorizer {
   if (documents.length === 0) {
     throw new Error('documents must not be empty');
@@ -181,7 +238,20 @@ export function buildHashedTfidfVectorizer(
     idfWeights[i] = Math.log((1 + n) / (1 + documentFrequencies[i]!)) + 1;
   }
 
-  return new HashedTfidfVectorizer(dimensions, idfWeights, n, maxFeaturesPerDocument);
+  return new HashedTfidfVectorizer(dimensions, idfWeights, n, maxFeaturesPerDocument, contextualMode);
+}
+
+export function buildContextualHashedTfidfVectorizer(
+  dimensions: number,
+  documents: ContextualDocument[],
+  maxFeaturesPerDocument = 4096
+): ContextVectorizer {
+  return buildHashedTfidfVectorizer(
+    dimensions,
+    documents.map((document) => contextualizeDocumentText(document)),
+    maxFeaturesPerDocument,
+    'path_chunk_prefix_v1'
+  );
 }
 
 export function createVectorizerFromSpec(spec: VectorizerSpec): ContextVectorizer {
@@ -198,7 +268,8 @@ export function createVectorizerFromSpec(spec: VectorizerSpec): ContextVectorize
       spec.dimensions,
       idfWeights,
       documentCount,
-      spec.config?.maxFeaturesPerDocument ?? 4096
+      spec.config?.maxFeaturesPerDocument ?? 4096,
+      spec.config?.contextualMode ?? 'none'
     );
   }
   throw new Error(`Unsupported vectorizer kind: ${spec.kind}`);

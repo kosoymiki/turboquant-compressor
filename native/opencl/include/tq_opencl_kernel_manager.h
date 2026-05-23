@@ -21,5 +21,8 @@ cl_kernel kernel_manager_get_kernel(const std::string& name);
 KernelMetadata kernel_manager_get_kernel_metadata(const std::string& name);
 void kernel_manager_release_all();
 std::string infer_spirv_path_from_source(const std::string& source_path);
+std::string kernel_manager_compile_key(
+    const std::string& source_path,
+    const std::string& build_opts);
 
 } // namespace tq

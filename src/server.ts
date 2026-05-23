@@ -1,6 +1,5 @@
 import { McpServer, StdioServerTransport, fromJsonSchema } from '@modelcontextprotocol/server';
 import { readFileSync } from 'node:fs';
-import { initWasmBackend, isWasmReady } from './native/wasm_backend.js';
 import { compressVectors } from './tools/compress.js';
 import { searchVectors } from './tools/search.js';
 import { parseCompressInput, parseSearchInput } from './tools/validation.js';
@@ -20,9 +19,9 @@ function readServerVersion(): string {
   try {
     const packageJsonPath = new URL('../package.json', import.meta.url);
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { version?: string };
-    return packageJson.version ?? '4.1.2';
+    return packageJson.version ?? '4.5.0';
   } catch {
-    return '4.1.2';
+    return '4.5.0';
   }
 }
 
@@ -298,6 +297,7 @@ const ContextPackBuildInputSchema = fromJsonSchema({
     dimensions: { type: 'number', minimum: 1, maximum: 8192 },
     chunkBytes: { type: 'number', minimum: 256, maximum: 65536 },
     bitsPerValue: { type: 'number', enum: [2, 3, 4, 8] },
+    vectorizer: { type: 'string', enum: ['token_hash', 'hashed_tfidf', 'plain_hashed_tfidf'] },
     storageMode: { type: 'string', enum: ['inline_text', 'preview_only', 'external_store'] },
     maxInlineChunkBytes: { type: 'number', minimum: 0, maximum: 65536 }
   },
@@ -465,13 +465,6 @@ server.registerTool(
     return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
   }
 );
-
-// Auto-init WASM backend (non-blocking, falls back to TS)
-initWasmBackend().then(ok => {
-  if (process.env.TURBOQUANT_MCP_QUIET === '1') return;
-  if (ok) process.stderr.write('[turboquant] WASM SIMD128 backend: ready (17KB)\n');
-  else process.stderr.write('[turboquant] WASM unavailable, using TS fallback\n');
-}).catch(() => {});
 
 const transport = new StdioServerTransport();
 server.connect(transport).catch((err: unknown) => {

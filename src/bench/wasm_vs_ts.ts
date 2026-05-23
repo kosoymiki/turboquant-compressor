@@ -6,6 +6,8 @@ import { performance } from 'perf_hooks';
 import { normalizedFwhtInPlace, isPowerOfTwo } from '../core/hadamard.js';
 import { initWasmBackend, isWasmReady, wasmFwht, wasmDot } from '../native/wasm_backend.js';
 
+const BENCH_LOG = process.env.TQ_BENCH_LOG === '1';
+
 function fwhtPureTS(data: Float32Array): void {
   const n = data.length;
   let len = 1;
@@ -37,7 +39,7 @@ function bench(name: string, fn: () => void, iters: number): number {
   for (let i = 0; i < iters; i++) fn();
   const elapsed = performance.now() - start;
   const perIter = elapsed / iters;
-  console.log(`${name}: ${perIter.toFixed(3)}ms/iter (${iters} iters, ${elapsed.toFixed(1)}ms total)`);
+  if (BENCH_LOG) console.log(`${name}: ${perIter.toFixed(3)}ms/iter (${iters} iters, ${elapsed.toFixed(1)}ms total)`);
   return perIter;
 }
 
@@ -45,13 +47,13 @@ async function main() {
   const dims = [64, 128, 256];
   const iters = 1000;
 
-  console.log('=== TurboQuant WASM SIMD128 vs Pure TS Benchmark ===\n');
+  if (BENCH_LOG) console.log('=== TurboQuant WASM SIMD128 vs Pure TS Benchmark ===\n');
 
   const wasmOk = await initWasmBackend();
-  console.log(`WASM backend: ${wasmOk ? 'READY (SIMD128)' : 'UNAVAILABLE'}\n`);
+  if (BENCH_LOG) console.log(`WASM backend: ${wasmOk ? 'READY (SIMD128)' : 'UNAVAILABLE'}\n`);
 
   for (const dim of dims) {
-    console.log(`--- dim=${dim} ---`);
+    if (BENCH_LOG) console.log(`--- dim=${dim} ---`);
     const data = new Float32Array(dim);
     for (let i = 0; i < dim; i++) data[i] = Math.random() * 2 - 1;
 
@@ -67,7 +69,7 @@ async function main() {
         const copy = new Float32Array(data);
         wasmFwht(copy);
       }, iters);
-      console.log(`  Speedup: ${(tsTime / wasmTime).toFixed(2)}x`);
+      if (BENCH_LOG) console.log(`  Speedup: ${(tsTime / wasmTime).toFixed(2)}x`);
     }
 
     // Dot product benchmark
@@ -79,9 +81,9 @@ async function main() {
 
     if (wasmOk) {
       const wasmDotTime = bench(`  WASM dot(${dim})`, () => { wasmDot(a, b); }, iters * 10);
-      console.log(`  Speedup: ${(tsDotTime / wasmDotTime).toFixed(2)}x`);
+      if (BENCH_LOG) console.log(`  Speedup: ${(tsDotTime / wasmDotTime).toFixed(2)}x`);
     }
-    console.log('');
+    if (BENCH_LOG) console.log('');
   }
 }
 

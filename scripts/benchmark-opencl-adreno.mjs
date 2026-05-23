@@ -14,6 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
 const buildDir = join(rootDir, 'native', 'opencl', 'build');
 const forensicsDir = join(rootDir, 'forensics');
+const safeRunner = join(rootDir, 'scripts', 'safe-runtime-pack-run.sh');
 
 mkdirSync(forensicsDir, { recursive: true });
 
@@ -49,7 +50,8 @@ function writeReport(report) {
 
 // Check binary exists
 const cliBin = join(buildDir, 'tq_opencl_cli');
-if (!existsSync(cliBin)) {
+const resolvedCliBin = process.env.TQ_OPENCL_CLI || cliBin;
+if (!existsSync(resolvedCliBin) && !existsSync(safeRunner)) {
   const report = {
     timestamp: new Date().toISOString(),
     state: 'ADRENO_NATIVE_NOT_BUILT',
@@ -75,14 +77,20 @@ const openclLdPath = [
   process.env.LD_LIBRARY_PATH || '',
 ].filter(Boolean).join(':');
 
-const probeResult = spawnSync(cliBin, ['probe'], {
-  encoding: 'utf-8',
-  timeout: 5000,
-  env: { ...process.env, LD_LIBRARY_PATH: openclLdPath },
-});
+const probeCmd = existsSync(safeRunner)
+  ? spawnSync(safeRunner, ['probe'], {
+      encoding: 'utf-8',
+      timeout: 15000,
+      env: { ...process.env, TQ_OPENCL_CLI: resolvedCliBin, LD_LIBRARY_PATH: openclLdPath },
+    })
+  : spawnSync(resolvedCliBin, ['probe'], {
+      encoding: 'utf-8',
+      timeout: 5000,
+      env: { ...process.env, LD_LIBRARY_PATH: openclLdPath },
+    });
 let probeJson;
 try {
-  probeJson = JSON.parse(probeResult.stdout);
+  probeJson = JSON.parse(probeCmd.stdout);
 } catch {
   probeJson = { available: false, error: 'parse_failed' };
 }

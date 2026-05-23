@@ -22,7 +22,7 @@ describe('no-secret-output: compress tool', () => {
   });
 
   it('compress warnings do not contain secrets', () => {
-    const result = compressVectors({ vectors: [[1, 0]], includeQJL: true });
+    const result = compressVectors({ vectors: [[1, 0, 0, 0]], includeQJL: true });
     for (const w of result.warnings ?? []) {
       expect(containsSecret(w)).toBe(false);
     }

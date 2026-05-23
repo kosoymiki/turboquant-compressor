@@ -2,7 +2,12 @@ import { z } from 'zod';
 import type { ContextPackBuildResult, ContextPackManifest, ContextPackStorageMode } from '../cost/types.js';
 import { compressVectors } from '../index.js';
 import { sha256Text, approximateTokens } from '../cost/fingerprint.js';
-import { buildHashedTfidfVectorizer, createTokenHashVectorizer } from '../context/vectorizer.js';
+import {
+  buildContextualHashedTfidfVectorizer,
+  buildHashedTfidfVectorizer,
+  contextualizeDocumentText,
+  createTokenHashVectorizer,
+} from '../context/vectorizer.js';
 import { buildProvenance } from '../context/provenance.js';
 import { buildReplayManifest } from '../context/replay_manifest.js';
 import {
@@ -24,10 +29,10 @@ const ContextPackBuildInputSchema = z.object({
       text: z.string(),
     })
   ),
-  dimensions: z.number().min(1).max(8192).default(384),
+  dimensions: z.number().min(1).max(8192).default(1024),
   chunkBytes: z.number().min(256).max(65536).default(4096),
   bitsPerValue: z.number().min(2).max(8).default(4),
-  vectorizer: z.enum(['token_hash', 'hashed_tfidf']).default('hashed_tfidf'),
+  vectorizer: z.enum(['token_hash', 'hashed_tfidf', 'plain_hashed_tfidf']).default('hashed_tfidf'),
   storageMode: z.enum(['inline_text', 'preview_only', 'external_store']).default('preview_only'),
   maxInlineChunkBytes: z.number().min(0).max(65536).default(4096),
 });
@@ -91,10 +96,19 @@ export function turboquantContextPackBuild(
     throw new Error('No chunks generated for context pack');
   }
 
-  const vectorizer = input.vectorizer === 'hashed_tfidf'
-    ? buildHashedTfidfVectorizer(input.dimensions, allChunks.map((c) => c.text))
-    : createTokenHashVectorizer(input.dimensions);
-  const vectors = allChunks.map((c) => vectorizer.embed(c.text));
+  const vectorizer = input.vectorizer === 'token_hash'
+    ? createTokenHashVectorizer(input.dimensions)
+    : input.vectorizer === 'plain_hashed_tfidf'
+      ? buildHashedTfidfVectorizer(input.dimensions, allChunks.map((c) => c.text))
+      : buildContextualHashedTfidfVectorizer(
+          input.dimensions,
+          allChunks.map((c, idx) => ({ path: c.path, text: c.text, chunkIndex: idx }))
+        );
+  const vectors = allChunks.map((c, idx) => vectorizer.embed(
+    input.vectorizer === 'hashed_tfidf'
+      ? contextualizeDocumentText({ path: c.path, text: c.text, chunkIndex: idx })
+      : c.text
+  ));
 
   const compressed = compressVectors({
     vectors,
@@ -166,9 +180,19 @@ export function turboquantContextPackBuild(
 
   const warnings: string[] = [
     'Deterministic local vectorizers are lexical baselines, not semantic embedding quality.',
-    'LEVEL_1_PUBLIC_BETA implementation does not store QJL payload.',
+    'LEVEL_1_PUBLIC implementation does not store QJL payload.',
     'This tool does not reduce Anthropic API token billing directly.',
   ];
+
+  if (input.vectorizer === 'hashed_tfidf') {
+    warnings.push(
+      'hashed_tfidf default uses a contextual path/chunk prefix to strengthen lexical retrieval without claiming semantic embeddings.'
+    );
+  } else if (input.vectorizer === 'plain_hashed_tfidf') {
+    warnings.push(
+      'plain_hashed_tfidf disables the contextual path/chunk prefix and is expected to retrieve worse than the default contextual hashed_tfidf path.'
+    );
+  }
 
   if (input.storageMode === 'external_store') {
     warnings.push(

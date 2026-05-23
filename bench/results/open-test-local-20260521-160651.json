@@ -1,0 +1,217 @@
+{
+  "test_name": "turboquant_open_test_local",
+  "files": 110,
+  "chunks": 162,
+  "approximate_tokens": 100723,
+  "token_count_source": "approximate_bytes_div_4",
+  "dimensions": 1024,
+  "vector_count": 162,
+  "compression_ratio": 7.930394875227077,
+  "compressed_bytes": 83672,
+  "original_bytes_estimate": 663552,
+  "compress_ms": 206.06666699999914,
+  "query_count": 50,
+  "codebook_type": "turboquant_beta",
+  "recall_at_1": 0.88,
+  "recall_at_5": 1,
+  "mrr": 0.94,
+  "score_mae_on_exact_topk": 0.003285903916265309,
+  "score_mse_on_exact_topk": 0.000016264191248008223,
+  "score_p95_abs_error_on_exact_topk": 0.00799337353517049,
+  "score_mae_on_union_topk": 0.01087671846332477,
+  "score_mse_on_union_topk": 0.0013863782795041177,
+  "algorithm_level": "LEVEL_1_PUBLIC",
+  "format_version": 3,
+  "include_qjl": false,
+  "warnings": [
+    "LEVEL_1_PUBLIC: Public path uses TurboQuant Beta Lloyd-Max scalar quantization without QJL correction.",
+    "QJL residual sketch/correction is not implemented in the public search path.",
+    "Lloyd-Max comparison is retained as a sidecar benchmark for contrast with the shipped public path.",
+    "Experimental QJL is kept research-only until an estimator/search path is reproducible on this corpus."
+  ],
+  "profiles": {
+    "token_hash": {
+      "vectorizer_id": "token_hash_fnv1a",
+      "vectorizer_kind": "token_hash",
+      "codebook_type": "turboquant_beta",
+      "compression_ratio": 7.930394875227077,
+      "compressed_bytes": 83672,
+      "compress_ms": 353.4577079999999,
+      "query_count": 50,
+      "quantization": {
+        "turboquant_beta": {
+          "query_count": 50,
+          "ranking_agreement_at_1": 0.98,
+          "ranking_overlap_at_5": 0.9719999999999999,
+          "ranking_loss_at_5": 0.028000000000000136,
+          "score_mae_on_exact_topk": 0.003237808211912761,
+          "score_mse_on_exact_topk": 0.000017968877964337968,
+          "score_p95_abs_error_on_exact_topk": 0.00806904832200539,
+          "score_mae_on_union_topk": 0.006060396473666007,
+          "score_mse_on_union_topk": 0.00035991882516978117
+        },
+        "lloyd_max_beta": {
+          "query_count": 50,
+          "ranking_agreement_at_1": 0.98,
+          "ranking_overlap_at_5": 0.9719999999999999,
+          "ranking_loss_at_5": 0.028000000000000136,
+          "score_mae_on_exact_topk": 0.003237808211912761,
+          "score_mse_on_exact_topk": 0.000017968877964337968,
+          "score_p95_abs_error_on_exact_topk": 0.00806904832200539,
+          "score_mae_on_union_topk": 0.006060396473666007,
+          "score_mse_on_union_topk": 0.00035991882516978117
+        }
+      },
+      "retrieval": {
+        "turboquant_beta": {
+          "query_count": 50,
+          "relevant_recall_at_1": 0.16,
+          "relevant_recall_at_5": 0.44,
+          "relevant_mrr": 0.259
+        },
+        "lloyd_max_beta": {
+          "query_count": 50,
+          "relevant_recall_at_1": 0.16,
+          "relevant_recall_at_5": 0.44,
+          "relevant_mrr": 0.259
+        }
+      },
+      "comparison": {
+        "quantization_ranking_loss_delta": 0,
+        "retrieval_recall_at_5_delta": 0,
+        "score_mae_exact_topk_delta": 0
+      },
+      "algorithm_level": "LEVEL_1_PUBLIC",
+      "format_version": 3,
+      "include_qjl": false,
+      "warnings": [
+        "LEVEL_1_PUBLIC: Public path uses TurboQuant Beta Lloyd-Max scalar quantization without QJL correction.",
+        "QJL residual sketch/correction is not implemented in the public search path.",
+        "Lloyd-Max comparison is retained as a sidecar benchmark for contrast with the shipped public path.",
+        "Experimental QJL is kept research-only until an estimator/search path is reproducible on this corpus."
+      ]
+    },
+    "hashed_tfidf": {
+      "vectorizer_id": "contextual_identifier_tfidf_hash_v1",
+      "vectorizer_kind": "hashed_tfidf",
+      "codebook_type": "turboquant_beta",
+      "compression_ratio": 7.930394875227077,
+      "compressed_bytes": 83672,
+      "compress_ms": 206.06666699999914,
+      "query_count": 50,
+      "quantization": {
+        "turboquant_beta": {
+          "query_count": 50,
+          "ranking_agreement_at_1": 1,
+          "ranking_overlap_at_5": 0.9520000000000001,
+          "ranking_loss_at_5": 0.04799999999999993,
+          "score_mae_on_exact_topk": 0.003285903916265309,
+          "score_mse_on_exact_topk": 0.000016264191248008223,
+          "score_p95_abs_error_on_exact_topk": 0.00799337353517049,
+          "score_mae_on_union_topk": 0.01087671846332477,
+          "score_mse_on_union_topk": 0.0013863782795041177
+        },
+        "lloyd_max_beta": {
+          "query_count": 50,
+          "ranking_agreement_at_1": 1,
+          "ranking_overlap_at_5": 0.9520000000000001,
+          "ranking_loss_at_5": 0.04799999999999993,
+          "score_mae_on_exact_topk": 0.003285903916265309,
+          "score_mse_on_exact_topk": 0.000016264191248008223,
+          "score_p95_abs_error_on_exact_topk": 0.00799337353517049,
+          "score_mae_on_union_topk": 0.01087671846332477,
+          "score_mse_on_union_topk": 0.0013863782795041177
+        }
+      },
+      "retrieval": {
+        "turboquant_beta": {
+          "query_count": 50,
+          "relevant_recall_at_1": 0.88,
+          "relevant_recall_at_5": 1,
+          "relevant_mrr": 0.94
+        },
+        "lloyd_max_beta": {
+          "query_count": 50,
+          "relevant_recall_at_1": 0.88,
+          "relevant_recall_at_5": 1,
+          "relevant_mrr": 0.94
+        }
+      },
+      "comparison": {
+        "quantization_ranking_loss_delta": 0,
+        "retrieval_recall_at_5_delta": 0,
+        "score_mae_exact_topk_delta": 0
+      },
+      "algorithm_level": "LEVEL_1_PUBLIC",
+      "format_version": 3,
+      "include_qjl": false,
+      "warnings": [
+        "LEVEL_1_PUBLIC: Public path uses TurboQuant Beta Lloyd-Max scalar quantization without QJL correction.",
+        "QJL residual sketch/correction is not implemented in the public search path.",
+        "Lloyd-Max comparison is retained as a sidecar benchmark for contrast with the shipped public path.",
+        "Experimental QJL is kept research-only until an estimator/search path is reproducible on this corpus."
+      ]
+    },
+    "plain_hashed_tfidf": {
+      "vectorizer_id": "hashed_tfidf_fnv1a_v1",
+      "vectorizer_kind": "hashed_tfidf",
+      "codebook_type": "turboquant_beta",
+      "compression_ratio": 7.930394875227077,
+      "compressed_bytes": 83672,
+      "compress_ms": 243.32984399999987,
+      "query_count": 50,
+      "quantization": {
+        "turboquant_beta": {
+          "query_count": 50,
+          "ranking_agreement_at_1": 0.94,
+          "ranking_overlap_at_5": 0.9319999999999999,
+          "ranking_loss_at_5": 0.06800000000000006,
+          "score_mae_on_exact_topk": 0.003014120984720684,
+          "score_mse_on_exact_topk": 0.00001340744790639765,
+          "score_p95_abs_error_on_exact_topk": 0.007402929005674436,
+          "score_mae_on_union_topk": 0.01242499246191546,
+          "score_mse_on_union_topk": 0.001494308998080518
+        },
+        "lloyd_max_beta": {
+          "query_count": 50,
+          "ranking_agreement_at_1": 0.94,
+          "ranking_overlap_at_5": 0.9319999999999999,
+          "ranking_loss_at_5": 0.06800000000000006,
+          "score_mae_on_exact_topk": 0.003014120984720684,
+          "score_mse_on_exact_topk": 0.00001340744790639765,
+          "score_p95_abs_error_on_exact_topk": 0.007402929005674436,
+          "score_mae_on_union_topk": 0.01242499246191546,
+          "score_mse_on_union_topk": 0.001494308998080518
+        }
+      },
+      "retrieval": {
+        "turboquant_beta": {
+          "query_count": 50,
+          "relevant_recall_at_1": 0.7,
+          "relevant_recall_at_5": 0.92,
+          "relevant_mrr": 0.7966666666666665
+        },
+        "lloyd_max_beta": {
+          "query_count": 50,
+          "relevant_recall_at_1": 0.7,
+          "relevant_recall_at_5": 0.92,
+          "relevant_mrr": 0.7966666666666665
+        }
+      },
+      "comparison": {
+        "quantization_ranking_loss_delta": 0,
+        "retrieval_recall_at_5_delta": 0,
+        "score_mae_exact_topk_delta": 0
+      },
+      "algorithm_level": "LEVEL_1_PUBLIC",
+      "format_version": 3,
+      "include_qjl": false,
+      "warnings": [
+        "LEVEL_1_PUBLIC: Public path uses TurboQuant Beta Lloyd-Max scalar quantization without QJL correction.",
+        "QJL residual sketch/correction is not implemented in the public search path.",
+        "Lloyd-Max comparison is retained as a sidecar benchmark for contrast with the shipped public path.",
+        "Experimental QJL is kept research-only until an estimator/search path is reproducible on this corpus."
+      ]
+    }
+  }
+}

@@ -17,6 +17,16 @@ namespace {
 const char* select_qjl_kernel_name(int proj_words, size_t local_size) {
     return (proj_words >= (int)local_size * 2) ? "tq_qjl_score_tiled" : "tq_qjl_score";
 }
+
+size_t choose_local_size_from_runtime_query(cl_kernel kernel, size_t fallback_local_size, size_t global_size) {
+    size_t suggested_local_size = 0;
+    if (global_size > 0 &&
+        query_kernel_suggested_local_work_size(kernel, 1, nullptr, &global_size, &suggested_local_size) &&
+        suggested_local_size > 0) {
+        return suggested_local_size;
+    }
+    return fallback_local_size;
+}
 }
 
 static inline uint32_t popcount32(uint32_t x) {
@@ -81,6 +91,11 @@ TqStatus qjl_score_opencl(const QjlScoreInput& input) {
         size_t local_size = local_work[0];
         if (local_size == 0) local_size = 64;
         size_t global_size = (kernel_name == std::string("tq_qjl_score_tiled"))
+            ? ((size_t)input.tokens * local_size)
+            : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
+        local_size = choose_local_size_from_runtime_query(k, local_size, global_size);
+        if (local_size == 0) local_size = 64;
+        global_size = (kernel_name == std::string("tq_qjl_score_tiled"))
             ? ((size_t)input.tokens * local_size)
             : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
         cl_event event;
@@ -149,6 +164,11 @@ TqStatus qjl_score_opencl_profiled(const QjlScoreInput& input, uint64_t* kernel_
         size_t local_size = local_work[0];
         if (local_size == 0) local_size = 64;
         size_t global_size = (kernel_name == std::string("tq_qjl_score_tiled"))
+            ? ((size_t)input.tokens * local_size)
+            : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
+        local_size = choose_local_size_from_runtime_query(k, local_size, global_size);
+        if (local_size == 0) local_size = 64;
+        global_size = (kernel_name == std::string("tq_qjl_score_tiled"))
             ? ((size_t)input.tokens * local_size)
             : (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
         cl_event event;

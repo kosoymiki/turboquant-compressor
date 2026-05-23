@@ -7,6 +7,7 @@
  */
 
 import { spawnSync } from 'child_process';
+import { type OpenClProbeResult, probeOpenCl } from '../native/opencl_probe.js';
 import { type ProductionPolicyAssessment, assessProductionPolicy } from '../native/production_policy.js';
 
 export interface BackendProbeOptions {
@@ -22,7 +23,10 @@ export interface BackendProbeResult {
   triton: 'available' | 'missing' | 'not_checked';
   cuda: 'available' | 'missing' | 'not_checked';
   vllm: 'available' | 'missing' | 'not_checked';
-  recommendedBackend: 'diagnostic_only' | 'typescript_cpu' | 'python_cpu' | 'python_gpu' | 'triton_gpu';
+  nativeBackend: OpenClProbeResult['recommendedBackend'] | 'diagnostic_only';
+  recommendedBackend: OpenClProbeResult['recommendedBackend'] | 'diagnostic_only' | 'python_cpu' | 'python_gpu' | 'triton_gpu';
+  executionOwner: 'native_cli_contract' | 'diagnostic_runtime';
+  admissionSource: 'native_probe' | 'production_policy_only';
   productionBackendAllowed: boolean;
   production: ProductionPolicyAssessment;
   probeMode: 'quick' | 'deep';
@@ -54,6 +58,7 @@ export function probeBackends(options: BackendProbeOptions = {}): BackendProbeRe
   const started = Date.now();
   const deep = options.deep === true;
   const timeoutMs = Math.max(100, Math.min(options.timeoutMs ?? 500, 3000));
+  const nativeProbe = probeOpenCl({ deep, timeoutMs });
 
   const result: BackendProbeResult = {
     termux: process.env['PREFIX']?.includes('com.termux') ?? false,
@@ -63,12 +68,19 @@ export function probeBackends(options: BackendProbeOptions = {}): BackendProbeRe
     triton: deep ? 'missing' : 'not_checked',
     cuda: deep ? 'missing' : 'not_checked',
     vllm: deep ? 'missing' : 'not_checked',
+    nativeBackend: nativeProbe.production.productionReady
+      ? nativeProbe.recommendedBackend
+      : 'diagnostic_only',
     recommendedBackend: 'diagnostic_only',
+    executionOwner: nativeProbe.production.productionReady ? 'native_cli_contract' : 'diagnostic_runtime',
+    admissionSource: nativeProbe.runtimePackProbe || nativeProbe.loadable !== null
+      ? 'native_probe'
+      : 'production_policy_only',
     productionBackendAllowed: false,
-    production: assessProductionPolicy(),
+    production: nativeProbe.production ?? assessProductionPolicy(),
     probeMode: deep ? 'deep' : 'quick',
     elapsedMs: 0,
-    warnings: [],
+    warnings: [...nativeProbe.warnings],
   };
 
   result.python = commandExists('python3', timeoutMs) ? 'available' : 'missing';
@@ -77,9 +89,9 @@ export function probeBackends(options: BackendProbeOptions = {}): BackendProbeRe
     if (result.python === 'missing') {
       result.warnings.push('Python not found; Python reference validation unavailable');
     }
-    if (!result.production.productionReady) {
-      result.warnings.push(`Production route blocked: ${result.production.blockers.join(', ')}`);
-    }
+    result.recommendedBackend = result.nativeBackend;
+    result.productionBackendAllowed = result.production.productionReady
+      && result.production.allowedProductionRoutes.includes(result.production.productionRoute as typeof result.production.allowedProductionRoutes[number]);
     result.warnings.push('Quick probe: pass deep=true to check torch/triton/vllm');
     result.elapsedMs = Date.now() - started;
     return result;
@@ -100,7 +112,9 @@ export function probeBackends(options: BackendProbeOptions = {}): BackendProbeRe
     }
   }
 
-  if (result.triton === 'available') {
+  if (result.nativeBackend !== 'diagnostic_only') {
+    result.recommendedBackend = result.nativeBackend;
+  } else if (result.triton === 'available') {
     result.recommendedBackend = 'triton_gpu';
   } else if (result.cuda === 'available') {
     result.recommendedBackend = 'python_gpu';

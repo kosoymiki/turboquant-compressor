@@ -2,7 +2,7 @@
 
 ## Scope
 
-This audit covers the shipped `v4.1.4` surface after kernel/runtime cleanup, the fresh open local benchmark, and the current custom driver runtime contract.
+This audit covers the shipped `v4.5.0` surface after kernel/runtime cleanup, the fresh open local benchmark, and the current custom driver runtime contract.
 
 Evidence anchors:
 - `bench/results/open-test-local-20260521-160651.json`

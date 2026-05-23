@@ -52,6 +52,8 @@ add_library(tq_opencl_core
   src/tq_repo_paths.cpp
   src/tq_gpu_profile.cpp
   src/tq_kernel_tune.cpp
+  src/tq_runtime_scheduler.cpp
+  src/tq_inference_runtime.cpp
   src/tq_driver_manifest.cpp
   src/tq_vk_probe.cpp
   src/tq_cl_vk_interop.cpp

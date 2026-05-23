@@ -16,6 +16,7 @@
 #include "tq_cl_vk_interop.h"
 
 #include <CL/cl.h>
+#include <CL/cl_ext.h>
 #include <cstddef>
 #include <string>
 
@@ -24,6 +25,7 @@ namespace tq {
 struct KernelMetadata {
     size_t preferred_work_group_size_multiple = 0;
     size_t work_group_size = 0;
+    size_t suggested_local_work_size = 0;
     cl_ulong local_mem_size = 0;
     cl_ulong private_mem_size = 0;
 };
@@ -44,10 +46,30 @@ const GpuProfile& get_gpu_profile();
 bool device_has_fp16();
 bool device_has_subgroups();
 bool device_has_il_program();
+bool device_has_async_program_compilation();
+bool device_has_suggested_local_work_size();
+bool device_has_create_command_queue();
+bool device_has_initialize_memory();
+bool device_has_device_uuid();
+bool device_has_priority_hints();
+bool device_has_throttle_hints();
+bool device_has_command_buffer();
+bool device_has_command_buffer_mutable_dispatch();
+bool device_has_external_memory();
+bool device_has_external_memory_ahb();
+bool device_has_external_semaphore();
+std::string get_device_uuid();
+uint64_t get_command_buffer_capabilities();
 bool device_has_svm();
 bool device_has_svm_coarse();
 bool device_has_svm_fine();
 bool device_has_svm_atomics();
+bool query_kernel_suggested_local_work_size(
+    cl_kernel kernel,
+    cl_uint work_dim,
+    const size_t* global_work_offset,
+    const size_t* global_work_size,
+    size_t* suggested_local_work_size);
 
 // Program/kernel compilation
 TqStatus build_program(const std::string& source, const std::string& options, cl_program* out);

@@ -7,6 +7,7 @@
 #include "tq_opencl.h"
 #include "../include/tq_autotuner.h"
 #include "../include/tq_repo_paths.h"
+#include "../include/tq_trace.h"
 #include <CL/cl.h>
 #include <cstdio>
 #include <cstdlib>
@@ -42,6 +43,8 @@ struct KernelResult {
     double std_ms;
     double cpu_mean_ms;
     double speedup_vs_cpu;
+    double host_mean_ms;
+    double host_p95_ms;
     size_t memory_bytes;
 };
 
@@ -123,10 +126,14 @@ static KernelResult bench_mse(const BenchShape& shape, int warmup, int iters, st
 
     // Timed iterations
     std::vector<double> times_ms;
+    std::vector<double> host_times_ms;
     for (int i = 0; i < iters; i++) {
         uint64_t ns;
+        auto wall_t0 = std::chrono::steady_clock::now();
         mse_score_opencl_profiled(input, scores_gpu.data(), &ns);
+        auto wall_t1 = std::chrono::steady_clock::now();
         times_ms.push_back((double)ns / 1e6);
+        host_times_ms.push_back(std::chrono::duration<double, std::milli>(wall_t1 - wall_t0).count());
     }
 
     // CPU reference timing
@@ -161,7 +168,11 @@ static KernelResult bench_mse(const BenchShape& shape, int warmup, int iters, st
     r.std_ms = compute_std(times_ms, mean);
     r.cpu_mean_ms = cpu_mean;
     r.speedup_vs_cpu = (mean > 0) ? cpu_mean / mean : 0;
+    r.host_mean_ms = compute_mean(host_times_ms);
+    r.host_p95_ms = percentile(host_times_ms, 95);
     r.memory_bytes = packed.size() + query.size() * 4 + norms.size() * 4 + centroids.size() * 4 + scores_gpu.size() * 4;
+    trace_log("bench", "kernel=%s tokens=%d heads=%d dim=%d bits=%d kernel_mean_ms=%.4f host_mean_ms=%.4f host_p95_ms=%.4f parity=%d",
+              r.kernel.c_str(), shape.tokens, shape.heads, shape.head_dim, shape.bits, r.mean_ms, r.host_mean_ms, r.host_p95_ms, r.parity ? 1 : 0);
     return r;
 }
 
@@ -195,12 +206,16 @@ static KernelResult bench_qjl(const BenchShape& shape, int warmup, int iters, st
 
     // Timed iterations
     std::vector<double> times_ms;
+    std::vector<double> host_times_ms;
     for (int i = 0; i < iters; i++) {
         std::fill(scores_gpu.begin(), scores_gpu.end(), 0.0f);
         input.base_scores = scores_gpu.data();
         uint64_t ns;
+        auto wall_t0 = std::chrono::steady_clock::now();
         qjl_score_opencl_profiled(input, &ns);
+        auto wall_t1 = std::chrono::steady_clock::now();
         times_ms.push_back((double)ns / 1e6);
+        host_times_ms.push_back(std::chrono::duration<double, std::milli>(wall_t1 - wall_t0).count());
     }
 
     // CPU timing
@@ -243,7 +258,11 @@ static KernelResult bench_qjl(const BenchShape& shape, int warmup, int iters, st
     r.std_ms = compute_std(times_ms, mean);
     r.cpu_mean_ms = cpu_mean;
     r.speedup_vs_cpu = (mean > 0) ? cpu_mean / mean : 0;
+    r.host_mean_ms = compute_mean(host_times_ms);
+    r.host_p95_ms = percentile(host_times_ms, 95);
     r.memory_bytes = query_signs.size() * 4 + residual_signs.size() * 4 + residual_norms.size() * 4 + scores_gpu.size() * 4;
+    trace_log("bench", "kernel=%s tokens=%d heads=%d dim=%d bits=%d kernel_mean_ms=%.4f host_mean_ms=%.4f host_p95_ms=%.4f parity=%d",
+              r.kernel.c_str(), shape.tokens, shape.heads, shape.head_dim, shape.bits, r.mean_ms, r.host_mean_ms, r.host_p95_ms, r.parity ? 1 : 0);
     return r;
 }
 
@@ -278,10 +297,14 @@ static KernelResult bench_value_dequant(const BenchShape& shape, int warmup, int
     }
 
     std::vector<double> times_ms;
+    std::vector<double> host_times_ms;
     for (int i = 0; i < iters; i++) {
         uint64_t ns;
+        auto wall_t0 = std::chrono::steady_clock::now();
         value_dequant_opencl_profiled(input, output_gpu.data(), &ns);
+        auto wall_t1 = std::chrono::steady_clock::now();
         times_ms.push_back((double)ns / 1e6);
+        host_times_ms.push_back(std::chrono::duration<double, std::milli>(wall_t1 - wall_t0).count());
     }
 
     std::vector<double> cpu_times;
@@ -315,7 +338,11 @@ static KernelResult bench_value_dequant(const BenchShape& shape, int warmup, int
     r.std_ms = compute_std(times_ms, mean);
     r.cpu_mean_ms = cpu_mean;
     r.speedup_vs_cpu = (mean > 0) ? cpu_mean / mean : 0;
+    r.host_mean_ms = compute_mean(host_times_ms);
+    r.host_p95_ms = percentile(host_times_ms, 95);
     r.memory_bytes = packed.size() + scales.size() * 4 + zeros.size() * 4 + output_gpu.size() * 4;
+    trace_log("bench", "kernel=%s tokens=%d heads=%d dim=%d bits=%d kernel_mean_ms=%.4f host_mean_ms=%.4f host_p95_ms=%.4f parity=%d",
+              r.kernel.c_str(), shape.tokens, shape.heads, shape.head_dim, shape.bits, r.mean_ms, r.host_mean_ms, r.host_p95_ms, r.parity ? 1 : 0);
     return r;
 }
 
@@ -387,6 +414,7 @@ static KernelResult bench_fused_attention(const BenchShape& shape, int warmup, i
     }
 
     std::vector<double> times_ms;
+    std::vector<double> host_times_ms;
     for (int i = 0; i < iters; i++) {
         std::fill(output_gpu.begin(), output_gpu.end(), 0.0f);
         input.output = output_gpu.data();
@@ -398,6 +426,7 @@ static KernelResult bench_fused_attention(const BenchShape& shape, int warmup, i
             ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
         }
         times_ms.push_back((double)ns / 1e6);
+        host_times_ms.push_back(std::chrono::duration<double, std::milli>(t1 - t0).count());
     }
 
     std::vector<double> cpu_times;
@@ -447,9 +476,13 @@ static KernelResult bench_fused_attention(const BenchShape& shape, int warmup, i
     r.std_ms = compute_std(times_ms, mean);
     r.cpu_mean_ms = cpu_mean;
     r.speedup_vs_cpu = (mean > 0) ? cpu_mean / mean : 0;
+    r.host_mean_ms = compute_mean(host_times_ms);
+    r.host_p95_ms = percentile(host_times_ms, 95);
     r.memory_bytes = key_packed.size() + val_packed.size() + query.size() * 4 +
                      norms.size() * 4 + centroids.size() * 4 + val_scales.size() * 4 +
                      val_zeros.size() * 4 + residual_signs.size() * 4;
+    trace_log("bench", "kernel=%s tokens=%d heads=%d dim=%d bits=%d kernel_mean_ms=%.4f host_mean_ms=%.4f host_p95_ms=%.4f parity=%d",
+              r.kernel.c_str(), shape.tokens, shape.heads, shape.head_dim, shape.bits, r.mean_ms, r.host_mean_ms, r.host_p95_ms, r.parity ? 1 : 0);
     return r;
 }
 
@@ -471,6 +504,8 @@ static void print_result_json(const KernelResult& r) {
     printf("      \"std_ms\": %.4f,\n", r.std_ms);
     printf("      \"cpu_mean_ms\": %.4f,\n", r.cpu_mean_ms);
     printf("      \"speedup_vs_cpu\": %.3f,\n", r.speedup_vs_cpu);
+    printf("      \"host_mean_ms\": %.4f,\n", r.host_mean_ms);
+    printf("      \"host_p95_ms\": %.4f,\n", r.host_p95_ms);
     printf("      \"memory_bytes\": %zu\n", r.memory_bytes);
     printf("    }");
 }
@@ -539,12 +574,14 @@ int run_benchmark(int argc, char* argv[]) {
     bool json_output = true;
     bool autotune = false;
     std::string kernel_dir;
+    std::string profile = std::getenv("TQ_OPENCL_BENCH_PROFILE") ? std::getenv("TQ_OPENCL_BENCH_PROFILE") : "";
 
     // Parse args
     for (int i = 0; i < argc; i++) {
         if (std::string(argv[i]) == "--warmup" && i + 1 < argc) warmup = atoi(argv[++i]);
         else if (std::string(argv[i]) == "--iters" && i + 1 < argc) iters = atoi(argv[++i]);
         else if (std::string(argv[i]) == "--kernel-dir" && i + 1 < argc) kernel_dir = argv[++i];
+        else if (std::string(argv[i]) == "--profile" && i + 1 < argc) profile = argv[++i];
         else if (std::string(argv[i]) == "--autotune") autotune = true;
     }
     kernel_dir = tq::resolve_kernel_dir(kernel_dir);
@@ -569,16 +606,26 @@ int run_benchmark(int argc, char* argv[]) {
     load_kernel(kernel_dir + "/tq_attention_apply_values.cl", "tq_attention_apply_values", build_opts);
 
     // Shape matrix
-    std::vector<BenchShape> shapes = {
-        {128, 4, 64, 3},   // small correctness
-        {128, 4, 64, 4},
-        {512, 8, 64, 3},   // interactive
-        {512, 8, 64, 4},
-        {2048, 8, 128, 3}, // long context mobile
-        {2048, 8, 128, 4},
-        {4096, 8, 128, 3}, // stress
-        {4096, 8, 128, 4},
-    };
+    std::vector<BenchShape> shapes;
+    if (profile == "smoke") {
+        shapes = {
+            {128, 4, 64, 3},
+            {128, 4, 64, 4},
+        };
+        warmup = std::min(warmup, 1);
+        iters = std::min(iters, 3);
+    } else {
+        shapes = {
+            {128, 4, 64, 3},   // small correctness
+            {128, 4, 64, 4},
+            {512, 8, 64, 3},   // interactive
+            {512, 8, 64, 4},
+            {2048, 8, 128, 3}, // long context mobile
+            {2048, 8, 128, 4},
+            {4096, 8, 128, 3}, // stress
+            {4096, 8, 128, 4},
+        };
+    }
 
     // Memory check — skip 8192 if < 6GB available
     std::ifstream meminfo("/proc/meminfo");
@@ -592,7 +639,7 @@ int run_benchmark(int argc, char* argv[]) {
             }
         }
     }
-    if (avail_kb == 0 || avail_kb > 4000000) {
+    if (profile != "smoke" && (avail_kb == 0 || avail_kb > 4000000)) {
         shapes.push_back({8192, 8, 128, 3}); // memory stress
         shapes.push_back({8192, 8, 128, 4});
     }
@@ -690,6 +737,7 @@ int run_benchmark(int argc, char* argv[]) {
         printf("  \"run\": {\n");
         printf("    \"warmup\": %d,\n", warmup);
         printf("    \"iters\": %d,\n", iters);
+        printf("    \"profile\": \"%s\",\n", profile.empty() ? "full" : profile.c_str());
         printf("    \"mem_available_kb_before\": %ld,\n", avail_kb);
         printf("    \"mem_available_kb_after\": %ld\n", avail_kb_after);
         printf("  },\n");

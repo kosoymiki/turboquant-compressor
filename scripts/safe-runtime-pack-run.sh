@@ -15,13 +15,37 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 INSTALLER="$ROOT_DIR/scripts/install-driver-root.sh"
 LOCK_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/turboquant/opencl-serial.lock"
+LOCK_PID_FILE="$LOCK_DIR/pid"
+LOCK_WAIT_SECONDS="${TQ_OPENCL_LOCK_WAIT_SECONDS:-20}"
+LOCK_STALE_SECONDS="${TQ_OPENCL_LOCK_STALE_SECONDS:-120}"
+RUNTIME_TIMEOUT_SECONDS="${TQ_OPENCL_TIMEOUT_SECONDS:-45}"
 
 acquire_lock() {
   mkdir -p "$(dirname "$LOCK_DIR")"
+  local start_ts now_ts lock_pid lock_age
+  start_ts="$(date +%s)"
   while ! mkdir "$LOCK_DIR" 2>/dev/null; do
+    if [ -f "$LOCK_PID_FILE" ]; then
+      lock_pid="$(cat "$LOCK_PID_FILE" 2>/dev/null || true)"
+      if [ -n "$lock_pid" ] && ! kill -0 "$lock_pid" 2>/dev/null; then
+        rm -rf "$LOCK_DIR" 2>/dev/null || true
+        continue
+      fi
+    fi
+    now_ts="$(date +%s)"
+    lock_age=$((now_ts - start_ts))
+    if [ "$lock_age" -ge "$LOCK_STALE_SECONDS" ]; then
+      rm -rf "$LOCK_DIR" 2>/dev/null || true
+      continue
+    fi
+    if [ "$lock_age" -ge "$LOCK_WAIT_SECONDS" ]; then
+      echo "[safe-runtime-pack-run] timed out waiting for runtime-pack lock: $LOCK_DIR" >&2
+      exit 124
+    fi
     sleep 1
   done
-  trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT INT TERM
+  printf '%s\n' "$$" > "$LOCK_PID_FILE"
+  trap 'rm -rf "$LOCK_DIR" 2>/dev/null || true' EXIT INT TERM
 }
 resolve_cli() {
   if [ -n "${TQ_OPENCL_CLI:-}" ] && [ -x "${TQ_OPENCL_CLI}" ]; then
@@ -86,7 +110,7 @@ cmd="${1:-}"
 shift || true
 
 case "$cmd" in
-  probe|benchmark|mse-score|qjl-score|value-dequant|fused-attention)
+  probe|frontier-smoke|system-svm-smoke|async-build-smoke|runtime-scheduler-smoke|inference-runtime-smoke|paged-kv-prefix-cache-smoke|benchmark|mse-score|qjl-score|value-dequant|fused-attention)
     ;;
   *)
     echo "[safe-runtime-pack-run] unsupported command: $cmd" >&2
@@ -114,20 +138,28 @@ ENV_RUNNER=(
   PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
   TMPDIR="${TMPDIR:-/data/data/com.termux/files/usr/tmp}"
   PATH="${PREFIX:-/data/data/com.termux/files/usr}/bin:/system/bin"
+  RUSTICL_DEBUG="${RUSTICL_DEBUG:-}"
+  RUSTICL_FEATURES="${RUSTICL_FEATURES:-}"
+  TQ_OPENCL_TRACE="${TQ_OPENCL_TRACE:-}"
+  TQ_OPENCL_INTERCEPT_LIB="${TQ_OPENCL_INTERCEPT_LIB:-}"
+  TQ_OPENCL_INTERCEPT_CONFIG="${TQ_OPENCL_INTERCEPT_CONFIG:-}"
+  OCL_INTERCEPT_CONFIG_FILE="${OCL_INTERCEPT_CONFIG_FILE:-}"
+  CLI_OpenCLFileName="${CLI_OpenCLFileName:-}"
+  LD_PRELOAD="${LD_PRELOAD:-}"
 )
 
 if command -v timeout >/dev/null 2>&1; then
   if [ "${TQ_OPENCL_SILENCE_STDERR:-1}" = "1" ]; then
     TMP_ERR="$(mktemp "${TMPDIR:-/tmp}/tq-runtime-stderr.XXXXXX")"
     set +e
-    "${ENV_RUNNER[@]}" timeout 45s bash -lc "$INNER_CMD" 2>"$TMP_ERR"
+    "${ENV_RUNNER[@]}" timeout "${RUNTIME_TIMEOUT_SECONDS}s" bash -lc "$INNER_CMD" 2>"$TMP_ERR"
     rc=$?
     set -e
     grep -v -E 'failed to open /dev/dri/renderD128: Permission denied|Unsupported SPIR-V capability: SpvCapabilityGenericPointer|^[[:space:]]*[0-9]+ bytes into the SPIR-V binary$|^SPIR-V WARNING:$|^[[:space:]]*In file .*spirv_to_nir\.c:5557$' "$TMP_ERR" >&2 || true
     rm -f "$TMP_ERR"
     exit "$rc"
   else
-    "${ENV_RUNNER[@]}" timeout 45s bash -lc "$INNER_CMD"
+    "${ENV_RUNNER[@]}" timeout "${RUNTIME_TIMEOUT_SECONDS}s" bash -lc "$INNER_CMD"
   fi
 else
   if [ "${TQ_OPENCL_SILENCE_STDERR:-1}" = "1" ]; then

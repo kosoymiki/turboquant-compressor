@@ -99,6 +99,7 @@ export interface ContextPackManifest {
       documentCount?: number;
       maxFeaturesPerDocument?: number;
       idfWeights?: number[];
+      contextualMode?: 'none' | 'path_chunk_prefix_v1';
     };
   };
   provenance: import('../context/provenance.js').ContextPackProvenance;

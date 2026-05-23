@@ -148,7 +148,7 @@ export const crushProfile: ClientProfile = {
 #   1. Installed Crush version recorded
 #   2. Exact config file recorded
 #   3. turboquant server starts
-#   4. All 8 tools discoverable or host limitation documented`,
+#   4. All 13 tools discoverable or host limitation documented`,
   smokeCommand: 'crush --help # verify MCP tools appear in Crush session',
   expectedTools: ALL_TOOLS,
   warnings: [

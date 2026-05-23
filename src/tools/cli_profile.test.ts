@@ -22,7 +22,7 @@ describe('CLI Profile', () => {
     expect(result.supportStatus).toBe('unverified');
   });
 
-  it('returns all 8 expected tools for claude_code', () => {
+  it('returns all expected tools for claude_code', () => {
     const result = getCliProfile({ host: 'claude_code' });
     expect(result.expectedTools).toHaveLength(8);
     expect(result.expectedTools).toContain('turboquant_cli_mcp_profile');

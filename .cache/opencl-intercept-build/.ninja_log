@@ -1,0 +1,18 @@
+# ninja log v7
+3	138	1779451343962829312	intercept/CMakeFiles/OpenCL.dir/src/cliprof_init.cpp.o	726476e46801a37d
+1	2549	1779451343962829312	intercept/CMakeFiles/OpenCL.dir/OS/OS_linux.cpp.o	cd86e6cf968a89e1
+2	2649	1779451343962829312	intercept/CMakeFiles/OpenCL.dir/src/chrometracer.cpp.o	1081a1d97f83196f
+6	4748	1779451343966829312	intercept/CMakeFiles/OpenCL.dir/src/emulate.cpp.o	29490135f93dfcd5
+2649	5161	1779451346610829311	intercept/CMakeFiles/OpenCL.dir/src/objtracker.cpp.o	830be92d84b443eb
+2550	6143	1779451346510829311	intercept/CMakeFiles/OpenCL.dir/src/main.cpp.o	811621cb93f9e6e4
+4749	7402	1779451348710829310	intercept/CMakeFiles/OpenCL.dir/src/utils.cpp.o	b6506476c68c7a9d
+6143	8440	1779451350102829310	cliloader/CMakeFiles/cliloader.dir/cliloader.cpp.o	c54ab01f765872be
+5161	9458	1779451349122829310	intercept/CMakeFiles/OpenCL.dir/git_version.cpp.o	2f1f5b3fdc162c24
+6	19613	1779451343966829312	intercept/CMakeFiles/OpenCL.dir/src/dispatch.cpp.o	6743f4f3d192687d
+16	23532	1779451343978829312	intercept/CMakeFiles/OpenCL.dir/src/enummap.cpp.o	eba50db45cdd8cc6
+138	29737	1779451344098829312	intercept/CMakeFiles/OpenCL.dir/src/intercept.cpp.o	78e6b8f0bd852c5c
+29738	29916	1779451373698829301	intercept/libOpenCL.so.1.2	43adc750af26b307
+29917	29945	1779451373878829301	intercept/libOpenCL.so.1	66472a2c0869d925
+29917	29945	1779451373878829301	intercept/libOpenCL.so	66472a2c0869d925
+29945	30077	1779451373906829301	cliloader/cliloader	2630f90dbfccdc6c
+7	53	1779451374058829300	CMakeFiles/install.util	430dd204eae6499c

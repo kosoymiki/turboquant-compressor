@@ -7,6 +7,7 @@
 #include "tq_opencl.h"
 #include "tq_buffer.h"
 #include "tq_kernel_tune.h"
+#include "tq_runtime_scheduler.h"
 #include <CL/cl.h>
 #include <chrono>
 #include <cstdint>
@@ -16,6 +17,16 @@ namespace tq {
 namespace {
 const char* select_value_kernel_name(const ValueDequantInput&) {
     return "tq_value_dequant";
+}
+
+size_t choose_local_size_from_runtime_query(cl_kernel kernel, size_t fallback_local_size, size_t global_size) {
+    size_t suggested_local_size = 0;
+    if (global_size > 0 &&
+        query_kernel_suggested_local_work_size(kernel, 1, nullptr, &global_size, &suggested_local_size) &&
+        suggested_local_size > 0) {
+        return suggested_local_size;
+    }
+    return fallback_local_size;
 }
 }
 
@@ -92,6 +103,9 @@ TqStatus value_dequant_opencl(const ValueDequantInput& input, float* output) {
         size_t local_size = local_work[0];
         if (local_size == 0) local_size = 64;
         size_t global_size = (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
+        local_size = choose_local_size_from_runtime_query(k, local_size, global_size);
+        if (local_size == 0) local_size = 64;
+        global_size = (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
         cl_event event;
         cl_int err = clEnqueueNDRangeKernel(queue, k, 1, nullptr, &global_size, &local_size, 0, nullptr, &event);
         if (err != CL_SUCCESS) {
@@ -160,6 +174,9 @@ TqStatus value_dequant_opencl_profiled(const ValueDequantInput& input, float* ou
         size_t local_size = local_work[0];
         if (local_size == 0) local_size = 64;
         size_t global_size = (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
+        local_size = choose_local_size_from_runtime_query(k, local_size, global_size);
+        if (local_size == 0) local_size = 64;
+        global_size = (((size_t)input.tokens + local_size - 1) / local_size) * local_size;
         cl_event event;
         cl_int err = clEnqueueNDRangeKernel(queue, k, 1, nullptr, &global_size, &local_size, 0, nullptr, &event);
         if (err != CL_SUCCESS) {
@@ -184,6 +201,7 @@ TqStatus value_dequant_opencl_profiled(const ValueDequantInput& input, float* ou
             *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
         }
 
+        runtime_scheduler_note_execution_dispatch(kernel_name, global_size, local_size, true, *kernel_ns);
         d_output.read_from_device(queue, output);
 
         clReleaseEvent(event);

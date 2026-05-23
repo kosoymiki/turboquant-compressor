@@ -1,0 +1,4 @@
+/data/data/com.termux/files/home/tmp_turboquant/.cache/opencl-intercept-install/lib/libOpenCL.so.1.2
+/data/data/com.termux/files/home/tmp_turboquant/.cache/opencl-intercept-install/lib/libOpenCL.so.1
+/data/data/com.termux/files/home/tmp_turboquant/.cache/opencl-intercept-install/lib/libOpenCL.so
+/data/data/com.termux/files/home/tmp_turboquant/.cache/opencl-intercept-install/bin/cliloader

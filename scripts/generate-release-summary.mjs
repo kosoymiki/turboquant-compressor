@@ -120,22 +120,22 @@ lines.push(section('MCP Tools (tools/list)',
 ));
 
 // 4. Test summary
-const testRes = run('node', ['--experimental-vm-modules', 'node_modules/jest/bin/jest.js', '--runInBand', '--no-coverage'], { timeout: 120000 });
+const testRes = run('npm', ['test', '--', '--runInBand', '--no-coverage'], { timeout: 600000 });
 const testOutput = (testRes.stdout + '\n' + testRes.stderr).trim();
-const summaryMatch = testOutput.match(/Tests?:.*\n?.*passed.*|Test Suites?:.*passed.*/g);
+const summaryMatch = testOutput.match(/Test Suites?:.*|Tests?:.*/g);
 const testSummary = summaryMatch ? summaryMatch.slice(-3).join('\n') : (testRes.ok ? 'Tests passed' : 'Tests FAILED');
 lines.push(section('Test Suite', codeBlock('', testSummary) + (testRes.ok ? '\n\nStatus: **PASS**' : '\n\nStatus: **FAIL**')));
 
 // 5. verify:release
-const verifyRes = run('node', ['scripts/verify-release.mjs'], { timeout: 30000 });
+const verifyRes = run('node', ['scripts/verify-release.mjs'], { timeout: 120000 });
 lines.push(section('verify:release', codeBlock('', (verifyRes.stdout + '\n' + verifyRes.stderr).trim().slice(0, 2000)) + (verifyRes.ok ? '\n\nStatus: **PASS**' : '\n\nStatus: **FAIL**')));
 
 // 6. verify-host-matrix
-const matrixRes = run('node', ['scripts/verify-host-matrix.mjs'], { timeout: 10000 });
+const matrixRes = run('node', ['scripts/verify-host-matrix.mjs'], { timeout: 30000 });
 lines.push(section('verify-host-matrix', codeBlock('', (matrixRes.stdout + '\n' + matrixRes.stderr).trim()) + (matrixRes.ok ? '\n\nStatus: **PASS**' : '\n\nStatus: **FAIL**')));
 
 // 7. MCP conformance
-const confRes = run('node', ['scripts/mcp-conformance.mjs'], { timeout: 60000 });
+const confRes = run('node', ['scripts/mcp-conformance.mjs'], { timeout: 120000 });
 const confOutput = confRes.stdout + '\n' + confRes.stderr;
 const confPassed = confOutput.match(/Total:\s*(\d+)\s*passed/);
 const confFailed = confOutput.match(/(\d+)\s*failed/);
@@ -145,14 +145,14 @@ const confSummary = confPassed && confFailed
 lines.push(section('MCP Conformance', codeBlock('', confOutput.slice(0, 1500)) + (confRes.ok ? '\n\nStatus: **PASS**' : '\n\nStatus: **FAIL**')));
 
 // 8. MCP transcript
-const transRes = run('node', ['scripts/mcp-transcript.mjs'], { timeout: 30000 });
+const transRes = run('node', ['scripts/mcp-transcript.mjs'], { timeout: 60000 });
 lines.push(section('MCP Transcript', codeBlock('', (transRes.stdout + '\n' + transRes.stderr).trim())));
 
 // 9. Smoke tests
-const smokeStdio = run('npm', ['run', 'smoke:stdio'], { timeout: 30000 });
-const smokeMcp = run('npm', ['run', 'smoke:mcp'], { timeout: 30000 });
-const smokeNumeric = run('npm', ['run', 'smoke:numeric'], { timeout: 30000 });
-const smokeApi = run('npm', ['run', 'smoke:api'], { timeout: 30000 });
+const smokeStdio = run('npm', ['run', 'smoke:stdio'], { timeout: 60000 });
+const smokeMcp = run('npm', ['run', 'smoke:mcp'], { timeout: 60000 });
+const smokeNumeric = run('npm', ['run', 'smoke:numeric'], { timeout: 60000 });
+const smokeApi = run('npm', ['run', 'smoke:api'], { timeout: 60000 });
 
 lines.push(section('Smoke Tests', [
   `- stdio: ${smokeStdio.ok ? '**PASS**' : 'FAIL'}`,
@@ -188,12 +188,12 @@ let archiveVerOk = false;
 let parityOk = false;
 if (srcExists && portExists) {
   const archRes = run('node', ['scripts/verify-archives.mjs'], {
-    timeout: 30000,
+    timeout: 60000,
     env: { ...process.env, TQ_SOURCE_ARCHIVE: sourceArchivePath, TQ_PORTABLE_ARCHIVE: portableArchivePath }
   });
   archiveVerOk = archRes.ok;
   const parityRes = run('node', ['scripts/verify-artifact-parity.mjs'], {
-    timeout: 30000,
+    timeout: 60000,
     env: { ...process.env, TQ_SOURCE_ARCHIVE: sourceArchivePath, TQ_PORTABLE_ARCHIVE: portableArchivePath }
   });
   parityOk = parityRes.ok;
@@ -211,7 +211,7 @@ if (srcExists && portExists) {
 }
 
 // 12. Overall verdict
-const allRuntimeOk = distExists && testRes.ok && verifyRes.ok && matrixRes.ok && confRes.ok && toolNames.length === 8;
+const allRuntimeOk = distExists && testRes.ok && verifyRes.ok && matrixRes.ok && confRes.ok && toolNames.length === 13;
 const allArchiveOk = !archiveEnvExplicit || (srcExists && portExists && archiveVerOk && parityOk);
 const allOk = allRuntimeOk && allArchiveOk;
 

@@ -187,7 +187,7 @@ async function runConformance() {
     session.sendNotification('notifications/initialized');
     results.push(pass('initialized_notification', 'sent, no response expected'));
 
-    // 3. tools/list — must return exactly 10 tools
+    // 3. tools/list — must return the full shipped public tool surface
     const listResp = await session.call(2, 'tools/list');
     if (listResp.result && Array.isArray(listResp.result.tools)) {
       toolsList = listResp.result.tools;

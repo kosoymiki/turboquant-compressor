@@ -160,7 +160,7 @@ The full frontier expansion confirms the same structural rule seen in P0:
 - Vulkan/Freedreno capability != OpenCL/Rusticl release claim
 - research roadmap != honest current product surface
 
-Therefore the only safe patch policy for `v4.1.4` is:
+Therefore the only safe patch policy for `v4.5.0` is:
 
 1. upgrade items from `implemented_partial` to `implemented_and_evidenced` only where repo plus runtime proof already exist or can be added concretely
 2. narrow or remove public claims for `spec_only_or_unproven`

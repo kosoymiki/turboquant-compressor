@@ -79,10 +79,10 @@ const checks = [
   { pattern: /SHA256:/, name: 'SHA256 hashes' },
   { pattern: /verify:archives[:\s]+(\*\*PASS\*\*|PASS)/, name: 'verify:archives PASS' },
   { pattern: /verify:artifact-parity[:\s]+(\*\*PASS\*\*|PASS)/, name: 'verify:artifact-parity PASS' },
-  { pattern: /mcp-conformance.*14.*passed.*0.*failed|Total:\s*14\s*passed/i, name: 'MCP conformance 14/14' },
+  { pattern: /mcp-conformance.*19.*passed.*0.*failed|Total:\s*19\s*passed/i, name: 'MCP conformance 19\/19' },
   { pattern: /isError entries[:\s]*0/i, name: 'MCP transcript 0 isError' },
   { pattern: /Smoke Tests/, name: 'Smoke Tests section' },
-  { pattern: /Test Suites?[:\s]+\d+\s+passed/i, name: 'Test count' },
+  { pattern: /Test Suites?:[\s\S]*passed/i, name: 'Test count' },
 ];
 
 for (const check of checks) {

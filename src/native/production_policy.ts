@@ -4,11 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { existsSync } from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
-
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+import { resolveRuntimeContractPaths, runtimeEvidenceExists } from './runtime_contracts.js';
 
 export type AllowedProductionRoute = 'mesa_rusticl_kgsl' | 'turnip_vulkan_kgsl';
 export type ProductionRoute = AllowedProductionRoute | 'diagnostic_only';
@@ -23,16 +19,23 @@ export interface ProductionPolicyAssessment {
   blockers: string[];
 }
 
-const RUSTICL_EVIDENCE = 'forensics/mesa/rusticl-ready.json';
-const TURNIP_EVIDENCE = 'forensics/mesa/turnip-ready.json';
-
-function hasEvidence(relPath: string): boolean {
-  return existsSync(join(ROOT, relPath));
+function firstEvidenceHit(candidates: string[]): string | null {
+  for (const path of candidates) {
+    if (runtimeEvidenceExists(path)) {
+      return path;
+    }
+  }
+  return null;
 }
 
 export function assessProductionPolicy(): ProductionPolicyAssessment {
-  const rusticlReady = hasEvidence(RUSTICL_EVIDENCE);
-  const turnipReady = hasEvidence(TURNIP_EVIDENCE);
+  const paths = resolveRuntimeContractPaths();
+  const rusticlCandidates = [paths.rusticlEvidencePath, paths.openclEvidencePath];
+  const turnipCandidates = [paths.mesaEvidencePath];
+  const rusticlEvidence = firstEvidenceHit(rusticlCandidates);
+  const turnipEvidence = firstEvidenceHit(turnipCandidates);
+  const rusticlReady = rusticlEvidence !== null;
+  const turnipReady = turnipEvidence !== null;
 
   let productionRoute: ProductionRoute = 'diagnostic_only';
   const blockers: string[] = [];
@@ -64,8 +67,8 @@ export function assessProductionPolicy(): ProductionPolicyAssessment {
     evidenceSources: [
       'third_party/mesa-adreno/manifest.lock.json',
       'third_party/mesa-adreno/proof-matrix.json',
-      RUSTICL_EVIDENCE,
-      TURNIP_EVIDENCE,
+      ...(rusticlEvidence ? [rusticlEvidence] : rusticlCandidates),
+      ...(turnipEvidence ? [turnipEvidence] : turnipCandidates.filter(path => path !== rusticlEvidence)),
     ],
     blockers,
   };

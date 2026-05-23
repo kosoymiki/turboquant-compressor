@@ -34,6 +34,7 @@ private:
     cl_mem cl_buffer_ = nullptr;
     size_t count_ = 0;
     bool use_svm_ = false;
+    cl_mem_flags flags_ = CL_MEM_READ_WRITE;
 };
 
 } // namespace tq

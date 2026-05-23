@@ -7,13 +7,21 @@
 #include "../include/tq_kernel_cache.h"
 #include "../include/tq_opencl.h"
 #include "../include/tq_repo_paths.h"
+#include "../include/tq_runtime_scheduler.h"
+#include "../include/tq_trace.h"
 
 #include <CL/cl.h>
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -49,6 +57,32 @@ bool binary_cache_disabled() {
     return v && std::strcmp(v, "1") == 0;
 }
 
+unsigned async_build_wait_timeout_ms() {
+    const char* raw = std::getenv("TQ_OPENCL_ASYNC_BUILD_WAIT_MS");
+    if (!raw || !*raw) return 5000;
+    char* end = nullptr;
+    unsigned long parsed = std::strtoul(raw, &end, 10);
+    if (!end || *end != '\0' || parsed == 0) return 5000;
+    if (parsed > 60000UL) return 60000;
+    return static_cast<unsigned>(parsed);
+}
+
+std::vector<std::string> precompiled_binary_roots() {
+    std::vector<std::string> roots;
+    const char* env_root = std::getenv("TQ_OPENCL_PRECOMPILED_DIR");
+    if (env_root && *env_root) roots.emplace_back(env_root);
+
+    std::string forensics_dir = resolve_forensics_dir();
+    if (!forensics_dir.empty()) {
+        roots.emplace_back(join_repo_path(forensics_dir, "precompiled-kernel-library"));
+    }
+
+    for (const auto& root : runtime_pack_roots()) {
+        roots.emplace_back(join_repo_path(root, "layer1-compute/precompiled-kernels"));
+    }
+    return roots;
+}
+
 std::string device_version_string() {
     char buf[256] = {};
     clGetDeviceInfo(get_device(), CL_DRIVER_VERSION, sizeof(buf), buf, nullptr);
@@ -66,47 +100,120 @@ std::string source_digest(const std::string& source_path, const std::string& bui
     return cache.device_hash(source_path, build_opts, 0, 0);
 }
 
+TqStatus build_program_and_wait(
+    cl_program prog,
+    cl_device_id dev,
+    const char* options,
+    const char* stage);
+
 TqStatus build_program_from_source(const std::string& source, const std::string& options, cl_program* out) {
+    trace_log("kernel-build", "source_build begin opts=%s source_bytes=%zu", options.c_str(), source.size());
     cl_int err;
     const char* src = source.c_str();
     size_t len = source.size();
     cl_program prog = clCreateProgramWithSource(get_context(), 1, &src, &len, &err);
     if (err != CL_SUCCESS) return TqStatus::ERR_BUILD_FAILED;
     cl_device_id dev = get_device();
-    err = clBuildProgram(prog, 1, &dev, options.c_str(), nullptr, nullptr);
-    if (err != CL_SUCCESS) {
-        size_t log_size = 0;
-        clGetProgramBuildInfo(prog, dev, CL_PROGRAM_BUILD_LOG, 0, nullptr, &log_size);
-        if (log_size > 1) {
-            std::string log(log_size, '\0');
-            clGetProgramBuildInfo(prog, dev, CL_PROGRAM_BUILD_LOG, log_size, &log[0], nullptr);
-            std::fprintf(stderr, "[OpenCL build error][source]: %s\n", log.c_str());
-        }
+    if (build_program_and_wait(prog, dev, options.c_str(), "source") != TqStatus::OK) {
         clReleaseProgram(prog);
         return TqStatus::ERR_BUILD_FAILED;
     }
+    trace_log("kernel-build", "source_build ok opts=%s", options.c_str());
     *out = prog;
     return TqStatus::OK;
 }
 
+struct AsyncBuildState {
+    std::mutex mu;
+    std::condition_variable cv;
+    bool done = false;
+    cl_build_status build_status = CL_BUILD_NONE;
+};
+
+void CL_CALLBACK async_build_notify(cl_program, void* user_data) {
+    auto* state = static_cast<AsyncBuildState*>(user_data);
+    if (!state) return;
+    {
+        std::lock_guard<std::mutex> lock(state->mu);
+        state->done = true;
+    }
+    setenv("TQ_OPENCL_LAST_ASYNC_BUILD_CALLBACK", "1", 1);
+    state->cv.notify_all();
+}
+
+TqStatus finalize_built_program(cl_program prog, cl_device_id dev, const char* stage) {
+    size_t log_size = 0;
+    cl_build_status build_status = CL_BUILD_NONE;
+    (void)clGetProgramBuildInfo(prog, dev, CL_PROGRAM_BUILD_STATUS, sizeof(build_status), &build_status, nullptr);
+    if (build_status == CL_BUILD_SUCCESS) {
+        const char* async_seen = std::getenv("TQ_OPENCL_LAST_ASYNC_BUILD_CALLBACK");
+        runtime_scheduler_note_build_stage(stage, true, async_seen && std::strcmp(async_seen, "1") == 0);
+        return TqStatus::OK;
+    }
+    runtime_scheduler_note_build_stage(stage, false, false);
+    clGetProgramBuildInfo(prog, dev, CL_PROGRAM_BUILD_LOG, 0, nullptr, &log_size);
+    if (log_size > 1) {
+        std::string log(log_size, '\0');
+        clGetProgramBuildInfo(prog, dev, CL_PROGRAM_BUILD_LOG, log_size, &log[0], nullptr);
+        std::fprintf(stderr, "[OpenCL build error][%s]: %s\n", stage, log.c_str());
+    }
+    return TqStatus::ERR_BUILD_FAILED;
+}
+
+TqStatus build_program_and_wait(
+    cl_program prog,
+    cl_device_id dev,
+    const char* options,
+    const char* stage) {
+    cl_int err = CL_SUCCESS;
+    if (device_has_async_program_compilation()) {
+        AsyncBuildState state;
+        unsetenv("TQ_OPENCL_LAST_ASYNC_BUILD_CALLBACK");
+        err = clBuildProgram(prog, 1, &dev, options, async_build_notify, &state);
+        if (err != CL_SUCCESS) return TqStatus::ERR_BUILD_FAILED;
+
+        std::unique_lock<std::mutex> lock(state.mu);
+        const auto timeout = std::chrono::milliseconds(async_build_wait_timeout_ms());
+        const bool callback_seen = state.cv.wait_for(lock, timeout, [&state] { return state.done; });
+        lock.unlock();
+
+        if (!callback_seen) {
+            const auto deadline = std::chrono::steady_clock::now() + timeout;
+            cl_build_status polled_status = CL_BUILD_IN_PROGRESS;
+            while (std::chrono::steady_clock::now() < deadline) {
+                if (clGetProgramBuildInfo(
+                        prog,
+                        dev,
+                        CL_PROGRAM_BUILD_STATUS,
+                        sizeof(polled_status),
+                        &polled_status,
+                        nullptr) != CL_SUCCESS) {
+                    break;
+                }
+                if (polled_status != CL_BUILD_IN_PROGRESS) break;
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        }
+        return finalize_built_program(prog, dev, stage);
+    }
+
+    err = clBuildProgram(prog, 1, &dev, options, nullptr, nullptr);
+    if (err != CL_SUCCESS) return TqStatus::ERR_BUILD_FAILED;
+    return finalize_built_program(prog, dev, stage);
+}
+
 TqStatus build_program_from_il(const std::vector<uint8_t>& il, const std::string& options, cl_program* out) {
 #if defined(CL_VERSION_2_1)
+    trace_log("kernel-build", "il_build begin opts=%s il_bytes=%zu", options.c_str(), il.size());
     cl_int err;
     cl_program prog = clCreateProgramWithIL(get_context(), il.data(), il.size(), &err);
     if (err != CL_SUCCESS || !prog) return TqStatus::ERR_BUILD_FAILED;
     cl_device_id dev = get_device();
-    err = clBuildProgram(prog, 1, &dev, options.c_str(), nullptr, nullptr);
-    if (err != CL_SUCCESS) {
-        size_t log_size = 0;
-        clGetProgramBuildInfo(prog, dev, CL_PROGRAM_BUILD_LOG, 0, nullptr, &log_size);
-        if (log_size > 1) {
-            std::string log(log_size, '\0');
-            clGetProgramBuildInfo(prog, dev, CL_PROGRAM_BUILD_LOG, log_size, &log[0], nullptr);
-            std::fprintf(stderr, "[OpenCL build error][IL]: %s\n", log.c_str());
-        }
+    if (build_program_and_wait(prog, dev, options.c_str(), "IL") != TqStatus::OK) {
         clReleaseProgram(prog);
         return TqStatus::ERR_BUILD_FAILED;
     }
+    trace_log("kernel-build", "il_build ok opts=%s", options.c_str());
     *out = prog;
     return TqStatus::OK;
 #else
@@ -118,6 +225,7 @@ TqStatus build_program_from_il(const std::vector<uint8_t>& il, const std::string
 }
 
 TqStatus build_program_from_binary(const std::vector<uint8_t>& binary, cl_program* out) {
+    trace_log("kernel-build", "binary_build begin binary_bytes=%zu", binary.size());
     cl_int err = CL_SUCCESS;
     cl_int binary_status = CL_SUCCESS;
     const unsigned char* ptr = binary.data();
@@ -125,11 +233,11 @@ TqStatus build_program_from_binary(const std::vector<uint8_t>& binary, cl_progra
     cl_device_id dev = get_device();
     cl_program prog = clCreateProgramWithBinary(get_context(), 1, &dev, &len, &ptr, &binary_status, &err);
     if (err != CL_SUCCESS || binary_status != CL_SUCCESS || !prog) return TqStatus::ERR_BUILD_FAILED;
-    err = clBuildProgram(prog, 1, &dev, "", nullptr, nullptr);
-    if (err != CL_SUCCESS) {
+    if (build_program_and_wait(prog, dev, "", "binary") != TqStatus::OK) {
         clReleaseProgram(prog);
         return TqStatus::ERR_BUILD_FAILED;
     }
+    trace_log("kernel-build", "binary_build ok binary_bytes=%zu", binary.size());
     *out = prog;
     return TqStatus::OK;
 }
@@ -146,6 +254,24 @@ void maybe_store_binary(
     unsigned char* ptrs[] = { binary.data() };
     if (clGetProgramInfo(prog, CL_PROGRAM_BINARIES, sizeof(ptrs), ptrs, nullptr) != CL_SUCCESS) return;
     cache.store(cache_key, "program", binary);
+    for (const auto& root : precompiled_binary_roots()) {
+        KernelBinaryCache export_cache(root);
+        export_cache.store(cache_key, "program", binary);
+    }
+}
+
+bool maybe_load_precompiled_binary(
+    const std::string& compile_key,
+    std::vector<uint8_t>& binary) {
+    for (const auto& root : precompiled_binary_roots()) {
+        KernelBinaryCache cache(root);
+        if (cache.load(compile_key, "program", binary)) {
+            trace_log("kernel-load", "precompiled_binary_hit key=%s root=%s bytes=%zu",
+                      compile_key.c_str(), root.c_str(), binary.size());
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace
@@ -164,6 +290,17 @@ std::string infer_spirv_path_from_source(const std::string& source_path) {
     return spirv_dir.empty() ? std::string() : join_repo_path(spirv_dir, (stem + ".spv").c_str());
 }
 
+std::string kernel_manager_compile_key(
+    const std::string& source_path,
+    const std::string& build_opts) {
+    KernelBinaryCache key_cache;
+    return key_cache.device_hash(
+        device_name_string(),
+        device_version_string() + "\n" + source_path + "\n" + build_opts + "\n" + source_digest(source_path, build_opts),
+        get_compute_units(),
+        get_max_wg_size());
+}
+
 TqStatus kernel_manager_load_kernel(
     const std::string& kernel_name,
     const std::string& spirv_path,
@@ -176,24 +313,45 @@ TqStatus kernel_manager_load_kernel(
     cl_program prog = nullptr;
     if (g_programs.count(program_key)) {
         prog = g_programs[program_key];
+        runtime_scheduler_note_program_reuse(kernel_name, program_key);
+        trace_log("kernel-load", "program_reuse source=%s kernel=%s", source_path.c_str(), kernel_name.c_str());
     } else {
         KernelBinaryCache binary_cache;
-        KernelBinaryCache key_cache;
-        std::string compile_key = key_cache.device_hash(
-            device_name_string(),
-            device_version_string() + "\n" + source_path + "\n" + build_opts + "\n" + source_digest(source_path, build_opts),
-            get_compute_units(),
-            get_max_wg_size());
+        std::string compile_key = kernel_manager_compile_key(source_path, build_opts);
+        runtime_scheduler_note_compile_intent(kernel_name, compile_key);
+        const bool has_spirv_il = !spirv_path.empty() && std::filesystem::exists(spirv_path);
+        const bool has_source = std::filesystem::exists(source_path);
 
         std::vector<uint8_t> binary;
         TqStatus st = TqStatus::ERR_BUILD_FAILED;
-        if (!want_source_only() && !binary_cache_disabled() && binary_cache.load(compile_key, "program", binary)) {
+        bool precompiled_hit = false;
+        bool binary_cache_hit = false;
+        if (!want_source_only() && !binary_cache_disabled()) {
+            precompiled_hit = maybe_load_precompiled_binary(compile_key, binary);
+            binary_cache_hit = precompiled_hit || binary_cache.load(compile_key, "program", binary);
+        }
+        runtime_scheduler_note_compile_candidate(
+            kernel_name,
+            compile_key,
+            precompiled_hit,
+            binary_cache_hit && !precompiled_hit,
+            has_spirv_il,
+            has_source,
+            want_source_only());
+        if (binary_cache_hit) {
+            runtime_scheduler_note_cache_hit(
+                precompiled_hit ? "precompiled" : "binary_cache",
+                kernel_name,
+                compile_key,
+                binary.size());
+            trace_log("kernel-load", "binary_cache_hit kernel=%s bytes=%zu", kernel_name.c_str(), binary.size());
             st = build_program_from_binary(binary, &prog);
         }
 
         if ((!prog || st != TqStatus::OK) && !want_source_only() && device_has_il_program()) {
             std::vector<uint8_t> il = read_binary_file(spirv_path);
             if (!il.empty()) {
+                trace_log("kernel-load", "spirv_il_attempt kernel=%s path=%s bytes=%zu", kernel_name.c_str(), spirv_path.c_str(), il.size());
                 st = build_program_from_il(il, build_opts, &prog);
             }
         }
@@ -204,6 +362,7 @@ TqStatus kernel_manager_load_kernel(
                 std::fprintf(stderr, "[OpenCL] Cannot read kernel file: %s\n", source_path.c_str());
                 return TqStatus::ERR_BUILD_FAILED;
             }
+            trace_log("kernel-load", "source_fallback kernel=%s path=%s", kernel_name.c_str(), source_path.c_str());
             st = build_program_from_source(source, build_opts, &prog);
         }
 
@@ -232,6 +391,15 @@ TqStatus kernel_manager_load_kernel(
     clGetKernelWorkGroupInfo(kernel, get_device(), CL_KERNEL_PRIVATE_MEM_SIZE,
                              sizeof(meta.private_mem_size), &meta.private_mem_size, nullptr);
     g_kernel_metadata[kernel_name] = meta;
+    runtime_scheduler_note_kernel_ready(kernel_name, meta);
+    trace_log(
+        "kernel-load",
+        "kernel_ready name=%s wg_limit=%zu pref_multiple=%zu local_mem=%llu private_mem=%llu",
+        kernel_name.c_str(),
+        meta.work_group_size,
+        meta.preferred_work_group_size_multiple,
+        static_cast<unsigned long long>(meta.local_mem_size),
+        static_cast<unsigned long long>(meta.private_mem_size));
     return TqStatus::OK;
 }
 

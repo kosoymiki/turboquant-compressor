@@ -18,7 +18,7 @@ const ALLOWED_NEARBY = [
   /does not reduce Anthropic/i,
   /not QJL-enabled/i,
   /no QJL data is stored/i,
-  /LEVEL_1_PUBLIC_BETA/i,
+  /LEVEL_1_PUBLIC/i,
   /donor claim/i,
   /unverified donor claim/i,
   /must be measured/i,

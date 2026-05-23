@@ -67,18 +67,28 @@ bool install_interop_layer(const InteropLayerConfig& config);
  * Uses KGSL GPUMEM_ALLOC_ID → dmabuf export → import on both sides.
  */
 InteropBuffer alloc_interop_buffer(size_t size, InteropBufferType type);
+int last_interop_dmabuf_errno();
+const char* last_interop_dmabuf_stage();
 
 /**
  * Import an existing dmabuf FD into OpenCL as cl_mem.
  * Requires cl_khr_external_memory or KGSL-specific import.
  */
 void* import_dmabuf_to_cl(int dmabuf_fd, size_t size);
+int last_interop_cl_import_error();
+const char* last_interop_cl_import_path();
 
 /**
  * Import an existing dmabuf FD into Vulkan as VkBuffer+VkDeviceMemory.
  * Requires VK_EXT_external_memory_dma_buf.
  */
 bool import_dmabuf_to_vk(int dmabuf_fd, size_t size, void** out_buffer, void** out_memory);
+
+/**
+ * Create an importable OpenCL semaphore from a sync FD.
+ * Requires cl_khr_external_semaphore + cl_khr_external_semaphore_sync_fd.
+ */
+void* import_sync_fd_semaphore_to_cl(int sync_fd);
 
 /**
  * Synchronize CL→VK: ensure CL writes are visible to Vulkan.

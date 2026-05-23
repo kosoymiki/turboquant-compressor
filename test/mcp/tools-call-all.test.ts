@@ -9,7 +9,7 @@ const rootDir = join(__dirname, '../..');
 const conformanceScript = join(rootDir, 'scripts', 'mcp-conformance.mjs');
 const serverPath = join(rootDir, 'dist', 'server.js');
 
-describe('tools-call-all: all 8 MCP tools must succeed via conformance harness', () => {
+describe('tools-call-all: the full MCP tool surface must succeed via conformance harness', () => {
   it('dist/server.js exists (run npm run build first)', () => {
     expect(existsSync(serverPath)).toBe(true);
   });

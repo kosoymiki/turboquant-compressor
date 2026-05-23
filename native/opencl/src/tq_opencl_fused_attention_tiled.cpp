@@ -9,6 +9,7 @@
 #include "tq_opencl.h"
 #include "tq_buffer.h"
 #include "../include/tq_kernel_tune.h"
+#include "../include/tq_trace.h"
 #include <CL/cl.h>
 #include <chrono>
 #include <cstdint>
@@ -125,7 +126,9 @@ TqStatus fused_attention_tiled_opencl(const FusedAttentionInput& input) {
 
         KernelTuneParams tune_values = get_kernel_tune("tq_attention_apply_values");
         size_t local_values = tune_values.wg_size_x;
-        size_t global_dim = ((size_t)dim + local_values - 1) / local_values * local_values;
+        const size_t items_per_thread = tune_values.items_per_thread > 0 ? (size_t)tune_values.items_per_thread : 1u;
+        size_t work_items = ((size_t)dim + items_per_thread - 1) / items_per_thread;
+        size_t global_dim = ((size_t)work_items + local_values - 1) / local_values * local_values;
 
         if (tune_values.local_mem_bytes > 0) {
             clSetKernelArg(k_values, arg++, tune_values.local_mem_bytes, nullptr);
@@ -201,6 +204,18 @@ TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input,
         size_t local_logits = tune_logits.wg_size_x;
         KernelTuneParams tune_values = get_kernel_tune("tq_attention_apply_values");
         size_t local_values = tune_values.wg_size_x;
+        const size_t items_per_thread = tune_values.items_per_thread > 0 ? (size_t)tune_values.items_per_thread : 1u;
+        trace_log(
+            "fused-profiled",
+            "shape tokens=%d dim=%d key_bits=%d val_bits=%d local_logits=%zu local_values=%zu svm_scores=%d svm_output=%d",
+            tokens,
+            dim,
+            key_bits,
+            val_bits,
+            local_logits,
+            local_values,
+            d_scores.uses_svm() ? 1 : 0,
+            d_output.uses_svm() ? 1 : 0);
 
         int a = 0;
         if (d_query.bind_kernel_arg(k_logits, a++) != TqStatus::OK ||
@@ -223,6 +238,9 @@ TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input,
         clSetKernelArg(k_logits, a++, sizeof(int), &proj_words);
         clSetKernelArg(k_logits, a++, sizeof(float), &qjl_scale);
         clSetKernelArg(k_logits, a++, sizeof(float), &sm_scale);
+        if (tune_logits.local_mem_bytes > 0) {
+            clSetKernelArg(k_logits, a++, tune_logits.local_mem_bytes, nullptr);
+        }
 
         size_t global_tokens = ((size_t)tokens + local_logits - 1) / local_logits * local_logits;
         cl_event ev1;
@@ -251,8 +269,12 @@ TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input,
         clSetKernelArg(k_values, a++, sizeof(int), &val_packed_stride);
         clSetKernelArg(k_values, a++, sizeof(int), &group_size);
         clSetKernelArg(k_values, a++, sizeof(int), &n_groups);
+        if (tune_values.local_mem_bytes > 0) {
+            clSetKernelArg(k_values, a++, tune_values.local_mem_bytes, nullptr);
+        }
 
-        size_t global_dim = ((size_t)dim + local_values - 1) / local_values * local_values;
+        size_t work_items = ((size_t)dim + items_per_thread - 1) / items_per_thread;
+        size_t global_dim = ((size_t)work_items + local_values - 1) / local_values * local_values;
         cl_event ev2;
         err = clEnqueueNDRangeKernel(queue, k_values, 1, nullptr, &global_dim, &local_values, 1, &ev1, &ev2);
         if (err != CL_SUCCESS) {
@@ -268,10 +290,27 @@ TqStatus fused_attention_tiled_opencl_profiled(const FusedAttentionInput& input,
         auto wall_end = std::chrono::steady_clock::now();
 
         if (profiling_enabled()) {
-            cl_ulong t1_start = 0, t2_end = 0;
-            if (clGetEventProfilingInfo(ev1, CL_PROFILING_COMMAND_START, sizeof(t1_start), &t1_start, nullptr) == CL_SUCCESS &&
+            cl_ulong t1_queue = 0, t1_start = 0, t1_end = 0, t2_queue = 0, t2_start = 0, t2_end = 0;
+            if (clGetEventProfilingInfo(ev1, CL_PROFILING_COMMAND_QUEUED, sizeof(t1_queue), &t1_queue, nullptr) == CL_SUCCESS &&
+                clGetEventProfilingInfo(ev1, CL_PROFILING_COMMAND_START, sizeof(t1_start), &t1_start, nullptr) == CL_SUCCESS &&
+                clGetEventProfilingInfo(ev1, CL_PROFILING_COMMAND_END, sizeof(t1_end), &t1_end, nullptr) == CL_SUCCESS &&
+                clGetEventProfilingInfo(ev2, CL_PROFILING_COMMAND_QUEUED, sizeof(t2_queue), &t2_queue, nullptr) == CL_SUCCESS &&
+                clGetEventProfilingInfo(ev2, CL_PROFILING_COMMAND_START, sizeof(t2_start), &t2_start, nullptr) == CL_SUCCESS &&
                 clGetEventProfilingInfo(ev2, CL_PROFILING_COMMAND_END, sizeof(t2_end), &t2_end, nullptr) == CL_SUCCESS) {
                 *kernel_ns = (uint64_t)(t2_end - t1_start);
+                trace_log(
+                    "fused-profiled",
+                    "event_ns logits(queue=%llu,start=%llu,end=%llu,dur=%llu) values(queue=%llu,start=%llu,end=%llu,dur=%llu) span=%llu wall=%llu",
+                    static_cast<unsigned long long>(t1_queue),
+                    static_cast<unsigned long long>(t1_start),
+                    static_cast<unsigned long long>(t1_end),
+                    static_cast<unsigned long long>(t1_end - t1_start),
+                    static_cast<unsigned long long>(t2_queue),
+                    static_cast<unsigned long long>(t2_start),
+                    static_cast<unsigned long long>(t2_end),
+                    static_cast<unsigned long long>(t2_end - t2_start),
+                    static_cast<unsigned long long>(*kernel_ns),
+                    static_cast<unsigned long long>(std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count()));
             } else {
                 *kernel_ns = (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(wall_end - wall_start).count();
             }

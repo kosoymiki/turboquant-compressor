@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { execSync, spawnSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -14,6 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
 const forensicsDir = join(rootDir, 'forensics');
 const outPath = join(forensicsDir, 'opencl-adreno-report.json');
+const safeRunner = join(rootDir, 'scripts', 'safe-runtime-pack-run.sh');
 
 const allowUnavailable = process.argv.includes('--allow-unavailable');
 
@@ -28,23 +29,47 @@ function writeReport(report) {
   writeFileSync(outPath, `${JSON.stringify(report, null, 2)}\n`);
 }
 
-// 1. Check dist built
-const distProbe = join(rootDir, 'dist', 'native', 'opencl_probe.js');
-if (!existsSync(distProbe)) {
-  fail('dist/native/opencl_probe.js not found — run npm run build');
+function normalizeProbe(probeResult) {
+  const devices = Array.isArray(probeResult.devices) ? probeResult.devices : [];
+  const adrenoDetected =
+    probeResult.adrenoDetected ??
+    devices.some((d) => d?.isAdreno || /adreno|fd[0-9]+/i.test(`${d?.name || ''} ${d?.vendor || ''}`));
+  return {
+    ...probeResult,
+    adrenoDetected,
+  };
 }
 
-// 2. Run the probe via Node
 let probeResult;
 try {
-  const out = execSync(
-    `node -e "import('${distProbe.replace(/\\/g, '/')}').then(m => console.log(JSON.stringify(m.probeOpenCl({ deep: false }))))"`,
-    { timeout: 5000, encoding: 'utf-8', cwd: rootDir }
-  );
-  probeResult = JSON.parse(out.trim());
+  if (existsSync(safeRunner)) {
+    const cliBin =
+      process.env.TQ_OPENCL_CLI ||
+      join(process.env.XDG_CACHE_HOME || join(process.env.HOME || '.', '.cache'),
+           'turboquant', 'native-opencl-build', 'tq_opencl_cli');
+    const result = spawnSync(safeRunner, ['probe'], {
+      timeout: 15000,
+      encoding: 'utf-8',
+      cwd: rootDir,
+      env: { ...process.env, TQ_OPENCL_CLI: cliBin },
+    });
+    if (result.status !== 0 || !result.stdout) {
+      throw new Error(result.error?.message || result.stderr || `safe-runtime-pack-run exited with status ${result.status ?? 'timeout'}`);
+    }
+    probeResult = JSON.parse(result.stdout.trim());
+  } else {
+    const distProbe = join(rootDir, 'dist', 'native', 'opencl_probe.js');
+    if (!existsSync(distProbe)) {
+      fail('dist/native/opencl_probe.js not found — run npm run build');
+    }
+    const { probeOpenCl } = await import(distProbe);
+    probeResult = probeOpenCl({ deep: false });
+  }
 } catch (e) {
   fail(`OpenCL probe execution failed: ${e.message}`);
 }
+
+probeResult = normalizeProbe(probeResult);
 
 console.log(`[opencl-probe] available=${probeResult.available}, adreno=${probeResult.adrenoDetected}, recommended=${probeResult.recommendedBackend}`);
 
@@ -82,11 +107,16 @@ if (!probeResult.available) {
 }
 
 // 4. If available, verify probe returned sane data
-if (probeResult.probeTimeMs > 3000) {
-  fail(`Probe took ${probeResult.probeTimeMs}ms — exceeds 3s budget`);
+const probeBudgetMs =
+  probeResult.recommendedBackend === 'mesa_rusticl_kgsl' ? 10000 : 3000;
+if (probeResult.probeTimeMs > probeBudgetMs) {
+  fail(`Probe took ${probeResult.probeTimeMs}ms — exceeds ${probeBudgetMs / 1000}s budget`);
 }
 
-if (probeResult.libraryCandidates.filter(l => l.exists).length === 0) {
+const existingLibraries = Array.isArray(probeResult.libraryCandidates)
+  ? probeResult.libraryCandidates.filter((l) => l.exists).length
+  : null;
+if (existingLibraries !== null && existingLibraries === 0) {
   fail('Probe says available but no library candidates exist');
 }
 

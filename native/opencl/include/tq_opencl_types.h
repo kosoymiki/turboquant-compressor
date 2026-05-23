@@ -14,9 +14,29 @@ struct DeviceInfo {
     std::string name;
     std::string vendor;
     std::string version;
+    std::string device_uuid;
     bool has_fp16 = false;
     bool has_subgroups = false;
+    bool has_subgroup_shuffle = false;
+    bool has_subgroup_shuffle_relative = false;
+    bool has_subgroup_ballot = false;
+    bool has_subgroup_clustered_reduce = false;
+    bool has_subgroup_non_uniform_arithmetic = false;
+    bool has_subgroup_forward_progress = false;
     bool has_il_program = false;
+    bool has_async_program_compilation = false;
+    bool has_integer_dot_product = false;
+    bool has_suggested_local_work_size = false;
+    bool has_create_command_queue = false;
+    bool has_initialize_memory = false;
+    bool has_device_uuid = false;
+    bool has_priority_hints = false;
+    bool has_throttle_hints = false;
+    bool has_command_buffer = false;
+    bool has_command_buffer_mutable_dispatch = false;
+    bool has_external_memory = false;
+    bool has_external_memory_ahb = false;
+    bool has_external_semaphore = false;
     bool has_svm = false;
     bool has_svm_coarse = false;
     bool has_svm_fine = false;
@@ -25,6 +45,9 @@ struct DeviceInfo {
     uint64_t global_mem_bytes = 0;
     uint32_t max_work_group_size = 0;
     uint32_t compute_units = 0;
+    uint32_t max_subgroups = 0;
+    uint32_t integer_dot_product_capabilities = 0;
+    uint64_t command_buffer_capabilities = 0;
 };
 
 struct ProbeResult {

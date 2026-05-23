@@ -69,13 +69,18 @@ const forbiddenCommon = [
   /\.claude\/settings\.local\.json$/,
   /\.claude\/.*\.local\.json$/,
   /(^|\/)\.git(\/|$)/,
+  /(^|\/)artifacts(\/|$)/,
+  /(^|\/)forensics(\/|$)/,
+  /(^|\/)bench\/results(\/|$)/,
+  /(^|\/)driver-root\/.*\.bak[^/]*$/,
+  /(^|\/)docs\/(AGENT_DONOR_CORPUS_|FRONTIER_DONOR_MODEL_|MESA_STACK_FORENSICS_MODULE_|MESA_TQ_FORENSIC_AUDIT_|P1_|P2_|RENDERDOC_GPU_DEBUG_CORPUS_|REPO_TECHNICAL_AUDIT_|SYSTEM_SVM_DONOR_CORPUS_|frontier-tracing-contract-|mesa-rusticl-vm-audit-|mesa-single-process-build-forensics-|opencl-donor-file-audit-|opencl-donor-integration-|runtime-pack-drift-forensic-|tz-frontier-capability-matrix-|DRIVER_DEBUG_FORENSICS_).*/,
+  /(^|\/)docs\/(EXPORT_CHECKLIST|EXPORT_VERDICT)\.md$/,
 ];
 
 const forbiddenSource = [
   /(^|\/)node_modules(\/|$)/,
   /(^|\/)dist(\/|$)/,
   /(^|\/)coverage(\/|$)/,
-  /(^|\/)forensics(\/|$)/,
   /mcp-conformance-transcript\.json$/,
   /(^|\/).*transcript.*\.jsonl$/,
   /(^|\/)native\/.*\/build(\/|$)/,

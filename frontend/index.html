@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TQ Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 1.5rem; border-bottom: 1px solid #2a2a4a; }
+    .header h1 { color: #00ff88; font-size: 1.5rem; }
+    .header .subtitle { color: #888; font-size: 0.9rem; margin-top: 0.25rem; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+    .card { background: #12121a; border: 1px solid #2a2a4a; border-radius: 12px; padding: 1.5rem; }
+    .card h2 { color: #00ff88; font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px solid #2a2a4a; padding-bottom: 0.5rem; }
+    .metric { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #1a1a2a; }
+    .metric:last-child { border-bottom: none; }
+    .metric .label { color: #888; }
+    .metric .value { color: #00ff88; font-weight: 600; }
+    .metric .value.warn { color: #ffaa00; }
+    .metric .value.error { color: #ff4444; }
+    input, textarea, select, button { width: 100%; padding: 0.75rem; margin: 0.5rem 0; background: #1a1a2a; border: 1px solid #3a3a5a; border-radius: 8px; color: #e0e0e0; font-size: 0.95rem; }
+    textarea { min-height: 120px; resize: vertical; font-family: monospace; }
+    button { background: linear-gradient(135deg, #00ff88, #00cc6a); color: #0a0a0f; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+    button:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,255,136,0.3); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .result { margin-top: 1rem; padding: 1rem; background: #0a0a15; border-radius: 8px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; word-break: break-all; }
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .tab { padding: 0.5rem 1rem; background: #1a1a2a; border: 1px solid #3a3a5a; border-radius: 6px; cursor: pointer; }
+    .tab.active { background: #00ff88; color: #0a0a0f; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .status-bar { display: flex; gap: 1rem; padding: 0.75rem 1rem; background: #12121a; border-radius: 8px; margin-bottom: 1rem; }
+    .status-item { display: flex; align-items: center; gap: 0.5rem; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #00ff88; }
+    .dot.warn { background: #ffaa00; }
+    .dot.error { background: #ff4444; }
+    pre { font-size: 0.8rem; line-height: 1.4; }
+    .loading { display: inline-block; width: 16px; height: 16px; border: 2px solid #3a3a5a; border-top-color: #00ff88; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>TURBOQUANT DASHBOARD</h1>
+    <div class="subtitle">Full TQ Pipeline — Corpus Control Plane</div>
+  </div>
+
+  <div class="container">
+    <div class="status-bar" id="statusBar">
+      <div class="status-item"><div class="dot" id="apiStatus"></div><span>API</span></div>
+      <div class="status-item"><div class="dot" id="tqStatus"></div><span>TQ Engine</span></div>
+      <div class="status-item"><div class="dot" id="corpusStatus"></div><span>Corpus</span></div>
+      <div class="status-item"><span id="artifactsCount">0</span> artifacts</div>
+    </div>
+
+    <div class="grid">
+      <!-- SEARCH CARD -->
+      <div class="card">
+        <h2>SEARCH</h2>
+        <input type="text" id="searchQuery" placeholder="Query..." />
+        <select id="searchTopK">
+          <option value="5">Top 5</option>
+          <option value="10">Top 10</option>
+          <option value="20" selected>Top 20</option>
+          <option value="50">Top 50</option>
+        </select>
+        <button onclick="doSearch()">SEARCH</button>
+        <div class="result" id="searchResult">Results will appear here...</div>
+      </div>
+
+      <!-- COMPRESS CARD -->
+      <div class="card">
+        <h2>COMPRESS</h2>
+        <textarea id="compressText" placeholder="Text to compress..."></textarea>
+        <select id="compressBits">
+          <option value="2">2 bits</option>
+          <option value="3">3 bits</option>
+          <option value="4" selected>4 bits</option>
+          <option value="8">8 bits</option>
+        </select>
+        <button onclick="doCompress()">COMPRESS</button>
+        <div class="result" id="compressResult">Compressed data will appear here...</div>
+      </div>
+
+      <!-- CACHE PLAN CARD -->
+      <div class="card">
+        <h2>CACHE PLAN</h2>
+        <select id="cacheBudget">
+          <option value="256">256 MB</option>
+          <option value="512" selected>512 MB</option>
+          <option value="1024">1024 MB</option>
+          <option value="2048">2048 MB</option>
+        </select>
+        <button onclick="doCachePlan()">GENERATE PLAN</button>
+        <div class="result" id="cacheResult">Cache plan will appear here...</div>
+      </div>
+
+      <!-- KV ANALYSIS CARD -->
+      <div class="card">
+        <h2>KV ANALYSIS</h2>
+        <div class="metric"><span class="label">Head Dim</span><input type="number" id="kvHeadDim" value="128" style="width:80px;margin:0"></span></div>
+        <div class="metric"><span class="label">KV Heads</span><input type="number" id="kvHeads" value="8" style="width:80px;margin:0"></span></div>
+        <div class="metric"><span class="label">Layers</span><input type="number" id="kvLayers" value="32" style="width:80px;margin:0"></span></div>
+        <div class="metric"><span class="label">Seq Len</span><input type="number" id="kvSeqLen" value="4096" style="width:80px;margin:0"></span></div>
+        <button onclick="doKvAnalyze()">ANALYZE</button>
+        <div class="result" id="kvResult">KV analysis will appear here...</div>
+      </div>
+
+      <!-- INTAKE CARD -->
+      <div class="card">
+        <h2>INTAKE PDF</h2>
+        <input type="text" id="intakePath" placeholder="/path/to/file.pdf" />
+        <select id="intakeLicense">
+          <option value="open">Open</option>
+          <option value="oer">OER</option>
+          <option value="paid_private">Paid/Private</option>
+        </select>
+        <button onclick="doIntake()">INGEST</button>
+        <div class="result" id="intakeResult">Intake results will appear here...</div>
+      </div>
+
+      <!-- BACKEND PROBE CARD -->
+      <div class="card">
+        <h2>BACKEND PROBE</h2>
+        <select id="probeDeep">
+          <option value="false">Quick</option>
+          <option value="true">Deep</option>
+        </select>
+        <button onclick="doBackendProbe()">PROBE</button>
+        <div class="result" id="probeResult">Backend status will appear here...</div>
+      </div>
+    </div>
+
+    <!-- TQ PIPELINE TRACE -->
+    <div class="card" style="margin-top:1.5rem">
+      <h2>PIPELINE TRACE</h2>
+      <div id="pipelineTrace" style="max-height:500px;overflow-y:auto">
+        <pre>Waiting for operations...</pre>
+      </div>
+    </div>
+  </div>
+
+<script>
+const API_BASE = 'http://localhost:8765/api';
+
+function log(msg) {
+  console.log('[TQ]', msg);
+  const trace = document.getElementById('pipelineTrace');
+  const entry = document.createElement('pre');
+  entry.textContent = `${new Date().toISOString()} ${msg}`;
+  entry.style.borderBottom = '1px solid #2a2a4a';
+  entry.style.padding = '0.5rem';
+  trace.prepend(entry);
+  if (trace.children.length > 50) trace.lastChild.remove();
+}
+
+async function api(endpoint, method='GET', body=null) {
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const r = await fetch(API_BASE + endpoint, opts);
+    return await r.json();
+  } catch(e) {
+    return { error: e.message };
+  }
+}
+
+async function doSearch() {
+  const q = document.getElementById('searchQuery').value;
+  const topK = document.getElementById('searchTopK').value;
+  if (!q) return;
+  log(`SEARCH: ${q.slice(0,50)}...`);
+  document.getElementById('searchResult').innerHTML = '<div class="loading"></div>';
+  const r = await api('/search', 'POST', {query: q, top_k: parseInt(topK)});
+  document.getElementById('searchResult').textContent = JSON.stringify(r, null, 2);
+  log(`SEARCH DONE: ${r.corpus_count || 0} results`);
+}
+
+async function doCompress() {
+  const text = document.getElementById('compressText').value;
+  const bits = document.getElementById('compressBits').value;
+  if (!text) return;
+  log(`COMPRESS: ${text.length} chars, ${bits} bits`);
+  document.getElementById('compressResult').innerHTML = '<div class="loading"></div>';
+  const r = await api('/compress', 'POST', {text, bits: parseInt(bits)});
+  document.getElementById('compressResult').textContent = JSON.stringify(r, null, 2);
+  log(`COMPRESS DONE`);
+}
+
+async function doCachePlan() {
+  const budget = document.getElementById('cacheBudget').value;
+  log(`CACHE PLAN: ${budget}MB`);
+  document.getElementById('cacheResult').innerHTML = '<div class="loading"></div>';
+  const r = await api('/cache-plan', 'POST', {budget_mb: parseInt(budget)});
+  document.getElementById('cacheResult').textContent = JSON.stringify(r, null, 2);
+  log(`CACHE PLAN DONE`);
+}
+
+async function doKvAnalyze() {
+  const r = {
+    head_dim: parseInt(document.getElementById('kvHeadDim').value),
+    num_kv_heads: parseInt(document.getElementById('kvHeads').value),
+    num_layers: parseInt(document.getElementById('kvLayers').value),
+    seq_len: parseInt(document.getElementById('kvSeqLen').value),
+  };
+  log(`KV ANALYZE: head_dim=${r.head_dim} layers=${r.num_layers}`);
+  document.getElementById('kvResult').innerHTML = '<div class="loading"></div>';
+  const result = await api('/analyze', 'POST', r);
+  document.getElementById('kvResult').textContent = JSON.stringify(result, null, 2);
+  log(`KV ANALYZE DONE`);
+}
+
+async function doIntake() {
+  const path = document.getElementById('intakePath').value;
+  const license = document.getElementById('intakeLicense').value;
+  if (!path) return;
+  log(`INTAKE: ${path}`);
+  document.getElementById('intakeResult').innerHTML = '<div class="loading"></div>';
+  const r = await api('/intake', 'POST', {pdf_path: path, license});
+  document.getElementById('intakeResult').textContent = JSON.stringify(r, null, 2);
+  log(`INTAKE DONE`);
+}
+
+async function doBackendProbe() {
+  const deep = document.getElementById('probeDeep').value === 'true';
+  log(`BACKEND PROBE: deep=${deep}`);
+  document.getElementById('probeResult').innerHTML = '<div class="loading"></div>';
+  const r = await api('/backend-probe?deep=' + deep);
+  document.getElementById('probeResult').textContent = JSON.stringify(r, null, 2);
+  log(`PROBE DONE`);
+}
+
+async function checkStatus() {
+  const r = await api('/health');
+  document.getElementById('tqStatus').className = r.tq_imported ? 'dot' : 'dot error';
+  document.getElementById('corpusStatus').className = r.artifacts_count > 0 ? 'dot' : 'dot warn';
+  document.getElementById('artifactsCount').textContent = r.artifacts_count || 0;
+  const tools = await api('/tools');
+  document.getElementById('apiStatus').className = tools.tq_imported ? 'dot' : 'dot error';
+}
+
+async function init() {
+  log('Dashboard initialized');
+  await checkStatus();
+  setInterval(checkStatus, 10000);
+}
+
+init();
+</script>
+</body>
+</html>
