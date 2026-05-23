@@ -25,3 +25,4 @@ native/adreno/build/
 
 # Local run artifacts
 artifacts/
+third_party/
