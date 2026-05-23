@@ -30,6 +30,10 @@ target_sources(tq_core PRIVATE
     src/tq_benchmark.cpp
     src/tq_oracle.cpp
     src/tq_context_pack.cpp
+    src/tq_calibration.cpp
+    src/tq_lsq_optimizer.cpp
+    src/tq_distillation.cpp
+    src/tq_qat_training.cpp
 )
 
 # Link kernel sources
