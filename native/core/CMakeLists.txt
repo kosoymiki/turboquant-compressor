@@ -63,3 +63,22 @@ enable_testing()
 add_executable(test_tq_core test/test_tq_core.cpp)
 target_link_libraries(test_tq_core PRIVATE tq_core pthread)
 add_test(NAME tq_core_test COMMAND test_tq_core)
+
+# ── Full benchmark ─────────────────────────────────────────────────────────
+add_executable(test_full_benchmark test/test_full_benchmark.cpp)
+target_link_libraries(test_full_benchmark PRIVATE tq_core pthread)
+target_include_directories(test_full_benchmark PRIVATE
+    ${CMAKE_SOURCE_DIR}/native/kernel/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/native/kernel/include
+)
+add_test(NAME tq_full_benchmark COMMAND test_full_benchmark)
+
+# ── QAT Training test ──────────────────────────────────────────────────────
+add_executable(test_qat test/test_qat.cpp)
+target_link_libraries(test_qat PRIVATE tq_core pthread)
+target_include_directories(test_qat PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/native/kernel/include
+)
+add_test(NAME tq_qat_test COMMAND test_qat)

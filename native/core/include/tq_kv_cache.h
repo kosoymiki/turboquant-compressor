@@ -1,7 +1,7 @@
 /**
  * TurboQuant Core — KV Cache Compression
  *
- * v4.5.4: C++ port from compressed_kv_cache.ts
+ * v4.6.0: C++ port from compressed_kv_cache.ts
  *
  * Features:
  *   - Mixed KV types (different bits for K and V)
