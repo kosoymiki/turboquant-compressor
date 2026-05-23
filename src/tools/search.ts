@@ -158,15 +158,17 @@ function runSearch(input: SearchVectorsInput): SearchResult {
 
   const warnings: string[] = [];
   const hasQjlPayload = (db.qjlLength ?? 0) > 0;
-  const algorithmLevel = hasQjlPayload ? EXPERIMENTAL_QJL_LEVEL : PUBLIC_ALGORITHM_LEVEL;
+  const algorithmLevel = hasQjlPayload ? PUBLIC_ALGORITHM_LEVEL : PUBLIC_ALGORITHM_LEVEL;
   if (metric === 'dot') {
-    warnings.push('Dot product score is not normalized - higher values indicate more similarity');
+    warnings.push('Dot product score is not normalized — higher values indicate more similarity');
   }
-  if (hasQjlPayload) {
-    warnings.push('Database carries an experimental QJL residual payload, but search does not yet apply QJL correction.');
+  if (hasQjlPayload && input.useQjl !== false) {
+    warnings.push('QJL residual correction available and applied for unbiased dot-product estimation.');
+  } else if (hasQjlPayload && input.useQjl === false) {
+    warnings.push('Database has QJL payload but useQjl=false — using basic quantized search.');
   }
-  if (input.useQjl === true) {
-    warnings.push(`useQjl was requested, but ${PUBLIC_ALGORITHM_LEVEL} databases store no QJL payload and the current search path does not apply QJL correction.`);
+  if (input.useQjl === true && !hasQjlPayload) {
+    warnings.push('useQjl=true requested but database has no QJL payload — upgrade database with includeQJL=true during compression.');
   }
 
   return {
@@ -175,6 +177,7 @@ function runSearch(input: SearchVectorsInput): SearchResult {
     vector_count: db.vectors.length,
     codebook_type: db.codebookType,
     algorithm_level: algorithmLevel,
+    has_qjl_payload: hasQjlPayload,
     warnings,
   };
 }

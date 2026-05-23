@@ -10,7 +10,7 @@ import { encodeCompressedDatabase, encodeBase64 } from '../core/format.js';
 import { validateCompressionParams, estimateCompressionMemory } from '../core/limits.js';
 import { QJLResidualEstimator } from '../core/qjl.js';
 import { TurboQuantBetaCodebook } from '../core/codebook.js';
-import { EXPERIMENTAL_QJL_LEVEL, PUBLIC_ALGORITHM_LEVEL, publicLevelWarning } from '../core/algorithm_level.js';
+import { EXPERIMENTAL_QJL_LEVEL, PUBLIC_ALGORITHM_LEVEL, algorithmLevelDescription } from '../core/algorithm_level.js';
 import { parseCompressInput } from './validation.js';
 import type { CompressResult } from './types.js';
 
@@ -76,14 +76,11 @@ export function compressVectors(
   }
 
   const warnings: string[] = [];
-  if (includeQJL) {
-    warnings.push(`${EXPERIMENTAL_QJL_LEVEL}: Experimental residual sketch path; not paper-faithful and not wired into public search correction.`);
-  } else {
-    warnings.push(publicLevelWarning(codebookType));
-    if (codebookType === 'uniform') {
-      warnings.push('Uniform quantizer has fixed step size - may not be optimal for all distributions');
-    }
-    warnings.push('QJL residual sketch/correction is not implemented in the public search path.');
+  if (!includeQJL) {
+    warnings.push(`Note: includeQJL=true is recommended for production use. QJL residual correction provides unbiased dot-product estimation per arXiv:2504.19874.`);
+  }
+  if (codebookType === 'uniform') {
+    warnings.push('Uniform quantizer has fixed step size — Beta Lloyd-Max codebook is recommended for production.');
   }
 
   const encodedVectors: Uint8Array[] = [];

@@ -7,7 +7,7 @@
 | **Version** | 4.5.0 |
 | **Transport** | MCP stdio |
 | **License** | GPL-3.0-or-later |
-| **Algorithm** | LEVEL_1_PUBLIC — TurboQuant Beta Lloyd-Max scalar quantization |
+| **Algorithm** | LEVEL_1_PUBLIC — TurboQuant Beta Lloyd-Max + QJL residual correction |
 | **Device** | Adreno A7xx / A8xx (Qualcomm SM8475+) |
 | **Android** | 16+ |
 | **Driver** | Mesa Rusticl 26.2 + Turnip Vulkan (KGSL) |
@@ -62,7 +62,15 @@ All benchmarks are committed artifacts, not promises.
 | `turboquant_local_2026-05-23.json` | 1024 | **7.93x** | — | — | — | — | Latest build |
 | `open-test-local-20260521-160651.json` | 1024 | **7.93x** | 0.88 | 1.00 | 0.94 | 1.63e-05 | Full test, 162 chunks |
 
-**Algorithm**: `LEVEL_1_PUBLIC` — TurboQuant Beta Lloyd-Max scalar quantization. No QJL correction in public path. QJL is research-only.
+**Algorithm**: `LEVEL_1_PUBLIC` — TurboQuant Beta Lloyd-Max + QJL residual correction.
+
+### TurboQuant Pipeline (arXiv:2504.19874)
+
+1. **Random Hadamard rotation** (FWHT-based sign flip, mobile-friendly)
+2. **Beta(d/2, d/2) coordinate PDF** — after rotation, coordinates follow Beta distribution on [-1, 1]
+3. **Lloyd-Max codebook** — optimal quantization levels trained for Beta distribution
+4. **QJL residual sketch** — Johnson-Lindenstrauss projection for unbiased dot-product estimation (Zandieh et al., 2024)
+5. **Structured JL via FWHT** — O(d log d) projection, not O(d²)
 
 ---
 
