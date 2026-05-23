@@ -9,8 +9,8 @@ on:
 
 env:
   NODE_VERSION: '20'
-  LLVM_VERSION: '22'
-  CLANG_VERSION: '22'
+  LLVM_VERSION: '21'
+  CLANG_VERSION: '21'
 
 jobs:
   # ── TypeScript / JavaScript ───────────────────────────────────────────────

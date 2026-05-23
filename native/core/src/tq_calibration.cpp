@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
+#include <cstdio>
 
 // ── Percentile calculation ───────────────────────────────────────────────────
 static float percentile(float* sorted, uint32_t n, float p) {
