@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Clean TurboQuant v4.5.0 - Remove debug artifacts, hardcode, secrets
+Clean TurboQuant v4.5.2 - Remove debug artifacts, hardcode, secrets
 Uses corpus web-search at each step for validation
 """
 
@@ -59,12 +59,12 @@ def clean_file(path: Path, dry_run: bool = True) -> list:
 
 def main():
     print("=" * 70)
-    print("TURBOQUANT v4.5.0 CLEANUP")
+    print("TURBOQUANT v4.5.2 CLEANUP")
     print("=" * 70)
 
     report = {
         "timestamp": "2026-05-22",
-        "action": "clean_v4.5.0",
+        "action": "clean_v4.5.2",
         "files_cleaned": [],
         "debug_removed": 0,
         "verification": {}
@@ -92,21 +92,21 @@ def main():
                     print(f"  {f.name}: {len(changes)} changes")
                     report["debug_removed"] += len(changes)
 
-    # Update version to v4.5.0
-    print("\n[3] Updating version to v4.5.0")
+    # Update version to v4.5.2
+    print("\n[3] Updating version to v4.5.2")
     pkg = TQ_ROOT / "package.json"
     if pkg.exists():
         with open(pkg) as f:
             d = json.load(f)
 
         print(f"  Current: {d.get('version', '?')}")
-        d['version'] = '4.5.0'
+        d['version'] = '4.5.2'
 
         with open(pkg, 'w') as f:
             json.dump(d, f, indent=2)
 
         print(f"  New: 4.5.0")
-        report["version_updated"] = "4.5.0"
+        report["version_updated to v4.5.2"
 
     # Update CHANGELOG
     print("\n[4] Updating CHANGELOG")
@@ -115,9 +115,9 @@ def main():
         with open(changelog) as f:
             content = f.read()
 
-        # Add v4.5.0 entry
+        # Add v4.5.2 entry
         entry = """
-## v4.5.0 (2026-05-22) - Full C++ Migration Ready
+## v4.5.2 (2026-05-22) - Full C++ Migration Ready
 
 ### Breaking Changes
 - None (stable release)
@@ -184,7 +184,7 @@ def main():
     # Verify with corpus search
     print("\n[6] Verifying with corpus search")
     verify_terms = [
-        "turboquant v4.5.0",
+        "turboquant v4.5.2",
         "turboquant corpus web search",
         "turboquant c++ native",
     ]

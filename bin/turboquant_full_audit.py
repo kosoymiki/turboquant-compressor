@@ -2,7 +2,7 @@
 """
 TurboQuant Full Corpus Audit
 Runs entire TQ project through corpus with hard web-search at each step.
-Targets: P0-P3 closure, Mesa drivers, C++ migration, v4.5.0 release.
+Targets: P0-P3 closure, Mesa drivers, C++ migration, v4.5.2 release.
 """
 
 import json
@@ -75,7 +75,7 @@ def main():
     report = {
         "timestamp": datetime.now().isoformat(),
         "TQ_VERSION": "v4.1.4",
-        "TARGET_VERSION": "v4.5.0",
+        "TARGET_VERSION": "v4.5.2",
         "audit_areas": {}
     }
 
@@ -225,10 +225,10 @@ def main():
             d = json.load(f)
         version = d.get("version", "?")
         print(f"  Current version: {version}")
-        print(f"  Target version: v4.5.0")
+        print(f"  Target version: v4.5.2")
         report["audit_areas"]["version"] = {
             "current": version,
-            "target": "v4.5.0"
+            "target": "v4.5.2"
         }
 
     # Area 7: MCP Conformance
@@ -316,7 +316,7 @@ def main():
 
     print("-" * 70)
     if all_pass:
-        print("OVERALL: READY FOR v4.5.0 RELEASE")
+        print("OVERALL: READY FOR v4.5.2 RELEASE")
     else:
         print("OVERALL: BLOCKERS FOUND — FIX BEFORE RELEASE")
 

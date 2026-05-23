@@ -53,7 +53,7 @@ Committed benchmark artifacts in `bench/results/`:
 
 ```yaml
 ---
-version: 4.5.0
+version: 4.5.2
 date: 2026-05-23
 algorithm: LEVEL_1_PUBLIC
 dimensions: 1024
