@@ -52,10 +52,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-core-aarch64
-          path: native/core/build/*.a
-          path: native/core/build/test_tq_core
-          path: native/core/build/test_full_benchmark
-          path: native/core/build/test_qat
+          path: |
+            native/core/build/*.a
+            native/core/build/test_tq_core
+            native/core/build/test_full_benchmark
+            native/core/build/test_qat
           retention-days: 1
 
   # ── Native Kernel (ARM64) ────────────────────────────────────────────────
@@ -90,9 +91,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-kernel-aarch64
-          path: native/kernel/build/*.a
-          path: native/kernel/build/test_kernel
-          path: native/kernel/build/test_hadamard_qjl
+          path: |
+            native/kernel/build/*.a
+            native/kernel/build/test_kernel
+            native/kernel/build/test_hadamard_qjl
           retention-days: 1
 
   # ── OpenCL Intercept (ARM64) ─────────────────────────────────────────────
