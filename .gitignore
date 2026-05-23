@@ -39,3 +39,4 @@ native/spirv/build/*.spv.txt
 native/spirv/tools/build/*.spv
 native/spirv/tools/build/*.spv.txt
 native/spirv/tools/build/*.bc
+/native/gpu/build/
