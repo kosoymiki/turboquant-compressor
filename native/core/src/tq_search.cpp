@@ -1,10 +1,11 @@
 /**
  * TurboQuant Core — Batch Search Pipeline
- * v4.6.0: TS format.ts v3 binary compatibility, zero warnings
+ * v4.6.0: P0 Hadamard QJL, P1 2-bit Beta, P2 Product Quantization wired
  */
 #include "tq_core.h"
 #include "tq_kernel_inline.h"
 #include "tq_beta_sphere.h"
+#include "tq_qjl_hadamard.h"
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
@@ -58,14 +59,10 @@ static uint64_t ns(void) {
     return (uint64_t)t.tv_sec * 1000000000ULL + t.tv_nsec;
 }
 
-static float qjl_dot(const float* q, uint8_t qd, const uint8_t* sk) {
-    int32_t a = 0;
-    for (uint8_t i = 0; i < qd; i++) {
-        int qb = q[i] >= 0.0f ? 1 : 0;
-        int sb = (sk[i >> 3] >> (i & 7)) & 1;
-        a += qb == sb ? 1 : -1;
-    }
-    return (float)a / (float)qd;
+// ── P0: Hadamard QJL — Zandieh et al., ICML 2024 ──────────────────────────
+// Paper-faithful 1-bit Hadamard QJL for asymmetric dot estimation
+static float hadamard_qjl_dot(tq_hadamard_qjl_t* qjl, const float* query_proj, const uint8_t* sketch) {
+    return tq_hadamard_qjl_estimate_dot(qjl, sketch, query_proj);
 }
 
 struct TK { uint32_t i; float s; };
@@ -160,6 +157,17 @@ int tq_search(const char* B, const float* Q, uint32_t D, uint32_t K,
     uint32_t* IB = (uint32_t*)malloc(P2 * 4);
     float* DB = (float*)malloc(P2 * 4);
     std::vector<TK> H; H.reserve(K);
+
+    // ── P0: Hadamard QJL init ──────────────────────────────────────────────
+    tq_hadamard_qjl_t hqjl;
+    float* query_proj = nullptr;
+    if (QJL_LEN > 0 && UQJ) {
+        uint32_t sketch_dims = (QJL_LEN * 8) / VCNT;  // m from stored sketches
+        tq_hadamard_qjl_init(&hqjl, D, sketch_dims, SEED);
+        query_proj = (float*)malloc(sketch_dims * sizeof(float));
+        tq_hadamard_qjl_project_query(&hqjl, Q, query_proj);
+    }
+
     for (uint32_t vi = 0; vi < VCNT; vi++) {
         tq_unpack_bits(QUANT + (size_t)vi * QUANT_PER, IB, D, (int)BITS);
         if (CB) {
@@ -171,14 +179,20 @@ int tq_search(const char* B, const float* Q, uint32_t D, uint32_t K,
         for (uint32_t i = 0; i < D; i++) DOT += NQ[i] * DB[i];
         float SC = DOT;
         if (SC > 1.0f) SC = 1.0f; else if (SC < -1.0f) SC = -1.0f;
-        if (QJL && QJL_LEN > 0) {
-            float QC = qjl_dot(NQ, 16, QJL + (size_t)vi * 2);
+        // P0: Paper-faithful Hadamard QJL asymmetric dot estimation
+        if (query_proj && QJL_LEN > 0) {
+            const uint8_t* sketch = QJL + (size_t)vi * (QJL_LEN / VCNT);
+            float QC = tq_hadamard_qjl_estimate_dot(&hqjl, sketch, query_proj);
             SC = SC + 0.02f * (QC * 0.5f + 0.5f) - 0.01f;
             if (SC > 1.0f) SC = 1.0f; else if (SC < -1.0f) SC = -1.0f;
         }
         TK IT = {vi, SC};
         if ((int)H.size() < (int)K) tk_push(H, IT);
         else if (SC > H[0].s) tk_rep(H, IT);
+    }
+    if (query_proj) {
+        free(query_proj);
+        tq_hadamard_qjl_shutdown(&hqjl);
     }
     free(NQ); free(DB); free(IB); free(NORMS); free(QUANT); free(QJL);
     std::sort(H.begin(), H.end(), [](const TK& a, const TK& b) {

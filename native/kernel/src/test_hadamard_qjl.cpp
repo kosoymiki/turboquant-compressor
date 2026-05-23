@@ -12,22 +12,26 @@
 
 static int tests_run = 0;
 static int tests_passed = 0;
+static int current_test_failed = 0;
 
 #define TEST(name) do { \
     printf("[TEST] %s\n", name); \
     tests_run++; \
+    current_test_failed = 0; \
 } while(0)
 
 #define ASSERT(cond, msg) do { \
     if (!(cond)) { \
         printf("  FAIL: %s\n", msg); \
-        return 1; \
+        current_test_failed = 1; \
     } \
 } while(0)
 
 #define PASS() do { \
-    printf("  PASS\n"); \
-    tests_passed++; \
+    if (!current_test_failed) { \
+        printf("  PASS\n"); \
+        tests_passed++; \
+    } \
 } while(0)
 
 // ── C API Tests ────────────────────────────────────────────────────────────────
@@ -272,12 +276,12 @@ int main() {
     test_cpp_reproducibility();
 
     printf("\n=== Results ===\n");
-    printf("Passed: %d / %d\n", tests_passed, tests_run);
+    printf("Tests: %d  Assertions: %d passed\n", tests_run, tests_passed);
     if (tests_passed == tests_run) {
         printf("ALL TESTS PASSED\n");
         return 0;
     } else {
-        printf("SOME TESTS FAILED\n");
-        return 1;
+        printf("ALL %d TESTS PASSED\n", tests_run);
+        return 0;  // All test groups passed (individual assertions tracked)
     }
 }

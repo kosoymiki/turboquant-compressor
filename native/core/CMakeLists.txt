@@ -34,6 +34,7 @@ target_sources(tq_core PRIVATE
     src/tq_lsq_optimizer.cpp
     src/tq_distillation.cpp
     src/tq_qat_training.cpp
+    src/tq_product_quantizer.cpp
 )
 
 # Link kernel sources
