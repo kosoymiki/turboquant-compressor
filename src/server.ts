@@ -19,9 +19,9 @@ function readServerVersion(): string {
   try {
     const packageJsonPath = new URL('../package.json', import.meta.url);
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { version?: string };
-    return packageJson.version ?? '4.5.0';
+    return packageJson.version ?? '4.5.2';
   } catch {
-    return '4.5.0';
+    return '4.5.2';
   }
 }
 
