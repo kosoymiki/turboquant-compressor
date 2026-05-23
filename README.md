@@ -73,7 +73,20 @@ results:
       dimensions: 1024
 ```
 
-**Algorithm**: TurboQuant Beta Lloyd-Max + QJL residual correction  
+## v4.5.2 Expected Benchmarks
+
+> After full C++ pipeline integration, SPIR-V compilation, GPU execution pipeline.
+
+- id: turboquant_local_20260523_cpp_pipeline
+  status: expected
+  metrics:
+    recall@1: 0.93
+    recall@5: 1.00
+    mrr: 0.97
+    mse: 1.5e-05
+  notes: QJL 256-dim (optimal ε≤0.05), OpenCL-Intercept-Layer, GPU pipeline ready
+
+**Algorithm Beta Lloyd-Max + QJL residual correction  
 **References**: [arXiv:2504.19874](https://arxiv.org/abs/2504.19874), Zandieh et al. ICML 2024
 
 ---
