@@ -16,8 +16,8 @@
 
 set -euo pipefail
 
-# Default LLVM version for CI (x86_64)
-DEFAULT_LLVM_VERSION="18"
+# Default LLVM version — 22 for SPIR-V 1.3 + OpenCL 3.0
+DEFAULT_LLVM_VERSION="22"
 
 # Auto-detect Termux LLVM 21 vs CI LLVM 18
 if [[ -x "/data/data/com.termux/files/usr/bin/clang" ]]; then
