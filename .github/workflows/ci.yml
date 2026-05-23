@@ -139,24 +139,27 @@ jobs:
         if: steps.exists.outputs.exists == 'false'
         id: changelog
         run: |
-          echo '## What's New' > release_notes.md
-          echo '' >> release_notes.md
-          echo '### TurboQuant v${{ steps.version.outputs.version }}' >> release_notes.md
-          echo '' >> release_notes.md
-          echo 'Built with:' >> release_notes.md
-          echo '- TypeScript/JS: npm build + tsc --noEmit ✓' >> release_notes.md
-          echo '- Native Core: CMake + Ninja (ARM64) ✓' >> release_notes.md
-          echo '- Native Kernel: CMake + Ninja (ARM64) ✓' >> release_notes.md
-          echo '- OpenCL Intercept: build (ARM64) ✓' >> release_notes.md
-          echo '- Smoke Tests: passed ✓' >> release_notes.md
-          echo '' >> release_notes.md
-          echo '### Features' >> release_notes.md
-          echo '- P0: Paper-faithful Hadamard QJL (Zandieh ICML 2024)' >> release_notes.md
-          echo '- P1: 2-bit Beta Lloyd-Max (15.72x compression)' >> release_notes.md
-          echo '- P2: ProductQuantizer class' >> release_notes.md
-          echo '' >> release_notes.md
-          echo '### Changes' >> release_notes.md
-          echo '```' >> release_notes.md
+          VERSION=${{ steps.version.outputs.version }}
+          cat > release_notes.md << 'EOF'
+## What's New
+
+### TurboQuant v${VERSION}
+
+Built with:
+- TypeScript/JS: npm build + tsc --noEmit ✓
+- Native Core: CMake + Ninja (ARM64) ✓
+- Native Kernel: CMake + Ninja (ARM64) ✓
+- OpenCL Intercept: build (ARM64) ✓
+- Smoke Tests: passed ✓
+
+### Features
+- P0: Paper-faithful Hadamard QJL (Zandieh ICML 2024)
+- P1: 2-bit Beta Lloyd-Max (15.72x compression)
+- P2: ProductQuantizer class
+
+### Changes
+```
+EOF
           git log --oneline -20 >> release_notes.md
           echo '```' >> release_notes.md
           cat release_notes.md
