@@ -182,9 +182,38 @@ int tq_kv_cache_attention(void* cache, const float* query, float* output) {
     tq_fwht_inplace(rq, c->pad_dim); tq_fwht_normalize(rq, c->pad_dim);
     Q8Vector q8; if (c->use_q8_query) quantize_q8(rq, d, &q8);
     memset(output, 0, d * 4); float li = 0.0f, mi = -1e30f;
-    uint32_t nt = c->key_quantized.num_tokens + c->buffer_token_count;
+    uint32_t q_tokens = c->key_quantized.num_tokens;
+    uint32_t b_tokens = c->buffer_token_count;
     uint32_t bpt = (d * c->key_bits + 7) / 8; uint8_t km = (1 << c->key_bits) - 1;
-    for (uint32_t t = 0; t < nt; t++) {
+
+    // Handle unquantized buffer tokens (when no quantized keys exist)
+    if (q_tokens == 0 && b_tokens > 0) {
+        for (uint32_t t = 0; t < b_tokens; t++) {
+            float dot = 0.0f;
+            for (uint32_t i = 0; i < d; i++) {
+                dot += rq[i] * c->key_buffer[t * d + i];
+            }
+            c->total_scores++;
+            float score = dot * ss;
+            float mn = std::max(score, mi);
+            float a = expf(mi - mn);
+            float p = expf(score - mn);
+            for (uint32_t j = 0; j < d; j++) {
+                output[j] = output[j] * a + p * c->key_buffer[t * d + j];
+            }
+            li = li * a + p;
+            mi = mn;
+        }
+        if (li > 1e-10f) {
+            float inv = 1.0f / li;
+            for (uint32_t i = 0; i < d; i++) output[i] *= inv;
+        }
+        free(rq);
+        return TQ_OK;
+    }
+
+    // Process quantized tokens
+    for (uint32_t t = 0; t < q_tokens; t++) {
         float dot = 0.0f;
         for (uint32_t i = 0; i < d; i++) {
             uint64_t bo = (uint64_t)t * bpt * 8 + i * c->key_bits;
@@ -197,9 +226,16 @@ int tq_kv_cache_attention(void* cache, const float* query, float* output) {
         float score = dot * c->key_quantized.norms[t] * ss;
         float mn = std::max(score, mi); float a = expf(mi - mn); float p = expf(score - mn);
         for (uint32_t j = 0; j < d; j++) output[j] = output[j] * a + p * rq[j];
-        li = li * a + p; mi = mn; }
-    if (li > 1e-10f) { float inv = 1.0f / li; for (uint32_t i = 0; i < d; i++) output[i] *= inv; }
-    free(rq); if (c->use_q8_query) free(q8.quantized); return TQ_OK;
+        li = li * a + p;
+        mi = mn;
+    }
+    if (li > 1e-10f) {
+        float inv = 1.0f / li;
+        for (uint32_t i = 0; i < d; i++) output[i] *= inv;
+    }
+    free(rq);
+    if (c->use_q8_query) free(q8.quantized);
+    return TQ_OK;
 }
 
 int tq_kv_cache_dequantize_keys(void* cache, float* out) {
