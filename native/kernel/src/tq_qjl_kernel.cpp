@@ -10,10 +10,6 @@
 #include <cmath>
 #include <algorithm>
 
-static bool is_pow2(uint32_t x) {
-    return (x != 0) && ((x & (x - 1)) == 0);
-}
-
 static uint32_t next_pow2(uint32_t x) {
     if (x == 0) return 1;
     x--;
@@ -23,30 +19,6 @@ static uint32_t next_pow2(uint32_t x) {
     x |= x >> 8;
     x |= x >> 16;
     return x + 1;
-}
-
-static void fwht_inplace(float* data, uint32_t n) {
-    for (uint32_t stride = 1; stride < n; stride <<= 1) {
-        for (uint32_t i = 0; i < n; i += stride << 1) {
-            for (uint32_t j = 0; j < stride; j++) {
-                float u = data[i + j];
-                float v = data[i + j + stride];
-                data[i + j] = u + v;
-                data[i + j + stride] = u - v;
-            }
-        }
-    }
-}
-
-static float quantize_uniform(float value, float min_val, float max_val, uint8_t bits) {
-    uint32_t levels = 1 << bits;
-    float range = max_val - min_val;
-    float step = range / (float)levels;
-    float normalized = (value - min_val) / step;
-    int idx = (int)(normalized + 0.5f);
-    if (idx < 0) idx = 0;
-    if (idx >= (int)levels) idx = levels - 1;
-    return min_val + (float)idx * step;
 }
 
 cl_int tq_qjl_init(tq_qjl_kernel_t* qjl, uint32_t orig_dims, uint32_t target_dims,

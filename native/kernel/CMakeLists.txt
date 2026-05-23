@@ -13,6 +13,7 @@ add_library(tq_kernel STATIC
   src/tq_rotation_kernel.cpp
   src/tq_quantizer_kernel.cpp
   src/tq_qjl_kernel.cpp
+  src/tq_qjl_hadamard.cpp
 )
 
 target_include_directories(tq_kernel PRIVATE include)
@@ -29,3 +30,7 @@ target_link_libraries(test_kernel PRIVATE tq_kernel pthread)
 add_executable(kernel_bench src/kernel_bench.cpp)
 target_include_directories(kernel_bench PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(kernel_bench PRIVATE tq_kernel pthread)
+
+add_executable(test_hadamard_qjl src/test_hadamard_qjl.cpp)
+target_include_directories(test_hadamard_qjl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(test_hadamard_qjl PRIVATE tq_kernel pthread)

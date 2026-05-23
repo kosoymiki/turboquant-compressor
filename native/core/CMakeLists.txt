@@ -43,6 +43,7 @@ if(EXISTS "${TQ_KERNEL_DIR}/src/tq_rotation_kernel.cpp")
         "${TQ_KERNEL_DIR}/src/tq_rotation_kernel.cpp"
         "${TQ_KERNEL_DIR}/src/tq_quantizer_kernel.cpp"
         "${TQ_KERNEL_DIR}/src/tq_qjl_kernel.cpp"
+        "${TQ_KERNEL_DIR}/src/tq_qjl_hadamard.cpp"
     )
     target_include_directories(tq_core PUBLIC "${TQ_KERNEL_DIR}/include")
 endif()

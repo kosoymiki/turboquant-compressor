@@ -8,12 +8,6 @@
 #include <cstdlib>
 #include <algorithm>
 
-static uint64_t get_time_ns() {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec;
-}
-
 static inline int is_pow2(uint32_t x) {
     return (x != 0) && ((x & (x - 1)) == 0);
 }
@@ -29,7 +23,7 @@ static inline uint32_t next_pow2(uint32_t x) {
     return x + 1;
 }
 
-cl_int tq_rotation_init(tq_rotation_kernel_t* kernel, uint32_t dimensions, uint32_t seed, tq_rotation_mode_t mode) {
+cl_int tq_rotation_init(tq_rotation_kernel_t* kernel, uint32_t dimensions, uint32_t seed, tq_rotation_mode_t /* mode */) {
     if (!kernel || dimensions == 0 || dimensions > TQ_ROTATION_MAX_DIMS) {
         return CL_INVALID_VALUE;
     }

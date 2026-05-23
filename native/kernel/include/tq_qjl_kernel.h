@@ -140,7 +140,6 @@ private:
     QJLSketchCompressor compressor_;
 
     float last_scale_a_;
-    float last_scale_b_;
 };
 
 class QJLDotProductEstimator {
