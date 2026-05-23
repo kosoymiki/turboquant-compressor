@@ -105,7 +105,7 @@ def main():
         with open(pkg, 'w') as f:
             json.dump(d, f, indent=2)
 
-        print(f"  New: 4.5.0")
+        print(f"  New: 4.5.2")
         report["version_updated to v4.5.2"
 
     # Update CHANGELOG

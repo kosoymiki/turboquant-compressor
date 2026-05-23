@@ -1,5 +1,5 @@
 /**
- * Compressed KV Cache v4.5.0 — TurboQuant implementation.
+ * Compressed KV Cache v4.5.2 — TurboQuant implementation.
  *
  * Current implementation characteristics:
  *   1. Mixed KV types (different bits for K and V)
