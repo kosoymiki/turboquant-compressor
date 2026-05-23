@@ -26,3 +26,7 @@ native/adreno/build/
 # Local run artifacts
 artifacts/
 third_party/
+/native/opencl-intercept/build/
+/native/opencl-intercept/*.so
+/native/opencl-intercept/intercept_cli
+/native/opencl-intercept/test_intercept
