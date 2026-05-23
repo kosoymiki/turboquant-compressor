@@ -123,6 +123,7 @@ float tq_lsq_analytic_gradient(
     }
 
     gradient /= (float)count;
+    (void)clipped;  // tracked in tq_lsq_analytic_gradient_internal
     return gradient;
 }
 

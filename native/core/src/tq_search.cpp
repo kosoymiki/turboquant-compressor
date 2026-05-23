@@ -1,6 +1,6 @@
 /**
  * TurboQuant Core — Batch Search Pipeline
- * v4.6.0: P0 Hadamard QJL, P1 2-bit Beta, P2 Product Quantization wired
+ * v4.6.1: P0 Hadamard QJL (Zandieh ICML 2024), P1 2-bit Beta, P2 ProductQuantizer
  */
 #include "tq_core.h"
 #include "tq_kernel_inline.h"
@@ -57,12 +57,6 @@ static uint64_t ns(void) {
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
     return (uint64_t)t.tv_sec * 1000000000ULL + t.tv_nsec;
-}
-
-// ── P0: Hadamard QJL — Zandieh et al., ICML 2024 ──────────────────────────
-// Paper-faithful 1-bit Hadamard QJL for asymmetric dot estimation
-static float hadamard_qjl_dot(tq_hadamard_qjl_t* qjl, const float* query_proj, const uint8_t* sketch) {
-    return tq_hadamard_qjl_estimate_dot(qjl, sketch, query_proj);
 }
 
 struct TK { uint32_t i; float s; };

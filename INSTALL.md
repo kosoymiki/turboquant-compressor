@@ -1,4 +1,4 @@
-# TurboQuant v4.5.0 — Installation Guide
+# TurboQuant v4.6.1 — Installation Guide
 
 ## Scope
 

@@ -25,17 +25,37 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit 2>&1 | grep -v ".test.ts" || true
 
+  native-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build deps
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq cmake ninja-build g++
+      - name: Native core build (zero warnings)
+        run: |
+          cd native/core && mkdir -p build && cd build && \
+          cmake .. -DCMAKE_CXX_COMPILER=g++ && make -j4 2>&1 | \
+          (grep -E "warning:|error:" && exit 1) || echo "ZERO WARNINGS"
+      - name: Native core tests
+        run: |
+          cd native/core/build && ./test_tq_core 2>&1 | grep -E "PASS|FAIL|ALL TESTS"
+
   native-kernel:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: apt-get install cmake ninja-build
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq cmake ninja-build
-      - name: Native kernel build
+          sudo apt-get update -qq && sudo apt-get install -y -qq cmake ninja-build g++
+      - name: Native kernel build (zero warnings)
         run: |
-          cd native/kernel && mkdir -p build && cd build && cmake .. && make -j4
-          ./test_kernel 2>&1 | grep -E "PASS|FAIL"
+          cd native/kernel && mkdir -p build && cd build && cmake .. && make -j4 2>&1 | \
+          (grep -E "warning:|error:" && exit 1) || echo "ZERO WARNINGS"
+      - name: Native kernel tests
+        run: |
+          cd native/kernel/build && ./test_kernel 2>&1 | grep -E "PASS|FAIL"
+          ./test_hadamard_qjl 2>&1 | grep -E "ALL|TESTS"
       - name: Intercept layer build
         run: |
           cd native/opencl-intercept && mkdir -p build && cd build && cmake .. && make -j4

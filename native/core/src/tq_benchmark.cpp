@@ -81,7 +81,7 @@ static float calculate_max_error(
 
 // ── Reconstruct vectors from compressed DB ────────────────────────────────────
 static float* reconstruct_vectors(
-    const char* base64, const float* norms,
+    const char* base64, const float* /* norms */,
     uint32_t count, uint32_t dims, uint8_t bits,
     uint8_t codebook_type
 ) {

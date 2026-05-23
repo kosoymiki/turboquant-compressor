@@ -1,4 +1,53 @@
-# Changelog — TurboQuant v4.5.2
+# Changelog — TurboQuant v4.6.1
+
+## v4.6.1 — 2026-05-24
+
+### P0: Paper-Faithful Hadamard QJL (Zandieh et al., ICML 2024)
+
+**Implementation**: `native/kernel/src/tq_qjl_hadamard.cpp`
+- Subsampled Hadamard: O(d log d) vs O(d²) Gaussian JL
+- 1-bit sign quantization with zero per-block overhead
+- Asymmetric estimator: QJL on keys, Gaussian JL on queries → unbiased dot products
+
+**Reference**: Zandieh et al., "Efficient and Accurate Inner Products for LLMs", arXiv:2406.03482
+
+### P1: 2-bit Beta Lloyd-Max
+
+**Compression breakthrough**: 15.72x (vs 7.93x at 4-bit)
+- Beta(d/2, d/2) distribution optimal for normalized sphere
+- Lloyd-Max codebook precomputed at compress time
+- Trade-off: ranking_agreement_at_1 = 0.8
+
+**Benchmark**:
+| Bits | Compression | Agreement@1 | Score MAE |
+|------|-------------|-------------|------------|
+| 4-bit | 7.93x | 1.0 | 0.003 |
+| 2-bit | 15.72x | 0.8 | 0.022 |
+
+### P2: ProductQuantizer Class
+
+**File**: `native/core/include/tq_product_quantizer.h`
+- k-means++ per subspace training
+- OPQ rotation (Optimized Product Quantization)
+- LUT-based asymmetric search
+- Heap-based top-k retrieval
+
+### Technical Debt Resolved
+
+- Fixed `clipped` variable tracking in `tq_lsq_optimizer.cpp`
+- Fixed KV cache segfault on unquantized buffer tokens
+- Fixed C++ member initialization order warnings
+- Zero compiler warnings across native tree
+
+### Benchmarks
+
+| Metric | v4.5.2 | v4.6.1 | Delta |
+|--------|---------|--------|-------|
+| compression_ratio | 7.93x | 15.72x (2-bit) | +98% |
+| ranking_agreement_at_1 | 1.0 | 0.8 (2-bit) | -20% |
+| score_mae | 0.003 | 0.022 (2-bit) | +633% |
+
+---
 
 ## v4.5.2 — 2026-05-23
 

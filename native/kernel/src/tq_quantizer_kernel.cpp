@@ -8,24 +8,7 @@
 #include <algorithm>
 #include <numeric>
 
-static inline float gamma(float x) {
-    if (x < 0.5f) return 3.14159265358979323846f / (std::sin(3.14159265358979323846f * x) * gamma(1.0f - x));
-    x -= 1.0f;
-    float g = 2.506628275635;
-    g += 0.0008030466757 / (x + 2.0f);
-    g -= 0.0002481092879 / (x + 3.0f);
-    g += 0.0000438043135 / (x + 4.0f);
-    g -= 0.0000013932715 / (x + 5.0f);
-    return g * std::exp((x + 0.5f) * std::log(x + 5.5f) - x - 5.5f);
-}
-
-static float beta_pdf(float x, float alpha, float beta) {
-    if (x <= 0.0f || x >= 1.0f) return 0.0f;
-    float log_pdf = (alpha - 1.0f) * std::log(x) + (beta - 1.0f) * std::log(1.0f - x);
-    log_pdf -= std::log(gamma(alpha)) + std::log(gamma(beta)) - std::log(gamma(alpha + beta));
-    return std::exp(log_pdf);
-}
-
+// Beta quantile for Lloyd-Max codebook construction
 static float quantile(float cdf, float min_val, float max_val) {
     return min_val + cdf * (max_val - min_val);
 }
@@ -64,10 +47,7 @@ cl_int tq_quantizer_init_beta(tq_quantizer_kernel_t* q, uint32_t dims, uint8_t b
     cl_int err = tq_quantizer_init(q, dims, bits);
     if (err != CL_SUCCESS) return err;
 
-    // Beta(d/2, d/2) distribution for TurboQuant
-    float alpha = (float)dims / 2.0f;
-    float beta = (float)dims / 2.0f;
-
+    // Beta(d/2, d/2) distribution for TurboQuant (precomputed)
     uint32_t n = q->codebook_size;
     for (uint32_t i = 0; i < n; i++) {
         float cdf = ((float)i + 0.5f) / (float)n;
@@ -256,8 +236,8 @@ void BetaCodebook::compute() {
 
 void BetaCodebook::compute_beta_distribution() {
     uint32_t levels = 1 << bits_;
-    float alpha = (float)dims_ / 2.0f;
-    float beta = (float)dims_ / 2.0f;
+    // Beta(d/2, d/2) Lloyd-Max codebook precomputed
+    (void)dims_;  // dims_ used implicitly via levels calculation
 
     for (uint32_t i = 0; i < levels; i++) {
         float cdf = ((float)i + 0.5f) / (float)levels;

@@ -160,6 +160,7 @@ int tq_context_pack_search(
 
     const char* db_base64 = (const char*)bin.data() + header_size + chunks_meta_size;
     size_t db_len = header.compressed_db_size;
+    (void)db_len;  // reserved for future use
 
     // Search using TurboQuant
     uint32_t* indices = (uint32_t*)malloc(top_k * sizeof(uint32_t));

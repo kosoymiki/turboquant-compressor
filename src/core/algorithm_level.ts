@@ -1,5 +1,5 @@
 /**
- * TurboQuant v4.5.2 — Production Algorithm Levels
+ * TurboQuant v4.6.1 — Production Algorithm Levels
  *
  * LEVEL_1_PUBLIC: TurboQuant Beta Lloyd-Max scalar quantization + QJL residual correction
  *   - Beta-distributed coordinate PDF after random Hadamard rotation

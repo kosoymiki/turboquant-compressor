@@ -21,7 +21,7 @@ export class RotationEngine {
 
   constructor(dimensions: number, seed: number = 0, mode: RotationMode = FWHT_SIGN) {
     if (mode === DENSE_QR_DEBUG) {
-      throw new Error('DENSE_QR_DEBUG is not implemented in v4.5.2; use FWHT_SIGN or NONE');
+      throw new Error('DENSE_QR_DEBUG is not implemented in v4.6.1; use FWHT_SIGN or NONE');
     }
     this.dimensions = dimensions;
     this.paddedDimensions = isPowerOfTwo(dimensions) ? dimensions : nextPowerOfTwo(dimensions);

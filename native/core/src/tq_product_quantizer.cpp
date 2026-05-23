@@ -13,13 +13,14 @@
 // ── C API stubs (C++ implementation in header) ───────────────────────────────
 
 tq_pq_config tq_pq_default_config(uint32_t dimensions) {
-    tq_pq_config cfg = {0};
-    cfg.dimensions = dimensions;
-    cfg.num_subspaces = 8;
-    cfg.bits_per_subspace = 8;
-    cfg.k_means_iterations = 50;
-    cfg.use_opq = 0;
-    cfg.rotation_seed = 42;
+    tq_pq_config cfg = {
+        .dimensions = dimensions,
+        .num_subspaces = 8,
+        .bits_per_subspace = 8,
+        .k_means_iterations = 50,
+        .use_opq = 0,
+        .rotation_seed = 42
+    };
     return cfg;
 }
 

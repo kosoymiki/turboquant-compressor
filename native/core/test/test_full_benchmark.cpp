@@ -1,5 +1,5 @@
 /**
- * TurboQuant Core — Full Benchmark Suite v4.6.0
+ * TurboQuant Core — Full Benchmark Suite v4.6.1
  */
 
 #include "tq_core.h"
@@ -228,7 +228,7 @@ int test_qat_training() {
 }
 
 int main() {
-    printf("\n=== TurboQuant Core Full Benchmark v4.6.0 ===\n\n");
+    printf("\n=== TurboQuant Core Full Benchmark v4.6.1 ===\n\n");
 
     test_compress_decompress();
     test_kv_cache();

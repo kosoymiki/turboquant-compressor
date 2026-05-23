@@ -1,7 +1,7 @@
 /**
  * TurboQuant Core — KV Cache Compression
  *
- * v4.6.0: C++ port from compressed_kv_cache.ts
+ * v4.6.1: P0 Hadamard QJL, P1 2-bit Beta, P2 ProductQuantizer
  *
  * Features:
  *   - Mixed KV types (different bits for K and V)

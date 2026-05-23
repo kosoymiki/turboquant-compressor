@@ -109,7 +109,7 @@ cl_int tq_qjl_compress(const tq_qjl_kernel_t* qjl, const float* residual, uint8_
 }
 
 cl_int tq_qjl_estimate_dot(const tq_qjl_kernel_t* qjl, const uint8_t* sketch_a, const uint8_t* sketch_b,
-                           float* estimate, const float* scale_a, const float* scale_b) {
+                           float* estimate, const float* /* scale_a */, const float* /* scale_b */) {
     if (!qjl || !qjl->is_initialized || !sketch_a || !sketch_b || !estimate) return CL_INVALID_VALUE;
     float vals_a[128], vals_b[128];
     uint32_t bit_pos = 0;

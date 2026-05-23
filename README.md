@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| Version | 4.5.2 |
+| Version | 4.6.1 |
 | License | GPL-3.0-or-later |
-| Algorithm | Beta Lloyd-Max + QJL residual correction |
+| Algorithm | Beta Lloyd-Max + Hadamard QJL (Zandieh ICML 2024) |
 | Target | Adreno A7xx/A8xx (Qualcomm SM8475+) |
 | Status | Production-ready |
 
@@ -14,13 +14,14 @@
 
 ## What is this?
 
-TurboQuant compresses high-dimensional vectors — the kind used in AI embeddings and ML models — into compact binary representations. It achieves **7.93x compression** with near-perfect nearest-neighbor search accuracy.
+TurboQuant compresses high-dimensional vectors — the kind used in AI embeddings and ML models — into compact binary representations. It achieves **up to 15.72x compression** with high-fidelity nearest-neighbor search.
 
 The compression uses:
 
-1. **Random Hadamard rotation** — a fast, mobile-friendly transformation that spreads information uniformly across dimensions
-2. **Beta Lloyd-Max quantization** — optimal compression levels for the rotated data
-3. **QJL residual correction** — unbiased dot-product estimation for accurate search results
+1. **Random Hadamard rotation** — a fast, mobile-friendly transformation using FWHT O(d log d)
+2. **Beta Lloyd-Max quantization** — optimal compression levels for rotated data (2-bit to 8-bit)
+3. **Hadamard QJL** — paper-faithful asymmetric dot estimation (Zandieh et al., ICML 2024)
+4. **Product Quantization** — sub-space quantization for ultra-high compression
 
 ### Quick Start
 
@@ -49,35 +50,55 @@ npm run smoke:stdio
 
 ## Benchmarks
 
+### v4.6.1 — P0 Hadamard QJL + P1 2-bit Beta + P2 ProductQuantizer
+
 Committed benchmark artifacts in `bench/results/`:
 
 ```yaml
 ---
-version: 4.5.2
-date: 2026-05-23
+version: 4.6.1
+date: 2026-05-24
 algorithm: LEVEL_1_PUBLIC
 dimensions: 1024
-compression_ratio: 7.93x
 results:
-  - id: turboquant_local_2026-05-23
+  - id: open-test-local-20260524-2bit
     status: latest
-  - id: open-test-local-20260521-160651
+    metrics:
+      compression_ratio: 15.72x  (2-bit Beta)
+      ranking_agreement_at_1: 0.8
+      ranking_overlap_at_5: 0.81
+      score_mae: 0.022
+    dataset:
+      chunks: 162
+      dimensions: 1024
+
+  - id: open-test-local-20260524-4bit
     status: verified
     metrics:
-      recall@1:  0.88
-      recall@5:  1.00
-      mrr:       0.94
-      mse:       1.63e-05
+      compression_ratio: 7.93x  (4-bit Beta)
+      ranking_agreement_at_1: 1.0
+      ranking_overlap_at_5: 0.95
+      score_mae: 0.00296
     dataset:
       chunks: 162
       dimensions: 1024
 ```
 
-## v4.5.2 Expected Benchmarks
+### Compression Levels
 
-> After full C++ pipeline integration, SPIR-V compilation, GPU execution pipeline.
+| Bits | Compression | Agreement@1 | Use Case |
+|------|-------------|-------------|----------|
+| 8-bit | 3.96x | 1.0 | Maximum accuracy |
+| 4-bit | 7.93x | 1.0 | Balanced |
+| 2-bit | 15.72x | 0.8 | Maximum compression |
 
-- id: turboquant_local_20260523_cpp_pipeline
+## v4.6.1 Technical Highlights
+
+- **P0**: Paper-faithful 1-bit Hadamard QJL (Zandieh et al., ICML 2024)
+  - O(d log d) subsampled Hadamard vs O(d²) Gaussian
+  - Asymmetric estimator: unbiased dot products
+- **P1**: 2-bit Beta Lloyd-Max — 2x compression improvement over 4-bit
+- **P2**: ProductQuantizer class — k-means++ per subspace training
   status: expected
   metrics:
     recall@1: 0.93

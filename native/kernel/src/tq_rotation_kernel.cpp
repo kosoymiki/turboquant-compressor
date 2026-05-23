@@ -48,7 +48,6 @@ cl_int tq_rotation_init(tq_rotation_kernel_t* kernel, uint32_t dimensions, uint3
     }
 
     // Generate sign pattern
-    uint32_t hal = 0xFFFFFFFF;
     for (uint32_t i = 0; i < kernel->padded_dimensions; i++) {
         uint32_t r = ((seed * 1664525U + 1013904223U) >> 16) & 0xFFFF;
         seed = (seed * 1664525U + 1013904223U);

@@ -1,5 +1,5 @@
 /**
- * TurboQuant Core — QAT Training Test v4.6.0
+ * TurboQuant Core — QAT Training Test v4.6.1
  */
 
 #include "tq_core.h"
@@ -9,7 +9,7 @@
 #include <cstdlib>
 
 int main() {
-    printf("\n=== TurboQuant QAT Training Test v4.6.0 ===\n\n");
+    printf("\n=== TurboQuant QAT Training Test v4.6.1 ===\n\n");
 
     // Simple calibration test
     float data[512];

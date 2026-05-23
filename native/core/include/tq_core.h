@@ -3,7 +3,7 @@
  *
  * End-to-end pipeline: rotation → quantization → QJL sign sketch → format encode
  * Integrates: libtq_kernel.a (CPU kernels) + libtq_gpu_pipeline.a (GPU)
- * v4.5.2: 1-bit Hadamard sign sketch (QJL v2) — 2B/vec, paper-faithful
+ * v4.6.1: P0 Hadamard QJL (Zandieh ICML 2024), P1 2-bit Beta, P2 ProductQuantizer
  */
 
 #ifndef TQ_CORE_H
@@ -12,7 +12,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define TQ_CORE_VERSION "4.6.0"
+#define TQ_CORE_VERSION "4.6.1"
 #define TQ_CORE_MAGIC   0x544D4331
 
 #define TQ_CODEBOOK_UNIFORM  0  // uniform symmetric (idx/(L-1))*2-1, fast, no precompute

@@ -90,8 +90,9 @@ public:
     uint32_t codes_per_vector() const { return cperv_; }
 
 private:
-    uint32_t dims_, k_, dim_sub_, cperv_;
-    uint8_t m_, k_bits_;
+    uint32_t dims_;
+    uint8_t m_;
+    uint32_t k_, dim_sub_, cperv_, k_bits_;
     std::vector<float> cents_;
     std::vector<float> opq_;
     bool trained_;
@@ -106,8 +107,8 @@ private:
 };
 
 ProductQuantizer::ProductQuantizer(uint32_t dims, uint8_t m, uint8_t k_bits)
-    : dims_(dims), m_(m), k_(1 << k_bits), k_bits_(k_bits),
-      dim_sub_(dims / m), cperv_((m * k_bits + 7) >> 3), trained_(false) {}
+    : dims_(dims), m_(m), k_(1 << k_bits), dim_sub_(dims / m),
+      cperv_((m * k_bits + 7) >> 3), k_bits_(k_bits), trained_(false) {}
 
 ProductQuantizer::~ProductQuantizer() = default;
 
@@ -189,7 +190,7 @@ float ProductQuantizer::kmeans(const float* pts, uint32_t n, uint32_t dim, uint3
 }
 
 void ProductQuantizer::train(const float* X, uint32_t N, uint32_t seed, uint32_t max_iter, bool use_opq) {
-    (void)max_iter;
+    (void)max_iter; (void)use_opq;
     cents_.resize(m_ * k_ * dim_sub_);
     tmp_x_.resize(dims_);
     tmp_rx_.resize(dims_);
