@@ -7,6 +7,8 @@
 #define TQ_PRODUCT_QUANTIZER_H
 
 #include <stdint.h>
+#include <stddef.h>
+#include <algorithm>
 
 #ifdef __cplusplus
 extern "C" {
