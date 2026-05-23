@@ -95,7 +95,7 @@ cl_context tq_opencl_create_context(int device_index);
 
 ```cmake
 cmake_minimum_required(VERSION 3.18)
-project(TurboQuantCore VERSION 4.5.4 LANGUAGES C CXX)
+project(TurboQuantCore VERSION 4.6.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

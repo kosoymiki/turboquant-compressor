@@ -1,7 +1,7 @@
 /**
  * TurboQuant Core — End-to-End Compression Pipeline
  *
- * v4.5.4: TS format.ts v3 binary compatibility
+ * v4.6.0: TS format.ts v3 binary compatibility
  *   Byte 28: codebook type (bits 0-1), reserved (bits 2-7)
  *   Bytes 32-55: TS V3 explicit offset fields (headerLength, normsOffset, quantizedOffset, etc.)
  *   CRC at byte 64: payload = norms + quantized (not qjl), per TS decodeV3 validation

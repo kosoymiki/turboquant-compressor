@@ -12,7 +12,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define TQ_CORE_VERSION "4.5.4"
+#define TQ_CORE_VERSION "4.6.0"
 #define TQ_CORE_MAGIC   0x544D4331
 
 #define TQ_CODEBOOK_UNIFORM  0  // uniform symmetric (idx/(L-1))*2-1, fast, no precompute

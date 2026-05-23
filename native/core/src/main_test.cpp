@@ -18,7 +18,7 @@ static int failed = 0;
 } while(0)
 
 int main() {
-    printf("=== TurboQuant Core inline test v4.5.4 ===\n\n");
+    printf("=== TurboQuant Core inline test v4.6.0 ===\n\n");
 
     // Test 1: next_pow2
     ASSERT(tq_next_pow2(1024) == 1024, "next_pow2(1024) = 1024");

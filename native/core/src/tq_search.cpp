@@ -1,6 +1,6 @@
 /**
  * TurboQuant Core — Batch Search Pipeline
- * v4.5.4: TS format.ts v3 binary compatibility, zero warnings
+ * v4.6.0: TS format.ts v3 binary compatibility, zero warnings
  */
 #include "tq_core.h"
 #include "tq_kernel_inline.h"

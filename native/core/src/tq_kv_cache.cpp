@@ -1,6 +1,6 @@
 /**
  * TurboQuant Core — KV Cache Implementation
- * v4.5.4: C++ port from compressed_kv_cache.ts
+ * v4.6.0: C++ port from compressed_kv_cache.ts
  */
 
 #include "tq_kv_cache.h"
