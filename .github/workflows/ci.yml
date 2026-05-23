@@ -139,29 +139,28 @@ jobs:
         if: steps.exists.outputs.exists == 'false'
         id: changelog
         run: |
-          VERSION=${{ steps.version.outputs.version }}
-          cat > release_notes.md << 'EOF'
-## What's New
-
-### TurboQuant v${VERSION}
-
-Built with:
-- TypeScript/JS: npm build + tsc --noEmit ✓
-- Native Core: CMake + Ninja (ARM64) ✓
-- Native Kernel: CMake + Ninja (ARM64) ✓
-- OpenCL Intercept: build (ARM64) ✓
-- Smoke Tests: passed ✓
-
-### Features
-- P0: Paper-faithful Hadamard QJL (Zandieh ICML 2024)
-- P1: 2-bit Beta Lloyd-Max (15.72x compression)
-- P2: ProductQuantizer class
-
-### Changes
-```
-EOF
-          git log --oneline -20 >> release_notes.md
-          echo '```' >> release_notes.md
+          VERSION="${{ steps.version.outputs.version }}"
+          {
+            echo "## What's New"
+            echo ""
+            echo "### TurboQuant v${VERSION}"
+            echo ""
+            echo "Built with:"
+            echo "- TypeScript/JS: npm build + tsc --noEmit"
+            echo "- Native Core: CMake + Ninja (ARM64)"
+            echo "- Native Kernel: CMake + Ninja (ARM64)"
+            echo "- OpenCL Intercept: build (ARM64)"
+            echo "- Smoke Tests: passed"
+            echo ""
+            echo "### Features"
+            echo "- P0: Paper-faithful Hadamard QJL (Zandieh ICML 2024)"
+            echo "- P1: 2-bit Beta Lloyd-Max (15.72x compression)"
+            echo "- P2: ProductQuantizer class"
+            echo ""
+            echo "### Changes"
+            echo "(recent commits)"
+            git log --oneline -10
+          } > release_notes.md
           cat release_notes.md
 
       - name: Create GitHub Release
