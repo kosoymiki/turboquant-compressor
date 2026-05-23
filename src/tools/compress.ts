@@ -88,7 +88,7 @@ export function compressVectors(
   let qjlSketchesB64: string | undefined;
 
   // QJL residual estimator (Hadamard + projection + 4-bit quantized sketch)
-  const qjlEstimator = includeQJL ? new QJLResidualEstimator({ targetDimensions: Math.min(64, dimensions!), bitsPerValue: 4, seed, useHadamard: true }) : null;
+  const qjlEstimator = includeQJL ? new QJLResidualEstimator({ targetDimensions: Math.min(Math.max(256, Math.floor(dimensions! / 4), 512)), bitsPerValue: 4, seed, useHadamard: true }) : null;
   const qjlSketches: Uint8Array[] = [];
 
   for (let i = 0; i < vectors.length; i++) {

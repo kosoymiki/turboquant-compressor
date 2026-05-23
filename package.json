@@ -1,7 +1,7 @@
 {
   "name": "turboquant-compressor",
-  "version": "4.5.0",
-  "description": "TurboQuant v4.5.0 \u2014 Termux-first MCP server for compressed local vector search, context-pack retrieval, KV/cache analysis, and custom Adreno Rusticl/Freedreno/KGSL readiness forensics.",
+  "version": "4.5.2",
+  "description": "TurboQuant v4.5.0 — Termux-first MCP server for compressed local vector search, context-pack retrieval, KV/cache analysis, and custom Adreno Rusticl/Freedreno/KGSL readiness forensics.",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {

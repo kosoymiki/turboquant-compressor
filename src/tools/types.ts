@@ -25,6 +25,7 @@ export interface SearchResult {
   vector_count: number;
   codebook_type: 'uniform' | 'turboquant_beta';
   algorithm_level: string;
+  has_qjl_payload: boolean;
   warnings: string[];
 }
 

@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| Version | 4.5.0 |
+| Version | 4.5.2 |
 | License | GPL-3.0-or-later |
 | Algorithm | Beta Lloyd-Max + QJL residual correction |
 | Target | Adreno A7xx/A8xx (Qualcomm SM8475+) |
