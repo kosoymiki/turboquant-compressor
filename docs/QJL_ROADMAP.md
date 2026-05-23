@@ -1,6 +1,6 @@
 # QJL Roadmap
 
-QJL is not implemented in the current public LEVEL_1 beta path.
+QJL is not implemented in the current public LEVEL_1 path.
 
 TurboQuant uses QJL on the residual after MSE quantization to build an unbiased inner-product estimator. This project currently does not implement that estimator.
 

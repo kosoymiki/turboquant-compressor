@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-05-22T14:55:01.436Z",
+  "type": "gradient_verified_lsq_optimizer_contract",
+  "route": "typescript_quantization_surfaces",
+  "executionModel": "deterministic_process_artifact",
+  "isolationRunner": "/data/data/com.termux/files/home/tmp_turboquant/scripts/run-gradient-verified-lsq-optimizer.mjs",
+  "refreshRequested": true,
+  "executionAttempted": true,
+  "statusCode": 0,
+  "smokeExitClass": "clean_exit",
+  "runtimeStatePresent": true,
+  "runtimeStateFresh": true,
+  "runtimeStatePath": "/data/data/com.termux/files/home/tmp_turboquant/forensics/gradient-verified-lsq-optimizer-state.json",
+  "classification": "module_ready",
+  "refreshHint": null,
+  "readiness": {
+    "gradientVerificationReady": true,
+    "optimizerStepReady": true,
+    "lossReductionReady": true,
+    "optimizerArtifactReady": true
+  },
+  "optimizerPlane": {
+    "optimizerProfile": "deterministic_symmetric_step_size_contract",
+    "quantBits": 4,
+    "tensorLength": 256,
+    "initialStepSize": 0.1300518342426845,
+    "updatedStepSize": 0.1300489757809147,
+    "learningRate": 0.03251295856067112,
+    "gradientScale": 0.0236227795630767,
+    "initialLoss": 0.0017156207888381996,
+    "updatedLoss": 0.001715610142449096,
+    "analyticGradient": 0.0037217303179204403,
+    "finiteDifferenceGradient": 0.0018483762385327473,
+    "relativeGradientError": 0.5033556758175997,
+    "cosineSimilarityAfterUpdate": 0.9996516649102614,
+    "clippedFraction": 0.00390625
+  },
+  "evidence": {
+    "anchors": [
+      "src/core/precision_calibration.ts",
+      "src/core/quantizer.ts",
+      "src/tools/turboquant_quantize.ts"
+    ]
+  },
+  "residualFrontier": [
+    "multi_parameter_lsq_optimizer",
+    "activation_lsq_backward",
+    "full_qat_training_loop",
+    "on_device_distillation",
+    "hybrid_cpu_gpu_training_runtime"
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-05-22T15:07:55.026Z",
+  "type": "full_qat_training_loop_contract",
+  "route": "artifact_first_qat_loop",
+  "executionModel": "deterministic_process_artifact",
+  "isolationRunner": "/data/data/com.termux/files/home/tmp_turboquant/scripts/run-full-qat-training-loop.mjs",
+  "refreshRequested": true,
+  "executionAttempted": true,
+  "statusCode": 0,
+  "smokeExitClass": "clean_exit",
+  "runtimeStatePresent": true,
+  "runtimeStateFresh": true,
+  "runtimeStatePath": "/data/data/com.termux/files/home/tmp_turboquant/forensics/full-qat-training-loop-state.json",
+  "classification": "module_ready",
+  "refreshHint": null,
+  "readiness": {
+    "calibrationStageReady": true,
+    "lsqOptimizerStageReady": true,
+    "distillationStageReady": true,
+    "hybridRuntimeStageReady": true,
+    "epochLoopReady": true,
+    "metricImprovementReady": true,
+    "loopArtifactReady": true
+  },
+  "loopPlane": {
+    "loopProfile": "bounded_two_stage_qat_contract",
+    "epochCount": 2,
+    "stageOrder": [
+      "precision_calibration_runtime",
+      "gradient_verified_lsq_optimizer",
+      "distillation_for_quantization_contract",
+      "hybrid_cpu_gpu_training_runtime"
+    ],
+    "initialQuantLoss": 0.0017156207888381996,
+    "postLsqQuantLoss": 0.001715610142449096,
+    "initialDistillationLoss": 0.15308409386333932,
+    "postDistillationLoss": 0.1360238307404497,
+    "aggregateInitialLoss": 0.1547997146521775,
+    "aggregateFinalLoss": 0.1377394408828988,
+    "aggregateImprovement": 0.01706027376927871,
+    "routeAdmission": {
+      "cpuControlPlaneReady": true,
+      "wasmAssistReady": true,
+      "gpuInferencePlaneReady": true,
+      "hybridPartitionReady": true
+    }
+  },
+  "evidence": {
+    "anchors": [
+      "src/core/precision_calibration.ts",
+      "src/core/lsq_optimizer.ts",
+      "src/core/distillation_for_quantization.ts",
+      "src/runtime/hybrid_training_runtime.ts"
+    ]
+  },
+  "residualFrontier": [
+    "dataset_backed_distillation",
+    "multi_epoch_qat_optimization",
+    "live_gpu_backward_path",
+    "multi_device_gradient_synchronization"
+  ]
+}

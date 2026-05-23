@@ -9,7 +9,7 @@ Do not mark verified until:
 - installed Crush version is recorded
 - config path is confirmed (`.crush.json`, `crush.json`, or `$HOME/.config/crush/crush.json`)
 - server appears as connected in Crush session
-- all 8 tools are discoverable
+- all 13 tools are discoverable
 
 ## Configuration
 
@@ -31,5 +31,5 @@ Config location varies by Crush version. Try one of:
 
 ## Notes
 
-- All 8 tools are available once connected.
+- All 13 tools are available once connected.
 - Use `turboquant_cli_mcp_profile` with `host: "crush"` for the exact config snippet.

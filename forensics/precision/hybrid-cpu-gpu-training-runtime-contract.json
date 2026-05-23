@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-05-22T15:04:50.072Z",
+  "type": "hybrid_cpu_gpu_training_runtime_contract",
+  "route": "artifact_first_phase_partition",
+  "executionModel": "deterministic_process_artifact",
+  "isolationRunner": "/data/data/com.termux/files/home/tmp_turboquant/scripts/run-hybrid-cpu-gpu-training-runtime.mjs",
+  "refreshRequested": true,
+  "executionAttempted": true,
+  "statusCode": 0,
+  "smokeExitClass": "clean_exit",
+  "runtimeStatePresent": true,
+  "runtimeStateFresh": true,
+  "runtimeStatePath": "/data/data/com.termux/files/home/tmp_turboquant/forensics/hybrid-cpu-gpu-training-runtime-state.json",
+  "classification": "module_ready",
+  "refreshHint": null,
+  "readiness": {
+    "cpuControlPlaneReady": true,
+    "wasmAssistReady": true,
+    "gpuInferencePlaneReady": true,
+    "hybridPartitionReady": true,
+    "runtimeArtifactReady": true
+  },
+  "runtimePlane": {
+    "runtimeProfile": "artifact_first_phase_partition_contract",
+    "recommendedBackend": "diagnostic_only",
+    "productionBackendAllowed": false,
+    "wasmInitialized": true,
+    "openclRoute": "mesa_rusticl_kgsl",
+    "inferenceContractClassification": "module_ready",
+    "pagedKvContractClassification": "module_ready",
+    "activationStepSizeMean": 0.05,
+    "weightStepSizeMean": 0.11,
+    "kvGroupStepSizeMean": 0.09,
+    "phaseRoutes": [
+      {
+        "phase": "observer_calibration_and_optimizer_control",
+        "primaryLane": "typescript_cpu",
+        "fallbackLane": "none",
+        "readiness": true,
+        "evidenceSource": "precision-calibration-runtime-state.json"
+      },
+      {
+        "phase": "teacher_student_logit_math",
+        "primaryLane": "wasm_cpu",
+        "fallbackLane": "typescript_cpu",
+        "readiness": true,
+        "evidenceSource": "native/wasm/pkg + deterministic distillation contract"
+      },
+      {
+        "phase": "prefill_decode_attention_execution",
+        "primaryLane": "opencl_gpu",
+        "fallbackLane": "wasm_cpu",
+        "readiness": true,
+        "evidenceSource": "opencl-inference-runtime-contract.json + opencl-paged-kv-prefix-cache-contract.json"
+      }
+    ]
+  },
+  "evidence": {
+    "anchors": [
+      "src/runtime/backend_probe.ts",
+      "src/native/wasm_backend.ts",
+      "forensics/adreno/opencl-inference-runtime-contract.json",
+      "forensics/adreno/opencl-paged-kv-prefix-cache-contract.json",
+      "forensics/precision-calibration-runtime-state.json"
+    ],
+    "warnings": [
+      "Quick probe: pass deep=true to check torch/triton/vllm"
+    ]
+  },
+  "residualFrontier": [
+    "full_qat_training_loop",
+    "dataset_backed_distillation",
+    "multi_device_gradient_synchronization",
+    "live_gpu_backward_path"
+  ]
+}

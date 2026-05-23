@@ -1,0 +1,54 @@
+{
+  "timestamp": "2026-05-22T14:58:47.963Z",
+  "type": "distillation_for_quantization_contract",
+  "route": "typescript_quantization_surfaces",
+  "executionModel": "deterministic_process_artifact",
+  "isolationRunner": "/data/data/com.termux/files/home/tmp_turboquant/scripts/run-distillation-for-quantization-contract.mjs",
+  "refreshRequested": true,
+  "executionAttempted": true,
+  "statusCode": 0,
+  "smokeExitClass": "clean_exit",
+  "runtimeStatePresent": true,
+  "runtimeStateFresh": true,
+  "runtimeStatePath": "/data/data/com.termux/files/home/tmp_turboquant/forensics/distillation-for-quantization-state.json",
+  "classification": "module_ready",
+  "refreshHint": null,
+  "readiness": {
+    "teacherStudentPairReady": true,
+    "softenedTargetReady": true,
+    "distillationLossReady": true,
+    "studentUpdateReady": true,
+    "contractArtifactReady": true
+  },
+  "distillationPlane": {
+    "distillationProfile": "deterministic_teacher_student_quantized_logits",
+    "batchSize": 5,
+    "vocabSize": 16,
+    "temperature": 1.75,
+    "quantBits": 4,
+    "quantStepSize": 0.11913073914391654,
+    "teacherEntropyMean": 2.741059003855716,
+    "initialKlMean": 0.03632065545569389,
+    "updatedKlMean": 0.03229417463584594,
+    "initialAnchorMse": 0.2507389624339851,
+    "updatedAnchorMse": 0.2226439795495167,
+    "initialCompositeLoss": 0.15308409386333932,
+    "updatedCompositeLoss": 0.1360238307404497,
+    "updateNorm": 0.18213371764495986
+  },
+  "evidence": {
+    "anchors": [
+      "src/core/precision_calibration.ts",
+      "src/core/lsq_optimizer.ts",
+      "src/core/hybrid_score.ts",
+      "src/tools/turboquant_quantize.ts"
+    ]
+  },
+  "residualFrontier": [
+    "dataset_backed_distillation",
+    "multi_step_student_training_loop",
+    "on_device_teacher_runtime",
+    "hybrid_cpu_gpu_training_runtime",
+    "full_qat_training_loop"
+  ]
+}

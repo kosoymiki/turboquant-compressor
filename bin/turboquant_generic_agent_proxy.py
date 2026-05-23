@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import os
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+HOME = Path(os.environ.get("HOME", str(Path.home()))).expanduser().resolve()
 
 
 def now_iso() -> str:
@@ -77,8 +79,14 @@ def main() -> int:
         "argv": argv,
         "prompt": prompt,
         "runtime": runtime.get("meta", {}),
-        "preflight": {"available": preflight is not None, "path": str(preflight_out)},
-        "paths": {"runtime": str(runtime_out), "proxy": str(proxy_out)},
+        "preflight": {
+            "available": preflight is not None,
+            "path": str(preflight_out),
+        },
+        "paths": {
+            "runtime": str(runtime_out),
+            "proxy": str(proxy_out),
+        },
     }
     proxy_out.write_text(json.dumps(packet, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(packet, ensure_ascii=False))

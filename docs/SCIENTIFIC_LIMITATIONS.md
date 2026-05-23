@@ -6,7 +6,7 @@ This document describes the scientific limitations of TurboQuant Compressor and 
 
 ## Algorithm Level
 
-The public benchmarked implementation is labeled as `LEVEL_1_PUBLIC_BETA`, indicating:
+The public benchmarked implementation is labeled as `LEVEL_1_PUBLIC`, indicating:
 
 - **Inspired by** TurboQuant paper concepts
 - **Not a faithful implementation** of the paper

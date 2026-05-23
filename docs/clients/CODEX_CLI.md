@@ -23,5 +23,5 @@ Add to `~/.codex/config.toml` or `.codex/config.toml` in project root.
 
 ## Notes
 
-- All 8 tools are available once connected.
+- All 13 tools are available once connected.
 - Use `turboquant_cli_mcp_profile` with `host: "codex_cli"` for the exact config snippet.

@@ -23,6 +23,7 @@ Rules:
 - This layer defines product APIs, compression/search behavior, MCP tools, and release behavior.
 - It must not depend on generated driver-pack outputs as source truth.
 - It may consume runtime evidence, but does not own it.
+- The staged `C++` migration baseline is tracked in `docs/CXX_MIGRATION_BASELINE.md`.
 
 ### 2. Custom GPU Runtime Stack
 

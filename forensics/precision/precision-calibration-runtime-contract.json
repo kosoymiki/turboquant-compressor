@@ -1,0 +1,152 @@
+{
+  "timestamp": "2026-05-22T14:49:16.236Z",
+  "type": "precision_calibration_runtime_contract",
+  "route": "typescript_quantization_surfaces",
+  "executionModel": "deterministic_process_artifact",
+  "isolationRunner": "/data/data/com.termux/files/home/tmp_turboquant/scripts/run-precision-calibration-runtime.mjs",
+  "refreshRequested": true,
+  "executionAttempted": true,
+  "statusCode": 0,
+  "smokeExitClass": "clean_exit",
+  "runtimeStatePresent": true,
+  "runtimeStateFresh": true,
+  "runtimeStatePath": "/data/data/com.termux/files/home/tmp_turboquant/forensics/precision-calibration-runtime-state.json",
+  "classification": "module_ready",
+  "refreshHint": null,
+  "readiness": {
+    "observerReady": true,
+    "fakeQuantPolicyReady": true,
+    "stepSizeContractReady": true,
+    "calibrationArtifactReady": true
+  },
+  "calibrationPlane": {
+    "surfaceCount": 3,
+    "observerStrategy": "minmax_with_percentile_snapshots",
+    "fakeQuantNoisePolicy": "activation_affine_weight_symmetric_kv_group_affine",
+    "activationStepSizeMean": 0.05039232571919759,
+    "weightStepSizeMean": 0.11697701045445033,
+    "kvGroupStepSizeMean": 0.09278769232332706,
+    "betaCodebookRange": {
+      "dimension": 64,
+      "bits": 4,
+      "centroidMin": -0.33074890001014573,
+      "centroidMax": 0.33074890001014584,
+      "msePerCoord": 0.00014268060993050287
+    }
+  },
+  "evidence": {
+    "surfaces": [
+      {
+        "name": "rotated_activation_surface",
+        "role": "activation",
+        "sampleCount": 6,
+        "elementCount": 384,
+        "observer": {
+          "min": -0.42877471446990967,
+          "max": 0.3271101713180542,
+          "absMax": 0.42877471446990967,
+          "mean": -0.018163246274828754,
+          "variance": 0.01529509665747347,
+          "p01": -0.29268839955329895,
+          "p99": 0.28701072931289673
+        },
+        "fakeQuant": {
+          "policy": "affine_per_tensor",
+          "bits": 4,
+          "mse": 0.00021599813759698363,
+          "maxAbsError": 0.025140248239040375,
+          "cosineSimilarity": 0.9932120981272073,
+          "clippedFraction": 0
+        },
+        "stepSize": {
+          "policy": "affine_minmax",
+          "learnable": false,
+          "initialStepSize": 0.05039232571919759,
+          "zeroPoint": 9,
+          "qmin": 0,
+          "qmax": 15,
+          "gradientScale": 0
+        }
+      },
+      {
+        "name": "weight_block_surface",
+        "role": "weight",
+        "sampleCount": 4,
+        "elementCount": 256,
+        "observer": {
+          "min": -0.7657565474510193,
+          "max": 0.8188390731811523,
+          "absMax": 0.8188390731811523,
+          "mean": 0.013031649330514483,
+          "variance": 0.19352019624849787,
+          "p01": -0.727138876914978,
+          "p99": 0.7975112795829773
+        },
+        "fakeQuant": {
+          "policy": "symmetric_per_tensor",
+          "bits": 4,
+          "mse": 0.0010386152058651317,
+          "maxAbsError": 0.05458378791809082,
+          "cosineSimilarity": 0.9973271002251664,
+          "clippedFraction": 0
+        },
+        "stepSize": {
+          "policy": "lsq_compatible_symmetric",
+          "learnable": true,
+          "initialStepSize": 0.11697701045445033,
+          "zeroPoint": 0,
+          "qmin": -7,
+          "qmax": 7,
+          "gradientScale": 0.0236227795630767
+        }
+      },
+      {
+        "name": "kv_value_group_surface",
+        "role": "kv_value",
+        "sampleCount": 4,
+        "elementCount": 128,
+        "observer": {
+          "min": -0.85584557056427,
+          "max": 0.9228528738021851,
+          "absMax": 0.9228528738021851,
+          "mean": 0.029245429617731133,
+          "variance": 0.3360242269295129,
+          "p01": -0.8261909484863281,
+          "p99": 0.9194815754890442
+        },
+        "fakeQuant": {
+          "policy": "affine_per_group",
+          "bits": 4,
+          "mse": 0.0006729629298926716,
+          "maxAbsError": 0.056302428245544434,
+          "cosineSimilarity": 0.9990014079649956,
+          "clippedFraction": 0
+        },
+        "stepSize": {
+          "policy": "group_minmax",
+          "learnable": false,
+          "initialStepSize": 0.09278769232332706,
+          "zeroPoint": 0,
+          "qmin": 0,
+          "qmax": 15,
+          "gradientScale": 0,
+          "groupCount": 16,
+          "minGroupStep": 0.05580119788646698,
+          "maxGroupStep": 0.11569635570049286
+        }
+      }
+    ],
+    "anchors": [
+      "src/tools/turboquant_quantize.ts",
+      "src/core/quantizer.ts",
+      "src/core/value_quant.ts",
+      "src/core/codebook.ts"
+    ]
+  },
+  "residualFrontier": [
+    "gradient_verified_lsq_optimizer",
+    "full_qat_training_loop",
+    "on_device_distillation",
+    "hybrid_cpu_gpu_training_runtime"
+  ]
+}

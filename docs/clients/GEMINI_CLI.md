@@ -21,5 +21,5 @@ turboquant-compressor works as a stdio MCP server with Gemini CLI via `~/.gemini
 
 ## Notes
 
-- All 8 tools are available once connected.
+- All 13 tools are available once connected.
 - Use `turboquant_cli_mcp_profile` with `host: "gemini_cli"` for the exact config snippet.

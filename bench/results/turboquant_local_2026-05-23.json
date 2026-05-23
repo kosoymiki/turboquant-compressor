@@ -1,0 +1,14 @@
+{
+  "test_name": "turboquant_local_benchmark_2026-05-23",
+  "timestamp": "2026-05-23T07:53:07.770Z",
+  "dimensions": 1024,
+  "vector_count": 1000,
+  "original_bytes_estimate": 4096000,
+  "compressed_bytes": 516080,
+  "compression_ratio": 7.936753991629205,
+  "algorithm_level": "LEVEL_1_PUBLIC",
+  "warnings": [
+    "LEVEL_1_PUBLIC: Public path uses TurboQuant Beta Lloyd-Max scalar quantization without QJL correction.",
+    "QJL residual sketch/correction is not implemented in the public search path."
+  ]
+}

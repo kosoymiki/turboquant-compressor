@@ -13,7 +13,7 @@ The server speaks JSON-RPC 2.0 over stdin/stdout. stderr is reserved for logging
 ## Protocol
 
 - `initialize` → capabilities negotiation
-- `tools/list` → returns all 8 tools with JSON Schema
+- `tools/list` → returns all 13 tools with JSON Schema
 - `tools/call` → invoke any tool by name
 
 ## Support status

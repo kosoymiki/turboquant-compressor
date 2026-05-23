@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+ARTIFACTS = ROOT / "artifacts"
 HOME = Path(os.environ.get("HOME", str(Path.home()))).expanduser().resolve()
 
 
@@ -26,8 +27,8 @@ def run_runtime() -> dict:
     return json.loads(result.stdout)
 
 
-def run_preflight(prompt: str | None) -> dict | None:
-    prompt = (prompt or "").strip()
+def run_preflight(prompt: str) -> dict | None:
+    prompt = prompt.strip()
     if not prompt:
         return None
     result = subprocess.run(
@@ -55,8 +56,10 @@ def main() -> int:
     parser.add_argument("--prompt")
     parser.add_argument("--argv", nargs=argparse.REMAINDER)
     args = parser.parse_args()
+
     runtime = run_runtime()
-    preflight = run_preflight(args.prompt)
+    preflight = run_preflight(args.prompt or "")
+
     packet = {
         "generated_at": now_iso(),
         "argv": args.argv or [],

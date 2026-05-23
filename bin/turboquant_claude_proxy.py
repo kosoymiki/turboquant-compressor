@@ -55,6 +55,7 @@ def main() -> int:
     parser.add_argument("--prompt")
     parser.add_argument("--argv", nargs=argparse.REMAINDER)
     args = parser.parse_args()
+
     runtime = run_runtime()
     preflight = run_preflight(args.prompt)
     packet = {

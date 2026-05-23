@@ -47,4 +47,4 @@ This requires control of the inference runtime, such as vLLM/SGLang/custom servi
 - Does not alter Claude Code server-side prompt caching.
 - Does not guarantee Claude Code token savings.
 - Does not implement paper-exact TurboQuant.
-- Does not store QJL payload in the current public LEVEL_1 beta path.
+- Does not store QJL payload in the current public LEVEL_1 path.

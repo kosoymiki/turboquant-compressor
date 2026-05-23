@@ -164,7 +164,7 @@ Expected:
 - compress returns `compressed_database_b64`
 - `format_version = 3`
 - `include_qjl = false`
-- `algorithm_level = LEVEL_1_PUBLIC_BETA`
+- `algorithm_level = LEVEL_1_PUBLIC`
 - search returns `index: 0`
 - no stdout protocol corruption
 - diagnostics go to stderr only
