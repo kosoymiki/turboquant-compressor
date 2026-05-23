@@ -31,3 +31,11 @@ third_party/
 /native/opencl-intercept/intercept_cli
 /native/opencl-intercept/test_intercept
 /native/kernel/build/
+/native/spirv/build/
+
+# SPIR-V binaries (generated at build time)
+native/spirv/build/*.spv
+native/spirv/build/*.spv.txt
+native/spirv/tools/build/*.spv
+native/spirv/tools/build/*.spv.txt
+native/spirv/tools/build/*.bc
