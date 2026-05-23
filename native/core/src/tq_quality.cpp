@@ -13,11 +13,6 @@
 #include <cstdlib>
 #include <ctime>
 
-static uint64_t now_ns(void) {
-    struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec;
-}
-
 float tq_quality_mse(
     const float* original_vectors,
     uint32_t N,
@@ -51,7 +46,6 @@ float tq_quality_mse(
         bcb = tq_compute_lloyd_max_beta_codebook((int)dims, 4, 50, 1e-6);
         cents = bcb.centroids;
     }
-    uint8_t levels = 16;
     float levels_m1 = 15.0f;
 
     for (uint32_t vi = 0; vi < N; vi++) {

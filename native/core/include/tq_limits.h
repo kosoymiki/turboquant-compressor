@@ -17,7 +17,7 @@ extern "C" {
 #define TQ_MAX_DIMENSIONS       131072
 #define TQ_MAX_VECTORS         10000000
 #define TQ_MAX_BITS             8
-#define TQ_MAX_QJL_DIMS         256
+#define TQ_MAX_QJL_DIMS         255
 #define TQ_MAX_CODEBOOK_CLUSTERS 256  // 8-bit quantization
 
 #define TQ_MIN_DIMENSIONS       1
