@@ -48,6 +48,15 @@ jobs:
         run: |
           cd native/core/build
           uname -m && ./test_tq_core
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-core-aarch64
+          path: native/core/build/*.a
+          path: native/core/build/test_tq_core
+          path: native/core/build/test_full_benchmark
+          path: native/core/build/test_qat
+          retention-days: 1
 
   # ── Native Kernel (ARM64) ────────────────────────────────────────────────
   native-kernel:
@@ -77,6 +86,14 @@ jobs:
         run: |
           cd native/kernel/build
           uname -m && ./test_kernel && ./test_hadamard_qjl
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-kernel-aarch64
+          path: native/kernel/build/*.a
+          path: native/kernel/build/test_kernel
+          path: native/kernel/build/test_hadamard_qjl
+          retention-days: 1
 
   # ── OpenCL Intercept (ARM64) ─────────────────────────────────────────────
   opencl-intercept:
@@ -117,9 +134,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for conventional-commits
+          fetch-depth: 0
 
-      - name: Extract version from package.json
+      - name: Extract version
         id: version
         run: |
           VERSION=$(node -p "require('./package.json').version")
@@ -134,6 +151,20 @@ jobs:
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Download native-core artifacts
+        if: steps.exists.outputs.exists == 'false'
+        uses: actions/download-artifact@v4
+        with:
+          name: native-core-aarch64
+          path: artifacts/core
+
+      - name: Download native-kernel artifacts
+        if: steps.exists.outputs.exists == 'false'
+        uses: actions/download-artifact@v4
+        with:
+          name: native-kernel-aarch64
+          path: artifacts/kernel
 
       - name: Generate changelog
         if: steps.exists.outputs.exists == 'false'
@@ -157,11 +188,19 @@ jobs:
             echo "- P1: 2-bit Beta Lloyd-Max (15.72x compression)"
             echo "- P2: ProductQuantizer class"
             echo ""
-            echo "### Changes"
-            echo "(recent commits)"
+            echo "### Changes (recent commits)"
             git log --oneline -10
           } > release_notes.md
           cat release_notes.md
+
+      - name: Create release artifacts
+        if: steps.exists.outputs.exists == 'false'
+        run: |
+          mkdir -p artifacts
+          cd artifacts
+          tar -czf tq_core_aarch64.tar.gz -C core . 2>/dev/null || true
+          tar -czf tq_kernel_aarch64.tar.gz -C kernel . 2>/dev/null || true
+          ls -la *.tar.gz
 
       - name: Create GitHub Release
         if: steps.exists.outputs.exists == 'false'
@@ -171,20 +210,13 @@ jobs:
           name: TurboQuant v${{ steps.version.outputs.version }}
           body_path: release_notes.md
           draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload release asset (native/core)
+      - name: Upload release assets
         if: steps.exists.outputs.exists == 'false'
         run: |
-          cd native/core/build
-          tar -czf tq_core_aarch64.tar.gz *.a test_tq_core test_full_benchmark 2>/dev/null || true
-          gh release upload ${{ steps.version.outputs.tag }} tq_core_aarch64.tar.gz --clobber 2>/dev/null || true
-
-      - name: Upload release asset (native/kernel)
-        if: steps.exists.outputs.exists == 'false'
-        run: |
-          cd native/kernel/build
-          tar -czf tq_kernel_aarch64.tar.gz libtq_kernel.a test_kernel test_hadamard_qjl 2>/dev/null || true
-          gh release upload ${{ steps.version.outputs.tag }} tq_kernel_aarch64.tar.gz --clobber 2>/dev/null || true
+          gh release upload ${{ steps.version.outputs.tag }} \
+            artifacts/tq_core_aarch64.tar.gz \
+            artifacts/tq_kernel_aarch64.tar.gz \
+            --clobber 2>/dev/null || true
