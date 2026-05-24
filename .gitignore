@@ -4,6 +4,7 @@ native/wasm/target/
 *.tgz
 *.log
 .DS_Store
+RELEASE_v*.md
 coverage/
 __pycache__/
 *.pyc
@@ -25,7 +26,14 @@ native/adreno/build/
 
 # Local run artifacts
 artifacts/
+# Cache directories
+.cache/
 third_party/
+third_party/OpenCL-Intercept-Layer/build*/
+bench/results/*.json
+!bench/results/.gitkeep
+# Build artifacts
+native/core/build/
 /native/opencl-intercept/build/
 /native/opencl-intercept/*.so
 /native/opencl-intercept/intercept_cli
